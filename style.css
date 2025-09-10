@@ -1,0 +1,11 @@
+// Инициализация Telegram Web App
+let tg = window.Telegram.WebApp;
+
+// Расширяем на весь экран
+tg.expand();
+
+// Обработчик события готовности
+tg.ready();
+
+// Можно добавить дополнительную логику здесь
+console.log("Mini App loaded successfully");

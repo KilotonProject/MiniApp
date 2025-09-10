@@ -1,0 +1,118 @@
+/* Стиль в духе Fallout Pip-Boy */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #072c07;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.pipboy {
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(to bottom, #001a00 0%, #004400 100%);
+    border: 2px solid #00ff00;
+    box-shadow: 0 0 20px #00ff00;
+    position: relative;
+}
+
+.screen {
+    padding: 20px;
+    height: calc(100% - 40px);
+    position: relative;
+}
+
+.display {
+    background-color: #001900;
+    border: 2px solid #00ff00;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 30px #00ff00;
+}
+
+.welcome-message {
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+}
+
+.glowing-text {
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+    font-size: 3rem;
+    letter-spacing: 4px;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+    }
+    to {
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+    }
+}
+
+.scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+        rgba(255, 255, 255, 0.03) 50%, 
+        rgba(0, 0, 0, 0.1) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.flicker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    animation: flicker 5s linear infinite;
+    pointer-events: none;
+    opacity: 0.02;
+}
+
+@keyframes flicker {
+    0% { background: transparent; }
+    5% { background: rgba(255, 255, 255, 0.1); }
+    10% { background: transparent; }
+    25% { background: rgba(255, 255, 255, 0.05); }
+    27% { background: transparent; }
+    30% { background: rgba(255, 255, 255, 0.1); }
+    35% { background: transparent; }
+    40% { background: rgba(255, 255, 255, 0.2); }
+    45% { background: transparent; }
+    50% { background: rgba(0, 0, 0, 0.3); }
+    55% { background: transparent; }
+    60% { background: rgba(255, 255, 255, 0.1); }
+    65% { background: transparent; }
+    70% { background: rgba(255, 255, 255, 0.2); }
+    75% { background: transparent; }
+    80% { background: rgba(0, 0, 0, 0.2); }
+    85% { background: transparent; }
+    90% { background: rgba(255, 255, 255, 0.1); }
+    95% { background: transparent; }
+    100% { background: rgba(0, 0, 0, 0.1); }
+}
+
+.footer {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+    font-size: 0.8rem;
+}
