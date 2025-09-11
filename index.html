@@ -6,135 +6,84 @@
     <title>KILOTON RUNNER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Monofett&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Приветственный экран -->
-    <div id="welcome-screen" class="screen active">
-        <div class="pipboy">
-            <div class="screen-inner">
-                <div class="welcome-message">
-                    <h1 class="glowing-text">WELCOME</h1>
-                    <div class="scanlines"></div>
-                    <div class="flicker"></div>
-                </div>
-                <div class="footer">
-                    <p>by KILOTON PROJECT</p>
-                </div>
+    <!-- Экран загрузки -->
+    <div id="loading-screen" class="screen visible">
+        <div class="loading-container">
+            <div class="pipboy-logo">
+                <div class="logo-subtext">RUNNER</div>
             </div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <div class="loading-text">INITIALIZING SYSTEMS...</div>
         </div>
     </div>
 
     <!-- Главный экран -->
-    <div id="main-screen" class="screen">
-        <div class="pipboy">
-            <!-- Верхняя рамка -->
-            <div class="frame-top">
-                <div class="branding">KILOTON</div>
-                <div class="title">RUNNER</div>
+    <div id="main-screen" class="screen hidden">
+        <!-- Верхняя рамка -->
+        <div class="frame top-frame">
+            <div class="frame-details">
+                <span class="frame-text">Initialization completed</span>
+                <span class="frame-text">running protocol</span>
             </div>
+        </div>
 
-            <!-- Основное содержимое -->
-            <div class="screen-inner">
-                <!-- Навигационное меню -->
-                <nav class="main-nav">
-                    <div class="nav-row">
-                        <button class="nav-btn active" data-section="stat">
-                            <span class="nav-icon">[S]</span> STAT
-                        </button>
-                        <button class="nav-btn" data-section="wallet">
-                            <span class="nav-icon">[W]</span> WALLET
-                        </button>
-                    </div>
-                    <div class="nav-row">
-                        <button class="nav-btn" data-section="runner">
-                            <span class="nav-icon">[R]</span> RUNNER
-                        </button>
-                        <button class="nav-btn" data-section="shop">
-                            <span class="nav-icon">[S]</span> SHOP
-                        </button>
-                    </div>
-                    <div class="nav-row">
-                        <button class="nav-btn" data-section="inventory">
-                            <span class="nav-icon">[I]</span> INVENTORY
-                        </button>
-                        <button class="nav-btn" data-section="radio">
-                            <span class="nav-icon">[R]</span> RADIO
-                        </button>
-                    </div>
-                    <div class="nav-row">
-                        <button class="nav-btn" data-section="settings">
-                            <span class="nav-icon">[S]</span> SETTINGS
-                        </button>
-                    </div>
-                </nav>
-
-                <!-- Область контента -->
-                <div class="content-area">
-                    <!-- Статистика (активная по умолчанию) -->
-                    <div id="stat-content" class="content-section active">
-                        <h2>USER PROFILE</h2>
-                        <div class="data-row">
-                            <span class="label">LEVEL:</span>
-                            <span class="value" id="user-level">--</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="label">XP:</span>
-                            <span class="value" id="user-xp">--/--</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="label">ENERGY:</span>
-                            <span class="value" id="user-energy">--/--</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="label">TON BALANCE:</span>
-                            <span class="value" id="user-ton">--</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="label">TSAR BALANCE:</span>
-                            <span class="value" id="user-tsar">--</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="label">REFERRALS:</span>
-                            <span class="value" id="user-refs">--</span>
-                        </div>
-                    </div>
-
-                    <!-- Остальные разделы (изначально скрыты) -->
-                    <div id="wallet-content" class="content-section">
-                        <h2>WALLET MANAGEMENT</h2>
-                        <p>TON and TSAR token management</p>
-                    </div>
-                    <div id="runner-content" class="content-section">
-                        <h2>QUEST RUNNER</h2>
-                        <p>Active missions and tasks</p>
-                    </div>
-                    <div id="shop-content" class="content-section">
-                        <h2>SUPPLY SHOP</h2>
-                        <p>Items and upgrades</p>
-                    </div>
-                    <div id="inventory-content" class="content-section">
-                        <h2>INVENTORY</h2>
-                        <p>Your collected items</p>
-                    </div>
-                    <div id="radio-content" class="content-section">
-                        <h2>RADIO TRANSMISSIONS</h2>
-                        <p>Audio content and podcasts</p>
-                    </div>
-                    <div id="settings-content" class="content-section">
-                        <h2>SETTINGS</h2>
-                        <p>Configuration options</p>
-                    </div>
-                </div>
+        <!-- Заголовок -->
+        <div class="header">
+            <h1 class="title">RUNNER</h1>
+            <div class="header-status">
+                <span class="status-item" id="current-time">🕐 00:00</span>
+                <span class="status-item" id="battery-status">🔋 100%</span>
             </div>
+        </div>
 
-            <!-- Нижняя рамка с информацией -->
-            <div class="frame-bottom">
-                <div class="status-info">
-                    <span class="status-item" id="temperature">T: 24.5°C</span>
-                    <span class="status-item" id="time">🕐 00:00</span>
-                    <span class="status-item" id="balance">BAL: 0.0</span>
-                    <span class="status-item" id="clan">CLAN: 100</span>
-                </div>
+        <!-- Область контента -->
+        <div class="content-area" id="content-area">
+            <!-- Контент будет загружаться динамически -->
+        </div>
+
+        <!-- Навигационное меню -->
+        <div class="navigation">
+            <button class="nav-btn" data-section="stat">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">STAT</span>
+            </button>
+            <button class="nav-btn" data-section="wallet">
+                <span class="nav-icon">💳</span>
+                <span class="nav-text">WALLET</span>
+            </button>
+            <button class="nav-btn" data-section="runner">
+                <span class="nav-icon">🏃</span>
+                <span class="nav-text">RUNNER</span>
+            </button>
+            <button class="nav-btn" data-section="shop">
+                <span class="nav-icon">🛒</span>
+                <span class="nav-text">SHOP</span>
+            </button>
+            <button class="nav-btn" data-section="inventory">
+                <span class="nav-icon">🎒</span>
+                <span class="nav-text">INVENTORY</span>
+            </button>
+            <button class="nav-btn" data-section="radio">
+                <span class="nav-icon">📻</span>
+                <span class="nav-text">RADIO</span>
+            </button>
+            <button class="nav-btn" data-section="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">SETTINGS</span>
+            </button>
+        </div>
+
+        <!-- Нижняя рамка -->
+        <div class="frame bottom-frame">
+            <div class="frame-details">
+                <span class="frame-text" id="footer-balance">BALANCE: 0.0 TON</span>
+                <span class="frame-text" id="footer-clan">CLAN: 100</span>
+                <span class="frame-text">KILOTON</span>
             </div>
         </div>
 
@@ -142,6 +91,7 @@
         <div class="scanlines"></div>
         <div class="flicker"></div>
         <div class="crt-effect"></div>
+        <div class="scanline"></div>
     </div>
 
     <script src="script.js"></script>
