@@ -3,95 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILOTON RUNNER</title>
+    <title>RUNNER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Monofett&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Экран загрузки -->
-    <div id="loading-screen" class="screen visible">
-        <div class="loading-container">
-            <div class="pipboy-logo">
-                <div class="logo-subtext">RUNNER</div>
-            </div>
-            <div class="loading-bar">
-                <div class="loading-progress"></div>
-            </div>
-            <div class="loading-text">INITIALIZING SYSTEMS...</div>
-        </div>
-    </div>
-
-    <!-- Главный экран -->
-    <div id="main-screen" class="screen hidden">
+    <div class="pipboy-container">
         <!-- Верхняя рамка -->
-        <div class="frame top-frame">
+        <div class="pipboy-frame top-frame">
             <div class="frame-details">
-                <span class="frame-text">Initialization completed</span>
-                <span class="frame-text">running protocol</span>
+                <span class="frame-text">VAULT-TEC INDUSTRIES</span>
+                <span class="frame-text">KILOTON PROJECT</span>
             </div>
         </div>
-
-        <!-- Заголовок -->
-        <div class="header">
-            <h1 class="title">RUNNER</h1>
-            <div class="header-status">
-                <span class="status-item" id="current-time">🕐 00:00</span>
-                <span class="status-item" id="battery-status">🔋 100%</span>
+        
+        <!-- Основной экран -->
+        <div class="pipboy-screen">
+            <!-- Приветственный экран -->
+            <div id="welcome-screen" class="screen active">
+                <div class="welcome-content">
+                    <h1 class="glowing-text">WELCOME</h1>
+                    <div class="subtitle">Initialization</div>
+                    <div class="footer">by KILOTON PROJECT</div>
+                </div>
             </div>
-        </div>
-
-        <!-- Область контента -->
-        <div class="content-area" id="content-area">
-            <!-- Контент будет загружаться динамически -->
-        </div>
-
-        <!-- Навигационное меню -->
-        <div class="navigation">
-            <button class="nav-btn" data-section="stat">
-                <span class="nav-icon">📊</span>
-                <span class="nav-text">STAT</span>
-            </button>
-            <button class="nav-btn" data-section="wallet">
-                <span class="nav-icon">💳</span>
-                <span class="nav-text">WALLET</span>
-            </button>
-            <button class="nav-btn" data-section="runner">
-                <span class="nav-icon">🏃</span>
-                <span class="nav-text">RUNNER</span>
-            </button>
-            <button class="nav-btn" data-section="shop">
-                <span class="nav-icon">🛒</span>
-                <span class="nav-text">SHOP</span>
-            </button>
-            <button class="nav-btn" data-section="inventory">
-                <span class="nav-icon">🎒</span>
-                <span class="nav-text">INVENTORY</span>
-            </button>
-            <button class="nav-btn" data-section="radio">
-                <span class="nav-icon">📻</span>
-                <span class="nav-text">RADIO</span>
-            </button>
-            <button class="nav-btn" data-section="settings">
-                <span class="nav-icon">⚙️</span>
-                <span class="nav-text">SETTINGS</span>
-            </button>
-        </div>
-
-        <!-- Нижняя рамка -->
-        <div class="frame bottom-frame">
-            <div class="frame-details">
-                <span class="frame-text" id="footer-balance">BALANCE: 0.0 TON</span>
-                <span class="frame-text" id="footer-clan">CLAN: 100</span>
-                <span class="frame-text">KILOTON</span>
+            
+            <!-- Главный экран -->
+            <div id="main-screen" class="screen">
+                <!-- Заголовок -->
+                <div class="screen-header">
+                    <h1>RUNNER</h1>
+                    <div class="header-details">VAULT 7901414278</div>
+                </div>
+                
+                <!-- Область контента -->
+                <div class="content-area" id="content-area">
+                    <!-- Контент будет меняться в зависимости от выбранного раздела -->
+                    <div class="default-content">
+                        <p>SELECT A SECTION FROM MENU</p>
+                        <p>STATUS: ONLINE</p>
+                        <p>SYSTEM: NOMINAL</p>
+                    </div>
+                </div>
+                
+                <!-- Нижний колонтитул -->
+                <div class="footer-info">
+                    <span id="time-display">🕐 00:00</span>
+                    <span id="balance-display">BAL: 0.0 TON</span>
+                    <span id="clan-display">CLAN: NONE</span>
+                </div>
             </div>
+            
+            <!-- Эффекты -->
+            <div class="scanlines"></div>
+            <div class="flicker"></div>
+            <div class="crt-effect"></div>
         </div>
-
-        <!-- Эффекты -->
-        <div class="scanlines"></div>
-        <div class="flicker"></div>
-        <div class="crt-effect"></div>
-        <div class="scanline"></div>
+        
+        <!-- Нижняя рамка с навигацией -->
+        <div class="pipboy-frame bottom-frame">
+            <nav class="pipboy-nav">
+                <button class="nav-btn" data-section="stat">
+                    <span class="nav-icon">[</span>STAT
+                </button>
+                <button class="nav-btn" data-section="wallet">
+                    <span class="nav-icon">[</span>WALLET
+                </button>
+                <button class="nav-btn" data-section="runner">
+                    <span class="nav-icon">[</span>RUNNER
+                </button>
+                <button class="nav-btn" data-section="shop">
+                    <span class="nav-icon">[</span>SHOP
+                </button>
+                <button class="nav-btn" data-section="inventory">
+                    <span class="nav-icon">[</span>INVENTORY
+                </button>
+                <button class="nav-btn" data-section="radio">
+                    <span class="nav-icon">[</span>RADIO
+                </button>
+                <button class="nav-btn" data-section="settings">
+                    <span class="nav-icon">[</span>SETTINGS
+                </button>
+            </nav>
+        </div>
     </div>
 
     <script src="script.js"></script>
