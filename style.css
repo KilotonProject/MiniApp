@@ -6,105 +6,88 @@
 }
 
 body {
-    background-color: #001100;
+    background-color: #000;
     font-family: 'Courier New', monospace;
+    color: #00ff00;
     overflow: hidden;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #00ff00;
-}
-
-.pipboy {
-    width: 100%;
-    height: 100vh;
-    background: 
-        linear-gradient(to bottom, #001a00 0%, #004400 100%),
-        repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.03) 0px, rgba(0, 255, 0, 0.03) 1px, transparent 1px, transparent 2px);
-    border: 3px solid #00ff00;
-    box-shadow: 
-        0 0 20px #00ff00,
-        inset 0 0 30px #00ff00;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Эффект статического шума */
-.noise {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 5;
-    opacity: 0.1;
-}
-
-/* Сканирующая линия */
-.scan-line {
-    position: absolute;
-    height: 2px;
-    width: 100%;
-    background: linear-gradient(to right, transparent, #00ff00, transparent);
-    top: 0;
-    animation: scan 5s linear infinite;
-    z-index: 6;
-    pointer-events: none;
-    box-shadow: 0 0 10px #00ff00;
-}
-
-@keyframes scan {
-    0% { top: 0; opacity: 0; }
-    10% { opacity: 1; }
-    95% { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
-}
-
-/* Болты по углам */
-.bolt {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background-color: #00ff00;
-    border-radius: 50%;
-    box-shadow: 0 0 5px #00ff00;
-}
-
-.bolt::before {
-    content: "+";
-    position: absolute;
-    color: #001100;
-    font-size: 8px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.top-left { top: 5px; left: 5px; }
-.top-right { top: 5px; right: 5px; }
-.bottom-left { bottom: 5px; left: 5px; }
-.bottom-right { bottom: 5px; right: 5px; }
-
-/* Надпись бренда */
-.brand {
-    position: absolute;
-    bottom: 8px;
-    right: 10px;
-    font-size: 10px;
-    color: #00ff00;
-    text-shadow: 0 0 3px #00ff00;
-    letter-spacing: 1px;
-    opacity: 0.7;
 }
 
 .screen {
-    padding: 30px 20px 20px;
-    height: calc(100% - 50px);
+    display: none;
+    height: 100vh;
+    width: 100%;
+    position: relative;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Стиль Pip-Boy */
+.pipboy {
+    width: 100%;
+    height: 100vh;
+    background-color: #001100;
+    background-image: 
+        linear-gradient(rgba(0, 80, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 80, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
     position: relative;
     overflow: hidden;
+    border: 2px solid #00aa00;
+    box-shadow: 0 0 20px #00ff00;
+}
+
+.screen-inner {
+    padding: 60px 20px 50px;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+/* Рамки */
+.frame-top, .frame-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(to bottom, #003300 0%, #001100 100%);
+    border-left: 2px solid #00ff00;
+    border-right: 2px solid #00ff00;
+    z-index: 3;
+}
+
+.frame-top {
+    top: 0;
+    border-bottom: 1px solid #00aa00;
+    border-top: 2px solid #00ff00;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.frame-bottom {
+    bottom: 0;
+    border-top: 1px solid #00aa00;
+    border-bottom: 2px solid #00ff00;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.branding {
+    font-size: 1.2rem;
+    text-shadow: 0 0 5px #00ff00;
+    letter-spacing: 2px;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px #00ff00;
+    letter-spacing: 3px;
 }
 
 /* Приветственный экран */
@@ -115,7 +98,6 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 100%;
-    z-index: 2;
 }
 
 .glowing-text {
@@ -124,7 +106,6 @@ body {
     font-size: 3rem;
     letter-spacing: 4px;
     animation: glow 2s ease-in-out infinite alternate;
-    font-weight: bold;
 }
 
 @keyframes glow {
@@ -136,161 +117,120 @@ body {
     }
 }
 
-/* Главный экран */
-.main-screen {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    opacity: 0;
-    transition: opacity 1.5s ease-in-out;
-}
-
-.header {
-    text-align: center;
+/* Главное меню */
+.main-nav {
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #007700;
-}
-
-.header h1 {
-    color: #00ff00;
-    text-shadow: 0 0 5px #00ff00;
-    font-size: 1.5rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    animation: flicker 3s infinite alternate;
-}
-
-.navigation {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
-}
-
-.nav-item {
-    color: #00ff00;
-    padding: 12px 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
     border: 1px solid #007700;
-    background-color: rgba(0, 77, 0, 0.2);
-    text-shadow: 0 0 3px #00ff00;
+    padding: 10px;
+    background-color: rgba(0, 30, 0, 0.5);
+}
+
+.nav-row {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid #007700;
+    color: #00ff00;
+    padding: 8px 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-shadow: 0 0 5px #00ff00;
+    transition: all 0.3s ease;
+    flex: 1;
+    margin: 0 5px;
     position: relative;
     overflow: hidden;
 }
 
-.nav-item::before {
-    content: ">";
-    position: absolute;
-    left: 5px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.nav-item:hover::before {
-    opacity: 1;
-}
-
-.nav-item:hover {
+.nav-btn:hover {
     background-color: #003300;
-    color: #ffffff;
-    text-shadow: 0 0 8px #00ff00;
-    box-shadow: 0 0 10px #00ff00;
     border-color: #00ff00;
-    transform: translateX(5px);
+    text-shadow: 0 0 10px #00ff00;
+    box-shadow: 0 0 15px #00ff00;
 }
 
-.nav-item:active {
-    background-color: #00ff00;
-    color: #001100;
-    text-shadow: none;
+.nav-btn.active {
+    background-color: #005500;
+    border-color: #00ff00;
+    color: #ffffff;
+    box-shadow: 0 0 20px #00ff00;
 }
 
 .nav-icon {
-    margin-right: 12px;
-    font-size: 1.2rem;
+    margin-right: 5px;
+    font-weight: bold;
 }
 
-.content {
-    flex: 1;
-    margin-top: 15px;
-    color: #00ff00;
+/* Область контента */
+.content-area {
     border: 1px solid #007700;
     padding: 15px;
+    background-color: rgba(0, 20, 0, 0.7);
+    height: calc(100% - 150px);
     overflow-y: auto;
-    background-color: rgba(0, 39, 0, 0.2);
-    position: relative;
 }
 
-.content-header {
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.content-section h2 {
     margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #007700;
+    border-bottom: 1px solid #00aa00;
+    padding-bottom: 5px;
+    text-shadow: 0 0 5px #00ff00;
 }
 
-.content-header h2 {
-    font-size: 1.2rem;
-    text-shadow: 0 0 3px #00ff00;
-    letter-spacing: 1px;
-}
-
-.profile-info {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.info-row {
+.data-row {
     display: flex;
     justify-content: space-between;
-    padding: 5px 0;
+    margin-bottom: 10px;
+    padding: 5px;
     border-bottom: 1px dotted #007700;
 }
 
-.label {
+.data-row .label {
     font-weight: bold;
-    text-shadow: 0 0 2px #00ff00;
+    color: #00ff00;
 }
 
-.value {
+.data-row .value {
     color: #ffffff;
     text-shadow: 0 0 3px #00ff00;
 }
 
-.progress-bar {
-    margin-top: 20px;
-    height: 10px;
-    background-color: #002200;
-    border: 1px solid #007700;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background-color: #00ff00;
-    box-shadow: 0 0 5px #00ff00;
-    transition: width 1s ease-in-out;
-}
-
-.footer-info {
+/* Статус бар */
+.status-info {
     display: flex;
     justify-content: space-between;
-    margin-top: 15px;
-    color: #00ff00;
-    font-size: 0.7rem;
-    padding: 8px 5px;
-    border-top: 1px solid #007700;
-    animation: footer-flicker 5s infinite;
+    width: 100%;
 }
 
-@keyframes footer-flicker {
+.status-item {
+    font-size: 0.8rem;
+    text-shadow: 0 0 3px #00ff00;
+    animation: statusFlicker 5s infinite;
+}
+
+@keyframes statusFlicker {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
-    85% { opacity: 0.9; }
+    75% { opacity: 0.9; }
 }
 
 /* Эффекты */
@@ -305,7 +245,13 @@ body {
         rgba(0, 0, 0, 0.1) 50%);
     background-size: 100% 4px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 4;
+    animation: scanline 10s linear infinite;
+}
+
+@keyframes scanline {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100%; }
 }
 
 .flicker {
@@ -315,90 +261,81 @@ body {
     width: 100%;
     height: 100%;
     background: transparent;
-    animation: flicker 7s linear infinite;
+    animation: flicker 8s linear infinite;
     pointer-events: none;
-    opacity: 0.03;
+    opacity: 0.02;
+    z-index: 5;
 }
 
 @keyframes flicker {
     0% { background: transparent; }
-    2% { background: rgba(255, 255, 255, 0.1); }
-    4% { background: transparent; }
-    8% { background: rgba(255, 255, 255, 0.05); }
-    9% { background: transparent; }
-    11% { background: rgba(255, 255, 255, 0.1); }
-    12% { background: transparent; }
-    20% { background: rgba(255, 255, 255, 0.2); }
-    21% { background: transparent; }
-    25% { background: rgba(0, 0, 0, 0.3); }
-    26% { background: transparent; }
-    55% { background: rgba(255, 255, 255, 0.1); }
-    56% { background: transparent; }
-    75% { background: rgba(255, 255, 255, 0.2); }
-    76% { background: transparent; }
+    1% { background: rgba(255, 255, 255, 0.1); }
+    2% { background: transparent; }
+    30% { background: rgba(255, 255, 255, 0.05); }
+    32% { background: transparent; }
+    64% { background: rgba(255, 255, 255, 0.02); }
+    65% { background: transparent; }
+    66% { background: rgba(255, 255, 255, 0.1); }
+    67% { background: transparent; }
     90% { background: rgba(0, 0, 0, 0.2); }
-    91% { background: transparent; }
+    92% { background: transparent; }
 }
 
-/* Анимация печатающего текста */
-.typewriter {
-    overflow: hidden;
-    border-right: 2px solid #00ff00;
-    white-space: nowrap;
-    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
-}
-
-@keyframes typing {
-    from { width: 0 }
-    to { width: 100% }
-}
-
-@keyframes blink-caret {
-    from, to { border-color: transparent }
-    50% { border-color: #00ff00 }
+.crt-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 60%, rgba(0, 30, 0, 0.1) 100%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 /* Адаптивность */
 @media (max-width: 768px) {
+    .screen-inner {
+        padding: 50px 10px 40px;
+    }
+    
+    .nav-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
     .glowing-text {
         font-size: 2rem;
     }
     
-    .header h1 {
+    .title {
         font-size: 1.2rem;
-    }
-    
-    .footer-info {
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-    
-    .nav-item {
-        padding: 10px 12px;
-        font-size: 0.9rem;
     }
 }
 
-@media (max-width: 480px) {
-    .screen {
-        padding: 20px 15px 15px;
-    }
-    
-    .glowing-text {
-        font-size: 1.8rem;
-    }
-    
-    .header h1 {
-        font-size: 1rem;
-    }
-    
-    .nav-item {
-        padding: 8px 10px;
-        font-size: 0.8rem;
-    }
-    
-    .footer-info span {
-        flex: 1 0 45%;
-        text-align: center;
-    }
+/* Анимация печатающего текста */
+.typing-effect {
+    overflow: hidden;
+    border-right: 2px solid #00ff00;
+    white-space: nowrap;
+    animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: #00ff00; }
+}
+
+.footer {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+    font-size: 0.8rem;
 }

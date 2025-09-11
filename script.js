@@ -7,175 +7,139 @@ tg.expand();
 // Обработчик события готовности
 tg.ready();
 
-// Переменные для управления состоянием
-let currentSection = 'stat';
-
-// Функция для отображения главного экрана
-function showMainScreen() {
-    document.getElementById('welcomeScreen').style.display = 'none';
-    const mainScreen = document.getElementById('mainScreen');
-    mainScreen.style.display = 'flex';
+// Основная функция инициализации
+document.addEventListener('DOMContentLoaded', function() {
+    // Сначала показываем приветственный экран
+    showWelcomeScreen();
     
-    // Анимация появления
+    // Через 5 секунд переключаем на главный экран
     setTimeout(() => {
-        mainScreen.style.opacity = '1';
-    }, 100);
+        showMainScreen();
+        initializeMainScreen();
+    }, 5000);
     
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 60000); // Обновлять время каждую минуту
-    
-    // Запускаем анимацию печатающего текста для заголовка
-    const header = document.querySelector('.header h1');
-    header.classList.add('typewriter');
-}
-
-// Функция для обновления времени в нижнем колонтитуле
-function updateCurrentTime() {
-    const now = new Date();
-    const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                       now.getMinutes().toString().padStart(2, '0');
-    document.getElementById('currentTime').textContent = timeString;
-}
-
-// Функция для загрузки контента раздела
-function loadSection(section) {
-    const contentArea = document.getElementById('contentArea');
-    
-    // Анимация исчезновения текущего контента
-    contentArea.style.opacity = '0';
-    
-    setTimeout(() => {
-        // Очищаем текущий контент
-        contentArea.innerHTML = '';
-        
-        // В зависимости от раздела загружаем соответствующий контент
-        switch(section) {
-            case 'stat':
-                contentArea.innerHTML = `
-                    <div class="content-header">
-                        <h2>USER PROFILE</h2>
-                    </div>
-                    <div class="profile-info">
-                        <div class="info-row">
-                            <span class="label">LEVEL:</span>
-                            <span class="value">15</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">XP:</span>
-                            <span class="value">1250/2000</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">ENERGY:</span>
-                            <span class="value">85/120</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">TON BALANCE:</span>
-                            <span class="value">45.75</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">TSAR BALANCE:</span>
-                            <span class="value">120</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">REFERRALS:</span>
-                            <span class="value">8</span>
-                        </div>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 62.5%;"></div>
-                    </div>
-                `;
-                break;
-            case 'wallet':
-                contentArea.innerHTML = '<h2>WALLET</h2><p>Your wallet and tokens information will be displayed here.</p>';
-                break;
-            case 'runner':
-                contentArea.innerHTML = '<h2>RUNNER</h2><p>Your tasks and missions will be displayed here.</p>';
-                break;
-            case 'shop':
-                contentArea.innerHTML = '<h2>SHOP</h2><p>Items for sale will be displayed here.</p>';
-                break;
-            case 'inventory':
-                contentArea.innerHTML = '<h2>INVENTORY</h2><p>Your items and NFTs will be displayed here.</p>';
-                break;
-            case 'radio':
-                contentArea.innerHTML = '<h2>RADIO</h2><p>Audio and podcasts will be available here.</p>';
-                break;
-            case 'settings':
-                contentArea.innerHTML = '<h2>SETTINGS</h2><p>App settings will be displayed here.</p>';
-                break;
-            default:
-                contentArea.innerHTML = '<h2>WELCOME</h2><p>Select a section from the menu.</p>';
-        }
-        
-        // Анимация появления нового контента
-        setTimeout(() => {
-            contentArea.style.opacity = '1';
-        }, 50);
-        
-    }, 300);
-}
-
-// Обработчики для навигационных кнопок
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function() {
-        const section = this.getAttribute('data-section');
-        
-        // Эффект вибрации (если поддерживается)
-        if (navigator.vibrate) {
-            navigator.vibrate(50);
-        }
-        
-        // Эффект статического шума при нажатии
-        const noiseEffect = document.createElement('div');
-        noiseEffect.style.position = 'absolute';
-        noiseEffect.style.top = '0';
-        noiseEffect.style.left = '0';
-        noiseEffect.style.width = '100%';
-        noiseEffect.style.height = '100%';
-        noiseEffect.style.background = 'radial-gradient(circle, rgba(0,255,0,0.2) 0%, transparent 70%)';
-        noiseEffect.style.pointerEvents = 'none';
-        noiseEffect.style.zIndex = '15';
-        noiseEffect.style.opacity = '0';
-        noiseEffect.style.animation = 'static-pulse 0.5s forwards';
-        
-        document.querySelector('.pipboy').appendChild(noiseEffect);
-        
-        // Удаляем эффект после завершения анимации
-        setTimeout(() => {
-            document.querySelector('.pipboy').removeChild(noiseEffect);
-        }, 500);
-        
-        // Загружаем выбранный раздел
-        loadSection(section);
-        currentSection = section;
-    });
+    // Обновляем время в реальном времени
+    setInterval(updateStatusBar, 1000);
 });
 
-// Добавляем стиль для эффекта статического импульса
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes static-pulse {
-        0% { opacity: 0; transform: scale(0.5); }
-        50% { opacity: 0.7; transform: scale(1.2); }
-        100% { opacity: 0; transform: scale(1.5); }
+// Показать приветственный экран
+function showWelcomeScreen() {
+    document.getElementById('welcome-screen').classList.add('active');
+    document.getElementById('main-screen').classList.remove('active');
+}
+
+// Показать главный экран
+function showMainScreen() {
+    document.getElementById('welcome-screen').classList.remove('active');
+    document.getElementById('main-screen').classList.add('active');
+}
+
+// Инициализация главного экрана
+function initializeMainScreen() {
+    // Добавляем обработчики для кнопок навигации
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Убираем активный класс у всех кнопок
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Добавляем активный класс к нажатой кнопке
+            this.classList.add('active');
+            
+            // Показываем соответствующий раздел
+            const sectionId = this.getAttribute('data-section') + '-content';
+            showContentSection(sectionId);
+            
+            // Эффект при нажатии
+            this.style.boxShadow = '0 0 25px #00ff00';
+            setTimeout(() => {
+                this.style.boxShadow = '';
+            }, 300);
+        });
+    });
+    
+    // Загружаем данные пользователя
+    loadUserData();
+}
+
+// Показать раздел контента
+function showContentSection(sectionId) {
+    // Скрываем все разделы
+    const allSections = document.querySelectorAll('.content-section');
+    allSections.forEach(section => section.classList.remove('active'));
+    
+    // Показываем выбранный раздел
+    document.getElementById(sectionId).classList.add('active');
+}
+
+// Загрузка данных пользователя
+function loadUserData() {
+    // Здесь будет загрузка данных из Telegram Web App или API
+    // Пока используем заглушки
+    document.getElementById('user-level').textContent = '5';
+    document.getElementById('user-xp').textContent = '750/1000';
+    document.getElementById('user-energy').textContent = '85/110';
+    document.getElementById('user-ton').textContent = '55.5';
+    document.getElementById('user-tsar').textContent = '12';
+    document.getElementById('user-refs').textContent = '3';
+    
+    // Обновляем баланс в статус баре
+    document.getElementById('balance').textContent = 'BAL: 55.5';
+}
+
+// Обновление статус бара
+function updateStatusBar() {
+    const now = new Date();
+    const timeString = `🕐 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    document.getElementById('time').textContent = timeString;
+    
+    // Случайное мерцание статус бара
+    if (Math.random() > 0.8) {
+        const statusItems = document.querySelectorAll('.status-item');
+        statusItems.forEach(item => {
+            item.style.opacity = Math.random() > 0.5 ? 0.7 : 1;
+        });
+        
+        // Случайный статический шум
+        if (Math.random() > 0.9) {
+            showStaticNoise();
+        }
     }
-`;
-document.head.appendChild(style);
+}
 
-// Ждем 5 секунд и показываем главный экран
-setTimeout(showMainScreen, 5000);
-
-// Добавим анимацию появления текста на приветственном экране
-document.addEventListener('DOMContentLoaded', function() {
-    const welcomeText = document.querySelector('.glowing-text');
-    welcomeText.style.opacity = '0';
-    welcomeText.style.transition = 'opacity 2s ease-in-out';
+// Эффект статического шума
+function showStaticNoise() {
+    const noise = document.createElement('div');
+    noise.style.position = 'absolute';
+    noise.style.top = '0';
+    noise.style.left = '0';
+    noise.style.width = '100%';
+    noise.style.height = '100%';
+    noise.style.background = 'repeating-linear-gradient(45deg, rgba(0, 255, 0, 0.1), transparent 5px)';
+    noise.style.zIndex = '10';
+    noise.style.pointerEvents = 'none';
+    document.getElementById('main-screen').appendChild(noise);
     
     setTimeout(() => {
-        welcomeText.style.opacity = '1';
-    }, 500);
+        noise.remove();
+    }, 100);
+}
+
+// Функция для отправки данных в бота
+function sendData(action, data = {}) {
+    const payload = {
+        action: action,
+        timestamp: new Date().getTime(),
+        user: tg.initDataUnsafe.user,
+        ...data
+    };
     
-    // Инициализируем первый раздел
-    loadSection(currentSection);
+    // Отправляем данные в бота
+    tg.sendData(JSON.stringify(payload));
+}
+
+// Обработчик получения данных от бота
+tg.onEvent('webAppDataReceived', (event) => {
+    console.log('Data received from bot:', event);
+    // Здесь можно обработать данные, полученные от бота
 });
