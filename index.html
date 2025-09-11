@@ -9,16 +9,111 @@
 </head>
 <body>
     <div class="pipboy">
+        <!-- Эффект статического шума -->
+        <div class="noise"></div>
+        
+        <!-- Сканирующая линия -->
+        <div class="scan-line"></div>
+        
+        <!-- Болты по углам -->
+        <div class="bolt top-left"></div>
+        <div class="bolt top-right"></div>
+        <div class="bolt bottom-left"></div>
+        <div class="bolt bottom-right"></div>
+        
+        <!-- Надпись KILOTON в углу -->
+        <div class="brand">KILOTON</div>
+        
         <div class="screen">
-            <div class="display">
-                <div class="welcome-message">
-                    <h1 class="glowing-text">WELCOME</h1>
-                    <div class="scanlines"></div>
-                    <div class="flicker"></div>
-                </div>
+            <!-- Приветственный экран -->
+            <div class="welcome-message" id="welcomeScreen">
+                <h1 class="glowing-text">WELCOME</h1>
+                <div class="scanlines"></div>
+                <div class="flicker"></div>
                 <div class="footer">
                     <p>by KILOTON PROJECT</p>
                 </div>
+            </div>
+
+            <!-- Главный экран (изначально скрыт) -->
+            <div class="main-screen" id="mainScreen">
+                <!-- Верхняя панель с заголовком -->
+                <div class="header">
+                    <h1>KILOTON MINI APP</h1>
+                </div>
+
+                <!-- Навигационное меню -->
+                <div class="navigation">
+                    <div class="nav-item" data-section="stat">
+                        <span class="nav-icon">📊</span> STAT
+                    </div>
+                    <div class="nav-item" data-section="wallet">
+                        <span class="nav-icon">📍</span> WALLET
+                    </div>
+                    <div class="nav-item" data-section="runner">
+                        <span class="nav-icon">📖</span> RUNNER
+                    </div>
+                    <div class="nav-item" data-section="shop">
+                        <span class="nav-icon">🛒</span> SHOP
+                    </div>
+                    <div class="nav-item" data-section="inventory">
+                        <span class="nav-icon">🎒</span> INVENTORY
+                    </div>
+                    <div class="nav-item" data-section="radio">
+                        <span class="nav-icon">⚙️</span> RADIO
+                    </div>
+                    <div class="nav-item" data-section="settings">
+                        <span class="nav-icon">🔧</span> SETTINGS
+                    </div>
+                </div>
+
+                <!-- Область контента -->
+                <div class="content" id="contentArea">
+                    <div class="content-header">
+                        <h2>USER PROFILE</h2>
+                    </div>
+                    <div class="profile-info">
+                        <div class="info-row">
+                            <span class="label">LEVEL:</span>
+                            <span class="value">15</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">XP:</span>
+                            <span class="value">1250/2000</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">ENERGY:</span>
+                            <span class="value">85/120</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">TON BALANCE:</span>
+                            <span class="value">45.75</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">TSAR BALANCE:</span>
+                            <span class="value">120</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">REFERRALS:</span>
+                            <span class="value">8</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 62.5%;"></div>
+                    </div>
+                </div>
+
+                <!-- Нижний колонтитул с информацией -->
+                <div class="footer-info">
+                    <span>T: 24.5°C</span>
+                    <span>🕐 <span id="currentTime">13:57</span></span>
+                    <span>BALANCE: 45.75 TON</span>
+                    <span>CLAN: KILOTON</span>
+                </div>
+
+                <!-- Эффекты -->
+                <div class="scanlines"></div>
+                <div class="flicker"></div>
             </div>
         </div>
     </div>
