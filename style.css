@@ -50,7 +50,7 @@ body {
 .bottom-frame {
     border-top: 1px solid #00cc00;
     position: fixed;
-    bottom: 0;
+    bottom: 70px; /* Изменено для размещения над footer-info */
     left: 0;
     width: 100%;
     z-index: 100;
@@ -76,7 +76,7 @@ body {
     position: relative;
     overflow: hidden;
     padding: 15px;
-    margin: 10px 10px 60px 10px;
+    margin: 10px 10px 110px 10px; /* Увеличено для нового расположения элементов */
     /* Усиленный эффект выпуклого экрана */
     background: radial-gradient(circle at center, #002a00, #001100);
     border-radius: 8px;
@@ -167,12 +167,18 @@ body {
     flex: 1;
     padding: 8px 5px;
     overflow-y: auto;
+    position: relative;
 }
 
 .default-content {
     text-align: center;
-    margin-top: 15px;
-    opacity: 0.2;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    opacity: 0.1; /* Сильно затемнен */
+    z-index: 1; /* На заднем плане */
     animation: text-flicker 25s infinite;
 }
 
@@ -182,7 +188,7 @@ body {
     font-size: 0.95rem;
 }
 
-/* Нижний колонтитул */
+/* Нижний колонтитул (ПЕРЕМЕЩЕН ВНИЗ) */
 .footer-info {
     display: flex;
     justify-content: space-between;
@@ -192,7 +198,7 @@ body {
     font-size: 0.75rem;
     text-shadow: 0 0 3px #00ff00;
     position: fixed;
-    bottom: 50px;
+    bottom: 0;
     left: 0;
     width: 100%;
     z-index: 99;
@@ -464,12 +470,22 @@ body {
         padding: 10px 5px;
         font-size: 0.85rem;
     }
+    
+    .bottom-frame {
+        bottom: 60px; /* Адаптивное позиционирование для мобильных */
+    }
+    
+    .pipboy-screen {
+        margin-bottom: 100px; /* Адаптивное позиционирование для мобильных */
+    }
 }
 
 /* Стили для контента разделов */
 .section-content {
     display: none;
-    margin-top: 8px;
+    margin-top: 30px; /* Добавлен отступ сверху */
+    position: relative;
+    z-index: 2; /* Поверх дефолтного текста */
 }
 
 .section-content.active {
@@ -478,8 +494,8 @@ body {
 }
 
 .stat-item {
-    margin-bottom: 8px;
-    padding: 6px;
+    margin-bottom: 12px; /* Увеличен отступ между элементами */
+    padding: 8px;
     border-bottom: 1px solid #007700;
     animation: text-flicker 20s infinite;
 }
@@ -487,7 +503,7 @@ body {
 .stat-label {
     color: #007700;
     font-size: 0.85rem;
-    margin-bottom: 3px;
+    margin-bottom: 5px;
 }
 
 .stat-value {
@@ -506,6 +522,7 @@ body {
     color: #ff0;
     text-shadow: 0 0 3px #ff0;
     animation: text-flicker 20s infinite;
+    margin-bottom: 15px; /* Добавлен отступ между параграфами */
 }
 
 @keyframes fadeIn {

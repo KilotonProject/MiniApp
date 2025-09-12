@@ -12,7 +12,7 @@
         <!-- Верхняя рамка -->
         <div class="pipboy-frame top-frame">
             <div class="frame-details">
-                <span class="frame-text">KILOTON INDUSTRIES</span>
+                <span class="frame-text">WELCOME TO KILOTON INDUSTRIES</span>
                 <span class="frame-text">TSR690-BOOM Vers 1.02</span>
             </div>
         </div>
@@ -38,7 +38,7 @@
                 
                 <!-- Область контента -->
                 <div class="content-area" id="content-area">
-                    <!-- Контент будет меняться в зависимости от выбранного раздела -->
+                    <!-- Дефолтный текст на заднем плане -->
                     <div class="default-content">
                         <p>SELECT A SECTION FROM MENU</p>
                         <p>STATUS: ONLINE</p>
@@ -109,14 +109,7 @@
             <div class="screen-glare"></div>
         </div>
 
-        <!-- Нижний колонтитул -->
-        <div class="footer-info">
-            <span id="time-display">🕐 00:00</span>
-            <span id="balance-display">BAL: 0.0 TON</span>
-            <span id="clan-display">CLAN: NONE</span>
-        </div>
-            
-        <!-- Нижняя рамка с навигацией -->
+        <!-- Нижняя рамка с навигацией (ПЕРЕМЕЩЕНА ВВЕРХ) -->
         <div class="pipboy-frame bottom-frame">
             <button class="menu-toggle" id="menu-toggle">
                 ☰ OPEN MENU
@@ -128,27 +121,34 @@
                     <button class="close-menu-btn" id="close-menu">✕</button>
                 </div>
                 <button class="nav-btn" data-section="stat">
-                    <span class="nav-icon">#</span>STAT
+                    <span class="nav-icon">☢</span>STAT
                 </button>
                 <button class="nav-btn" data-section="wallet">
-                    <span class="nav-icon">#</span>WALLET
+                    <span class="nav-icon">💎</span>WALLET
                 </button>
                 <button class="nav-btn" data-section="runner">
-                    <span class="nav-icon">#</span>RUNNER
+                    <span class="nav-icon">🏃</span>RUNNER
                 </button>
                 <button class="nav-btn" data-section="shop">
-                    <span class="nav-icon">#</span>SHOP
+                    <span class="nav-icon">🛒</span>SHOP
                 </button>
                 <button class="nav-btn" data-section="inventory">
-                    <span class="nav-icon">#</span>INVENTORY
+                    <span class="nav-icon">🎒</span>INVENTORY
                 </button>
                 <button class="nav-btn" data-section="radio">
-                    <span class="nav-icon">#</span>RADIO
+                    <span class="nav-icon">📻</span>RADIO
                 </button>
                 <button class="nav-btn" data-section="settings">
-                    <span class="nav-icon">#</span>SETTINGS
+                    <span class="nav-icon">⚙</span>SETTINGS
                 </button>
             </nav>
+        </div>
+
+        <!-- Нижний колонтитул (ПЕРЕМЕЩЕН ВНИЗ) -->
+        <div class="footer-info">
+            <span id="time-display">🕐 00:00</span>
+            <span id="balance-display">BAL: 0.0 TON</span>
+            <span id="clan-display">CLAN: NONE</span>
         </div>
     </div>
 
@@ -206,6 +206,9 @@
             document.querySelectorAll('.section-content').forEach(div => {
                 div.classList.remove('active');
             });
+            
+            // Скрываем дефолтный текст
+            document.querySelector('.default-content').style.display = 'none';
             
             // Показываем выбранный раздел
             const selectedSection = document.getElementById(`${section}-section`);
