@@ -50,10 +50,10 @@ body {
 .bottom-frame {
     border-top: 1px solid #00cc00;
     position: fixed;
-    bottom: 70px; /* Изменено для размещения над footer-info */
+    bottom: 70px;
     left: 0;
     width: 100%;
-    z-index: 100;
+    z-index: 102;
     padding: 5px 10px;
 }
 
@@ -76,7 +76,7 @@ body {
     position: relative;
     overflow: hidden;
     padding: 15px;
-    margin: 10px 10px 110px 10px; /* Увеличено для нового расположения элементов */
+    margin: 10px 10px 110px 10px;
     /* Усиленный эффект выпуклого экрана */
     background: radial-gradient(circle at center, #002a00, #001100);
     border-radius: 8px;
@@ -84,7 +84,6 @@ body {
     box-shadow: 
         0 0 30px rgba(0, 255, 0, 0.4),
         inset 0 0 60px rgba(0, 0, 0, 0.6),
-        0 8px 25px rgba(0, 0, 0, 0.7),
         inset 0 0 0 1px rgba(0, 255, 0, 0.2);
     border: 1px solid rgba(0, 255, 0, 0.3);
 }
@@ -103,14 +102,15 @@ body {
     display: flex;
 }
 
-/* Приветственный экран */
+/* Приветственный экран - ИСПРАВЛЕНО */
 .welcome-content {
     text-align: center;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 100%;
+    width: 90%;
+    max-width: 400px;
 }
 
 .glowing-text {
@@ -120,6 +120,8 @@ body {
     letter-spacing: 4px;
     animation: glow 2s ease-in-out infinite alternate, text-flicker 12s infinite;
     margin-bottom: 10px;
+    line-height: 1.2;
+    word-wrap: break-word;
 }
 
 .subtitle {
@@ -129,6 +131,7 @@ body {
     margin-bottom: 30px;
     letter-spacing: 2px;
     animation: text-flicker 18s infinite;
+    line-height: 1.3;
 }
 
 .battery-status {
@@ -177,8 +180,8 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 100%;
-    opacity: 0.1; /* Сильно затемнен */
-    z-index: 1; /* На заднем плане */
+    opacity: 0.1;
+    z-index: 1;
     animation: text-flicker 25s infinite;
 }
 
@@ -188,7 +191,7 @@ body {
     font-size: 0.95rem;
 }
 
-/* Нижний колонтитул (ПЕРЕМЕЩЕН ВНИЗ) */
+/* Нижний колонтитул */
 .footer-info {
     display: flex;
     justify-content: space-between;
@@ -201,7 +204,7 @@ body {
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 99;
+    z-index: 101;
     animation: text-flicker 30s infinite;
 }
 
@@ -218,7 +221,7 @@ body {
     text-shadow: 0 0 3px #00ff00;
     cursor: pointer;
     margin-bottom: 5px;
-    z-index: 101;
+    z-index: 103;
     position: relative;
     animation: text-flicker 15s infinite;
 }
@@ -438,6 +441,30 @@ body {
     .content-area {
         padding: 5px 3px;
     }
+    
+    /* Исправление для мобильной версии */
+    .bottom-frame {
+        bottom: 50px;
+    }
+    
+    .pipboy-screen {
+        margin-bottom: 120px;
+    }
+    
+    /* Адаптация приветственного экрана */
+    .welcome-content {
+        width: 95%;
+    }
+    
+    .glowing-text {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+    
+    .subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -471,21 +498,73 @@ body {
         font-size: 0.85rem;
     }
     
+    /* Исправление для мобильной версии */
     .bottom-frame {
-        bottom: 60px; /* Адаптивное позиционирование для мобильных */
+        bottom: 40px;
+        z-index: 102;
+    }
+    
+    .footer-info {
+        z-index: 101;
     }
     
     .pipboy-screen {
-        margin-bottom: 100px; /* Адаптивное позиционирование для мобильных */
+        margin-bottom: 110px;
+    }
+    
+    /* Адаптация приветственного экрана для очень маленьких экранов */
+    .welcome-content {
+        width: 100%;
+        padding: 0 10px;
+    }
+    
+    .glowing-text {
+        font-size: 1.6rem;
+        letter-spacing: 1px;
+        line-height: 1.1;
+    }
+    
+    .subtitle {
+        font-size: 0.8rem;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
+        line-height: 1.2;
+    }
+    
+    .battery-status {
+        font-size: 0.7rem;
+        bottom: -30px;
+    }
+}
+
+@media (max-width: 350px) {
+    /* Дополнительные стили для очень маленьких экранов */
+    .glowing-text {
+        font-size: 1.4rem;
+    }
+    
+    .subtitle {
+        font-size: 0.7rem;
+    }
+    
+    .battery-status {
+        font-size: 0.6rem;
+    }
+    
+    .pipboy-screen {
+        padding: 10px;
+        margin: 5px 5px 100px 5px;
     }
 }
 
 /* Стили для контента разделов */
 .section-content {
     display: none;
-    margin-top: 30px; /* Добавлен отступ сверху */
+    margin-top: 30px;
     position: relative;
-    z-index: 2; /* Поверх дефолтного текста */
+    z-index: 2;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 .section-content.active {
@@ -494,7 +573,7 @@ body {
 }
 
 .stat-item {
-    margin-bottom: 12px; /* Увеличен отступ между элементами */
+    margin-bottom: 12px;
     padding: 8px;
     border-bottom: 1px solid #007700;
     animation: text-flicker 20s infinite;
@@ -518,11 +597,15 @@ body {
     animation: text-flicker 20s infinite;
 }
 
+.yellow-content {
+    padding-left: 15px;
+}
+
 .yellow-content p {
     color: #ff0;
     text-shadow: 0 0 3px #ff0;
     animation: text-flicker 20s infinite;
-    margin-bottom: 15px; /* Добавлен отступ между параграфами */
+    margin-bottom: 15px;
 }
 
 @keyframes fadeIn {
