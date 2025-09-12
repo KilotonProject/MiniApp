@@ -42,7 +42,7 @@ body {
 
 .bottom-frame {
     border-top: 1px solid #00ff00;
-    order: 2;
+    order: 3; /* Убедимся, что навигация в самом низу */
 }
 
 .frame-details {
@@ -64,7 +64,7 @@ body {
     position: relative;
     overflow: hidden;
     padding: 10px;
-    order: 1;
+    order: 1; /* Убедимся, что экран выше навигации */
 }
 
 .screen {
@@ -130,7 +130,7 @@ body {
 
 .screen-header h1 {
     font-size: 2rem;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ff0, 0 0 20px #ff0;
     letter-spacing: 3px;
     margin-bottom: 5px;
 }
@@ -167,7 +167,7 @@ body {
     border-top: 1px solid #00ff00;
     font-size: 0.8rem;
     text-shadow: 0 0 3px #00ff00;
-    order: 3;
+    order: 2; /* Убедимся, что колонтитул между экраном и навигацией */
     animation: text-flicker 30s infinite;
 }
 
@@ -381,9 +381,21 @@ body {
 }
 
 .stat-value {
-    color: #00ff00;
     font-size: 1.1rem;
-    text-shadow: 0 0 5px #00ff00;
+    text-shadow: 0 0 5px #ff0;
+}
+
+/* Желтый текст для ретро-стиля */
+.yellow-text {
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0, 0 0 10px #ff0;
+    animation: text-flicker 20s infinite;
+}
+
+.yellow-content p {
+    color: #ff0;
+    text-shadow: 0 0 3px #ff0;
+    animation: text-flicker 20s infinite;
 }
 
 @keyframes fadeIn {
