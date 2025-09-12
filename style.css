@@ -7,7 +7,7 @@
 
 body {
     background-color: #000;
-    font-family: 'Courier New', monospace;
+    font-family: 'Courier New', Glass TTY VT220;
     color: #00ff00;
     overflow: hidden;
     height: 100vh;
@@ -42,6 +42,7 @@ body {
 
 .bottom-frame {
     border-top: 1px solid #00ff00;
+    order: 2;
 }
 
 .frame-details {
@@ -54,6 +55,7 @@ body {
     font-size: 0.7rem;
     text-shadow: 0 0 5px #00ff00;
     letter-spacing: 1px;
+    animation: text-flicker 15s infinite;
 }
 
 /* Основной экран */
@@ -61,7 +63,8 @@ body {
     flex: 1;
     position: relative;
     overflow: hidden;
-    padding: 20px;
+    padding: 10px;
+    order: 1;
 }
 
 .screen {
@@ -93,7 +96,7 @@ body {
     text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
     font-size: 3rem;
     letter-spacing: 4px;
-    animation: glow 2s ease-in-out infinite alternate;
+    animation: glow 2s ease-in-out infinite alternate, text-flicker 12s infinite;
     margin-bottom: 10px;
 }
 
@@ -103,6 +106,7 @@ body {
     font-size: 1.2rem;
     margin-bottom: 30px;
     letter-spacing: 2px;
+    animation: text-flicker 18s infinite;
 }
 
 .welcome-content .footer {
@@ -118,9 +122,10 @@ body {
 /* Главный экран */
 .screen-header {
     text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
     border-bottom: 1px solid #00ff00;
+    animation: text-flicker 20s infinite;
 }
 
 .screen-header h1 {
@@ -137,17 +142,19 @@ body {
 
 .content-area {
     flex: 1;
-    padding: 15px;
+    padding: 5px;
     overflow-y: auto;
 }
 
 .default-content {
     text-align: center;
-    margin-top: 30%;
+    margin-top: 10px;
+    opacity: 0.2;
+    animation: text-flicker 25s infinite;
 }
 
 .default-content p {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     text-shadow: 0 0 5px #00ff00;
 }
 
@@ -155,11 +162,13 @@ body {
 .footer-info {
     display: flex;
     justify-content: space-between;
-    padding: 10px 15px;
+    padding: 8px 15px;
     background-color: #002200;
     border-top: 1px solid #00ff00;
     font-size: 0.8rem;
     text-shadow: 0 0 3px #00ff00;
+    order: 3;
+    animation: text-flicker 30s infinite;
 }
 
 /* Навигация */
@@ -186,6 +195,7 @@ body {
     gap: 5px;
     min-width: 80px;
     justify-content: center;
+    animation: text-flicker 15s infinite;
 }
 
 .nav-btn:hover {
@@ -296,6 +306,15 @@ body {
     50% { opacity: 0; }
 }
 
+@keyframes text-flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 0.95; }
+    93% { opacity: 0.5; }
+    94% { opacity: 0.95; }
+    97% { opacity: 0.9; }
+    98% { opacity: 1; }
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .pipboy-nav {
@@ -340,6 +359,7 @@ body {
 /* Стили для контента разделов */
 .section-content {
     display: none;
+    margin-top: 10px;
 }
 
 .section-content.active {
@@ -348,15 +368,16 @@ body {
 }
 
 .stat-item {
-    margin-bottom: 15px;
-    padding: 10px;
+    margin-bottom: 10px;
+    padding: 8px;
     border-bottom: 1px solid #007700;
+    animation: text-flicker 20s infinite;
 }
 
 .stat-label {
     color: #007700;
     font-size: 0.9rem;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .stat-value {
