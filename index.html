@@ -99,6 +99,7 @@
                         <p class="yellow-text">Configure your application preferences.</p>
                     </div>
                 </div>
+            </div>
             
             <!-- Эффекты -->
             <div class="scanlines"></div>
@@ -116,32 +117,104 @@
             
         <!-- Нижняя рамка с навигацией -->
         <div class="pipboy-frame bottom-frame">
-            <nav class="pipboy-nav">
+            <button class="menu-toggle" id="menu-toggle">
+                ☰ OPEN MENU
+            </button>
+            
+            <nav class="pipboy-nav" id="pipboy-nav">
                 <button class="nav-btn" data-section="stat">
-                    <span class="nav-icon">☐</span>STAT
+                    <span class="nav-icon">☢</span>STAT
                 </button>
                 <button class="nav-btn" data-section="wallet">
-                    <span class="nav-icon">☐</span>WALLET
+                    <span class="nav-icon">💎</span>WALLET
                 </button>
                 <button class="nav-btn" data-section="runner">
-                    <span class="nav-icon">☐</span>RUNNER
+                    <span class="nav-icon">🏃</span>RUNNER
                 </button>
                 <button class="nav-btn" data-section="shop">
-                    <span class="nav-icon">☐</span>SHOP
+                    <span class="nav-icon">🛒</span>SHOP
                 </button>
                 <button class="nav-btn" data-section="inventory">
-                    <span class="nav-icon">☐</span>INVENTORY
+                    <span class="nav-icon">🎒</span>INVENTORY
                 </button>
                 <button class="nav-btn" data-section="radio">
-                    <span class="nav-icon">☐</span>RADIO
+                    <span class="nav-icon">📻</span>RADIO
                 </button>
                 <button class="nav-btn" data-section="settings">
-                    <span class="nav-icon">☐</span>SETTINGS
+                    <span class="nav-icon">⚙</span>SETTINGS
                 </button>
             </nav>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Управление меню
+        const menuToggle = document.getElementById('menu-toggle');
+        const pipboyNav = document.getElementById('pipboy-nav');
+        let menuOpen = false;
+        
+        menuToggle.addEventListener('click', function() {
+            menuOpen = !menuOpen;
+            if (menuOpen) {
+                pipboyNav.classList.add('open');
+                menuToggle.textContent = '✕ CLOSE MENU';
+            } else {
+                pipboyNav.classList.remove('open');
+                menuToggle.textContent = '☰ OPEN MENU';
+            }
+        });
+        
+        // Закрытие меню при выборе пункта
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                pipboyNav.classList.remove('open');
+                menuToggle.textContent = '☰ OPEN MENU';
+                menuOpen = false;
+                
+                // Активация соответствующего экрана
+                const section = this.getAttribute('data-section');
+                showSection(section);
+            });
+        });
+        
+        // Функция показа выбранного раздела
+        function showSection(section) {
+            // Скрываем все разделы
+            document.querySelectorAll('.section-content').forEach(div => {
+                div.classList.remove('active');
+            });
+            
+            // Показываем выбранный раздел
+            const selectedSection = document.getElementById(`${section}-section`);
+            if (selectedSection) {
+                selectedSection.classList.add('active');
+            }
+            
+            // Делаем кнопку активной
+            navButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-section') === section) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        // Обновление времени
+        function updateTime() {
+            const now = new Date();
+            const timeString = `🕐 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            document.getElementById('time-display').textContent = timeString;
+        }
+        
+        setInterval(updateTime, 60000);
+        updateTime();
+        
+        // Имитация данных (замените на реальные)
+        document.getElementById('balance-display').textContent = 'BAL: 42.5 TON';
+        document.getElementById('clan-display').textContent = 'CLAN: WASTELANDERS';
+    });
+    </script>
 </body>
 </html>
