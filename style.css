@@ -14,6 +14,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    perspective: 1000px;
 }
 
 .pipboy-container {
@@ -42,7 +43,11 @@ body {
 
 .bottom-frame {
     border-top: 1px solid #00ff00;
-    order: 3; /* Убедимся, что навигация в самом низу */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
 }
 
 .frame-details {
@@ -64,7 +69,15 @@ body {
     position: relative;
     overflow: hidden;
     padding: 10px;
-    order: 1; /* Убедимся, что экран выше навигации */
+    margin-bottom: 70px; /* Добавляем отступ для нижнего меню */
+    /* Эффект выпуклого экрана */
+    background: radial-gradient(circle at center, #002200, #001100);
+    border-radius: 5px;
+    transform: translateZ(10px);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.3),
+        inset 0 0 50px rgba(0, 0, 0, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.5);
 }
 
 .screen {
@@ -167,7 +180,11 @@ body {
     border-top: 1px solid #00ff00;
     font-size: 0.8rem;
     text-shadow: 0 0 3px #00ff00;
-    order: 2; /* Убедимся, что колонтитул между экраном и навигацией */
+    position: fixed;
+    bottom: 60px;
+    left: 0;
+    width: 100%;
+    z-index: 99;
     animation: text-flicker 30s infinite;
 }
 
@@ -401,4 +418,18 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Эффект выпуклого экрана */
+.pipboy-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 5px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 5;
 }
