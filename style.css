@@ -131,14 +131,15 @@ body {
     animation: text-flicker 18s infinite;
 }
 
-.welcome-content .footer {
+.battery-status {
     position: absolute;
-    bottom: -50px;
+    bottom: -40px;
     width: 100%;
     text-align: center;
     color: #00ff00;
     text-shadow: 0 0 5px #00ff00;
     font-size: 0.9rem;
+    animation: text-flicker 18s infinite;
 }
 
 /* Главный экран */
@@ -226,19 +227,49 @@ body {
     bottom: -100%;
     left: 0;
     width: 100%;
-    background: #001100;
+    background: rgba(0, 17, 0, 0.98);
     border-top: 2px solid #00cc00;
-    padding: 15px 10px;
+    padding: 15px 10px 70px 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     transition: bottom 0.4s ease;
     z-index: 100;
     box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
+    height: auto;
+    max-height: 70vh;
+    overflow-y: auto;
 }
 
 .pipboy-nav.open {
-    bottom: 50px;
+    bottom: 0;
+}
+
+.menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-bottom: 1px solid #00cc00;
+    margin-bottom: 10px;
+    color: #00ff00;
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px #00ff00;
+}
+
+.close-menu-btn {
+    background: transparent;
+    border: 1px solid #00cc00;
+    color: #00ff00;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 3px #00ff00;
+}
+
+.close-menu-btn:active {
+    background-color: #00ff00;
+    color: #001100;
 }
 
 .nav-btn {
@@ -376,7 +407,7 @@ body {
 
 @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    to { opacity: 0; }
 }
 
 @keyframes text-flicker {
@@ -422,6 +453,15 @@ body {
     }
     
     .default-content p {
+        font-size: 0.85rem;
+    }
+    
+    .pipboy-nav {
+        padding: 10px 5px 60px 5px;
+    }
+    
+    .nav-btn {
+        padding: 10px 5px;
         font-size: 0.85rem;
     }
 }

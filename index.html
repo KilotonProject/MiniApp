@@ -12,7 +12,7 @@
         <!-- Верхняя рамка -->
         <div class="pipboy-frame top-frame">
             <div class="frame-details">
-                <span class="frame-text">WELCOME TO KILOTON INDUSTRIES</span>
+                <span class="frame-text">KILOTON INDUSTRIES</span>
                 <span class="frame-text">TSR690-BOOM Vers 1.02</span>
             </div>
         </div>
@@ -24,6 +24,7 @@
                 <div class="welcome-content">
                     <h1 class="glowing-text">WELCOME</h1>
                     <div class="subtitle">TERMINAL ACTIVATION</div>
+                    <div class="battery-status">BAT.A2.5MOM</div>
                 </div>
             </div>
             
@@ -122,26 +123,30 @@
             </button>
             
             <nav class="pipboy-nav" id="pipboy-nav">
+                <div class="menu-header">
+                    <span>MENU</span>
+                    <button class="close-menu-btn" id="close-menu">✕</button>
+                </div>
                 <button class="nav-btn" data-section="stat">
-                    <span class="nav-icon">☢</span>STAT
+                    <span class="nav-icon">#</span>STAT
                 </button>
                 <button class="nav-btn" data-section="wallet">
-                    <span class="nav-icon">💎</span>WALLET
+                    <span class="nav-icon">#</span>WALLET
                 </button>
                 <button class="nav-btn" data-section="runner">
-                    <span class="nav-icon">🏃</span>RUNNER
+                    <span class="nav-icon">#</span>RUNNER
                 </button>
                 <button class="nav-btn" data-section="shop">
-                    <span class="nav-icon">🛒</span>SHOP
+                    <span class="nav-icon">#</span>SHOP
                 </button>
                 <button class="nav-btn" data-section="inventory">
-                    <span class="nav-icon">🎒</span>INVENTORY
+                    <span class="nav-icon">#</span>INVENTORY
                 </button>
                 <button class="nav-btn" data-section="radio">
-                    <span class="nav-icon">📻</span>RADIO
+                    <span class="nav-icon">#</span>RADIO
                 </button>
                 <button class="nav-btn" data-section="settings">
-                    <span class="nav-icon">⚙</span>SETTINGS
+                    <span class="nav-icon">#</span>SETTINGS
                 </button>
             </nav>
         </div>
@@ -149,35 +154,51 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Автоматический переход с приветственного экрана
+        setTimeout(function() {
+            document.getElementById('welcome-screen').classList.remove('active');
+            document.getElementById('main-screen').classList.add('active');
+        }, 3000);
+
         // Управление меню
         const menuToggle = document.getElementById('menu-toggle');
+        const closeMenuBtn = document.getElementById('close-menu');
         const pipboyNav = document.getElementById('pipboy-nav');
         let menuOpen = false;
         
         menuToggle.addEventListener('click', function() {
-            menuOpen = !menuOpen;
-            if (menuOpen) {
-                pipboyNav.classList.add('open');
-                menuToggle.textContent = '✕ CLOSE MENU';
-            } else {
-                pipboyNav.classList.remove('open');
-                menuToggle.textContent = '☰ OPEN MENU';
-            }
+            openMenu();
+        });
+        
+        closeMenuBtn.addEventListener('click', function() {
+            closeMenu();
         });
         
         // Закрытие меню при выборе пункта
         const navButtons = document.querySelectorAll('.nav-btn');
         navButtons.forEach(button => {
             button.addEventListener('click', function() {
-                pipboyNav.classList.remove('open');
-                menuToggle.textContent = '☰ OPEN MENU';
-                menuOpen = false;
+                closeMenu();
                 
                 // Активация соответствующего экрана
                 const section = this.getAttribute('data-section');
                 showSection(section);
             });
         });
+        
+        // Функция открытия меню
+        function openMenu() {
+            menuOpen = true;
+            pipboyNav.classList.add('open');
+            menuToggle.textContent = '✕ CLOSE MENU';
+        }
+        
+        // Функция закрытия меню
+        function closeMenu() {
+            menuOpen = false;
+            pipboyNav.classList.remove('open');
+            menuToggle.textContent = '☰ OPEN MENU';
+        }
         
         // Функция показа выбранного раздела
         function showSection(section) {
