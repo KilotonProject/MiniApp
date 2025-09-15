@@ -47,36 +47,13 @@ body {
     border-bottom: 1px solid #00cc00;
 }
 
-.bottom-frame {
-    border-top: 1px solid #00cc00;
-    position: fixed;
-    bottom: 80px; /* Поднято выше */
-    left: 0;
-    width: 100%;
-    z-index: 102;
-    padding: 5px 10px;
-}
-
-.frame-details {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.frame-text {
-    font-size: 0.65rem;
-    text-shadow: 0 0 4px #00ff00;
-    letter-spacing: 1px;
-    animation: text-flicker 15s infinite;
-}
-
 /* Основной экран */
 .pipboy-screen {
     flex: 1;
     position: relative;
     overflow: hidden;
     padding: 15px;
-    margin: 10px 10px 120px 10px; /* Увеличен отступ снизу */
+    margin: 10px 10px 100px 10px; /* Уменьшен отступ снизу */
     /* Усиленный эффект выпуклого экрана */
     background: radial-gradient(circle at center, #002a00, #001100);
     border-radius: 8px;
@@ -191,75 +168,70 @@ body {
     font-size: 0.95rem;
 }
 
-/* Нижний колонтитул */
-.footer-info {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 15px; /* Увеличен padding */
-    background-color: #002200;
-    border-top: 1px solid #00cc00;
-    font-size: 0.8rem; /* Немного увеличен шрифт */
-    text-shadow: 0 0 3px #00ff00;
+/* Объединенная нижняя панель */
+.unified-bottom-panel {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 101;
+    z-index: 100;
+    background: #001100;
+    border-top: 2px solid #00cc00;
+    box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
+}
+
+.info-panel {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 15px;
+    background-color: #002200;
+    font-size: 0.8rem;
+    text-shadow: 0 0 3px #00ff00;
     animation: text-flicker 30s infinite;
 }
 
-/* Навигация - выдвижное меню */
+.menu-panel {
+    position: relative;
+}
+
+/* Кнопка меню */
 .menu-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 12px 15px; /* Увеличен padding */
+    padding: 12px 15px;
     background: linear-gradient(to bottom, #003300, #002200);
-    border: 2px solid #00cc00;
+    border: none;
+    border-top: 1px solid #00cc00;
     color: #00ff00;
     text-align: center;
     font-family: 'Courier New', monospace;
-    font-size: 1rem; /* Увеличен шрифт */
+    font-size: 1rem;
     text-shadow: 0 0 5px #00ff00;
     cursor: pointer;
-    margin-bottom: 5px;
     z-index: 103;
     position: relative;
     animation: text-flicker 15s infinite;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
     transition: all 0.3s ease;
 }
 
 .menu-toggle:hover {
     background: linear-gradient(to bottom, #004400, #003300);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
 }
 
 .menu-toggle:active {
     background: linear-gradient(to bottom, #00ff00, #00cc00);
     color: #001100;
     text-shadow: none;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.7);
 }
 
-.menu-toggle::before {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
-    border: 1px solid rgba(0, 255, 0, 0.3);
-    pointer-events: none;
-}
-
-.menu-toggle::after {
-    content: '⬍'; /* Более аутентичный символ вместо бургер-меню */
+.menu-toggle-icon {
     margin-right: 8px;
     font-size: 1.2rem;
 }
 
+/* Выдвижное меню */
 .pipboy-nav {
     position: fixed;
     bottom: -100%;
@@ -267,12 +239,12 @@ body {
     width: 100%;
     background: rgba(0, 17, 0, 0.98);
     border-top: 2px solid #00cc00;
-    padding: 15px 10px 70px 10px;
+    padding: 15px 10px 20px 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     transition: bottom 0.4s ease;
-    z-index: 100;
+    z-index: 102;
     box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
     height: auto;
     max-height: 70vh;
@@ -290,6 +262,9 @@ body {
     padding: 10px 5px;
     border-bottom: 1px solid #00cc00;
     margin-bottom: 10px;
+}
+
+.menu-title {
     color: #00ff00;
     font-size: 1.1rem;
     text-shadow: 0 0 5px #00ff00;
@@ -303,6 +278,7 @@ body {
     cursor: pointer;
     font-family: 'Courier New', monospace;
     text-shadow: 0 0 3px #00ff00;
+    font-size: 1.1rem;
 }
 
 .close-menu-btn:active {
@@ -444,8 +420,8 @@ body {
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    to { opacity: 0; }
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 @keyframes text-flicker {
@@ -471,15 +447,6 @@ body {
         padding: 5px 3px;
     }
     
-    /* Исправление для мобильной версии */
-    .bottom-frame {
-        bottom: 60px;
-    }
-    
-    .pipboy-screen {
-        margin-bottom: 130px;
-    }
-    
     /* Адаптация приветственного экрана */
     .welcome-content {
         width: 95%;
@@ -501,7 +468,7 @@ body {
         font-size: 0.95rem;
     }
     
-    .footer-info {
+    .info-panel {
         padding: 7px 12px;
         font-size: 0.75rem;
     }
@@ -516,7 +483,7 @@ body {
         font-size: 1.4rem;
     }
     
-    .footer-info {
+    .info-panel {
         font-size: 0.7rem;
         padding: 6px 10px;
     }
@@ -530,26 +497,12 @@ body {
     }
     
     .pipboy-nav {
-        padding: 10px 5px 60px 5px;
+        padding: 10px 5px 15px 5px;
     }
     
     .nav-btn {
         padding: 10px 5px;
         font-size: 0.85rem;
-    }
-    
-    /* Исправление для мобильной версии */
-    .bottom-frame {
-        bottom: 50px;
-        z-index: 102;
-    }
-    
-    .footer-info {
-        z-index: 101;
-    }
-    
-    .pipboy-screen {
-        margin-bottom: 120px;
     }
     
     /* Адаптация приветственного экрана для очень маленьких экранов */
@@ -582,7 +535,7 @@ body {
         font-size: 0.9rem;
     }
     
-    .menu-toggle::after {
+    .menu-toggle-icon {
         font-size: 1rem;
         margin-right: 6px;
     }
@@ -604,7 +557,7 @@ body {
     
     .pipboy-screen {
         padding: 10px;
-        margin: 5px 5px 110px 5px;
+        margin: 5px 5px 90px 5px;
     }
     
     /* Адаптация кнопки меню для очень маленьких экранов */
@@ -613,7 +566,7 @@ body {
         font-size: 0.85rem;
     }
     
-    .menu-toggle::after {
+    .menu-toggle-icon {
         font-size: 0.9rem;
         margin-right: 4px;
     }
@@ -737,4 +690,376 @@ body {
     background-color: #003300;
     box-shadow: 0 0 15px #00ff00;
     color: #ffffff;
+}
+
+/* Стили для скрытия кнопки меню при открытом меню */
+.pipboy-nav.open ~ .menu-toggle {
+    display: none !important;
+}
+
+/* Убедимся, что кнопка меню отображается как flex по умолчанию */
+.menu-toggle {
+    display: flex !important;
+}
+
+/* Стили для раздела Gameboy */
+.game-list {
+    margin-top: 20px;
+}
+
+.game-item {
+    border: 1px solid #00cc00;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                transparent, 
+                rgba(0, 255, 0, 0.2), 
+                transparent);
+    transition: left 0.5s;
+}
+
+.game-item:hover::after {
+    left: 100%;
+}
+
+.game-item:hover {
+    background-color: #003300;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.game-icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.game-title {
+    font-size: 1.1rem;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    vertical-align: middle;
+}
+
+.game-desc {
+    display: block;
+    font-size: 0.8rem;
+    color: #00ff00;
+    margin-top: 5px;
+}
+
+/* Стили для экрана Wasteland Duel */
+#wasteland-duel-screen {
+    display: none;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.game-header {
+    text-align: center;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.back-button {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    background: transparent;
+    border: 1px solid #00cc00;
+    color: #00ff00;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 3px #00ff00;
+}
+
+.back-button:hover {
+    background-color: #003300;
+}
+
+.game-subtitle {
+    font-size: 0.9rem;
+    color: #007700;
+    margin-top: 5px;
+}
+
+.duel-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex: 1;
+}
+
+.player-area, .enemy-area {
+    text-align: center;
+    width: 45%;
+}
+
+.vs-divider {
+    font-size: 1.5rem;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    font-weight: bold;
+}
+
+.sprite {
+    height: 100px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.character {
+    position: relative;
+    width: 40px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.character.enemy {
+    transform: scaleX(-1);
+}
+
+.head {
+    position: absolute;
+    top: 0;
+    left: 15px;
+    width: 20px;
+    height: 20px;
+    background-color: #00ff00;
+    border-radius: 50%;
+}
+
+.body {
+    position: absolute;
+    top: 20px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    background-color: #00ff00;
+}
+
+.arm-left, .arm-right {
+    position: absolute;
+    width: 10px;
+    height: 25px;
+    background-color: #00ff00;
+    top: 25px;
+}
+
+.arm-left {
+    left: 0;
+    transform-origin: top right;
+    animation: idleArmLeft 2s infinite ease-in-out;
+}
+
+.arm-right {
+    right: 0;
+    transform-origin: top left;
+    animation: idleArmRight 2s infinite ease-in-out;
+}
+
+.leg-left, .leg-right {
+    position: absolute;
+    width: 12px;
+    height: 30px;
+    background-color: #00ff00;
+    top: 50px;
+}
+
+.leg-left {
+    left: 8px;
+    transform-origin: top right;
+    animation: idleLegLeft 2s infinite ease-in-out;
+}
+
+.leg-right {
+    right: 8px;
+    transform-origin: top left;
+    animation: idleLegRight 2s infinite ease-in-out;
+}
+
+@keyframes idleArmLeft {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+@keyframes idleArmRight {
+    0%, 100% { transform: rotate(5deg); }
+    50% { transform: rotate(-5deg); }
+}
+
+@keyframes idleLegLeft {
+    0%, 100% { transform: rotate(2deg); }
+    50% { transform: rotate(-2deg); }
+}
+
+@keyframes idleLegRight {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+}
+
+.status-bars {
+    margin-bottom: 10px;
+}
+
+.health-bar, .energy-bar {
+    margin-bottom: 8px;
+}
+
+.bar-label {
+    font-size: 0.7rem;
+    color: #007700;
+    text-align: left;
+    margin-bottom: 3px;
+}
+
+.bar {
+    height: 10px;
+    background-color: #002200;
+    border: 1px solid #00cc00;
+    position: relative;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.health-fill {
+    background-color: #00ff00;
+    box-shadow: 0 0 5px #00ff00;
+}
+
+.energy-fill {
+    background-color: #ff0;
+    box-shadow: 0 0 5px #ff0;
+}
+
+.action-label {
+    font-size: 0.9rem;
+    color: #ff0;
+    text-shadow: 0 0 3px #ff0;
+    height: 20px;
+}
+
+.battle-controls {
+    text-align: center;
+}
+
+.controls-title {
+    font-size: 0.9rem;
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.move-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.move-btn {
+    padding: 8px 5px;
+    background: transparent;
+    border: 1px solid #00cc00;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 3px #00ff00;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.move-btn:hover {
+    background-color: #003300;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.move-btn:active {
+    background-color: #00ff00;
+    color: #001100;
+    text-shadow: none;
+}
+
+.round-timer {
+    font-size: 0.9rem;
+    color: #ff0;
+    text-shadow: 0 0 3px #ff0;
+}
+
+/* Анимации для боя */
+@keyframes attack {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(20px); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes enemyAttack {
+    0% { transform: scaleX(-1) translateX(0); }
+    50% { transform: scaleX(-1) translateX(20px); }
+    100% { transform: scaleX(-1) translateX(0); }
+}
+
+@keyframes hit {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(3); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes charge {
+    0% { box-shadow: 0 0 0 0px rgba(0, 255, 0, 0.7); }
+    100% { box-shadow: 0 0 0 8px rgba(0, 255, 0, 0); }
+}
+
+.player-attack {
+    animation: attack 0.4s forwards;
+}
+
+.enemy-attack {
+    animation: enemyAttack 0.4s forwards;
+}
+
+.player-hit, .enemy-hit {
+    animation: hit 0.3s ease;
+}
+
+.player-charge, .enemy-charge {
+    animation: charge 1s infinite;
+}
+
+/* Адаптивность для игры */
+@media (max-width: 480px) {
+    .duel-container {
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    
+    .player-area, .enemy-area {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .vs-divider {
+        margin: 10px 0;
+        transform: rotate(90deg);
+    }
+    
+    .move-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }

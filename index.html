@@ -39,7 +39,7 @@
                 <!-- Область контента -->
                 <div class="content-area" id="content-area">
                     <!-- Дефолтный текст на заднем плане -->
-                    <div class="default-content">
+                    <div class="default-content" id="default-content">
                         <p>SELECT A SECTION FROM MENU</p>
                         <p>STATUS: ONLINE</p>
                         <p>SYSTEM: NOMINAL</p>
@@ -99,6 +99,105 @@
                         <h2 class="yellow-text">SETTINGS</h2>
                         <p class="yellow-text">Configure your application preferences.</p>
                     </div>
+
+                    <!-- Новый раздел Gameboy -->
+                    <div id="gameboy-section" class="section-content yellow-content">
+                        <h2 class="yellow-text">GAMEBOY TERMINAL</h2>
+                        <p class="yellow-text">SELECT A GAME:</p>
+                        
+                        <div class="game-list">
+                            <div class="game-item" data-game="wasteland-duel">
+                                <span class="game-icon">⚔️</span>
+                                <span class="game-title">Wasteland Duel</span>
+                                <span class="game-desc">PVP Battle</span>
+                            </div>
+                            <div class="game-item" data-game="coming-soon">
+                                <span class="game-icon">🔄</span>
+                                <span class="game-title">More Games</span>
+                                <span class="game-desc">Coming Soon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Экран игры Wasteland Duel -->
+            <div id="wasteland-duel-screen" class="screen">
+                <div class="game-header">
+                    <button class="back-button" id="back-to-gameboy">← BACK</button>
+                    <h2 class="yellow-text">WASTELAND DUEL</h2>
+                    <div class="game-subtitle">PVP BATTLE</div>
+                </div>
+                
+                <div class="duel-container">
+                    <div class="player-area">
+                        <div class="sprite" id="player-sprite">
+                            <div class="character">
+                                <div class="head"></div>
+                                <div class="body"></div>
+                                <div class="arm-left"></div>
+                                <div class="arm-right"></div>
+                                <div class="leg-left"></div>
+                                <div class="leg-right"></div>
+                            </div>
+                        </div>
+                        <div class="status-bars">
+                            <div class="health-bar">
+                                <div class="bar-label">HEALTH</div>
+                                <div class="bar">
+                                    <div class="fill health-fill" id="player-health-fill"></div>
+                                </div>
+                            </div>
+                            <div class="energy-bar">
+                                <div class="bar-label">ENERGY</div>
+                                <div class="bar">
+                                    <div class="fill energy-fill" id="player-energy-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-label" id="player-action">[?????]</div>
+                    </div>
+
+                    <div class="vs-divider">VS</div>
+
+                    <div class="enemy-area">
+                        <div class="sprite" id="enemy-sprite">
+                            <div class="character enemy">
+                                <div class="head"></div>
+                                <div class="body"></div>
+                                <div class="arm-left"></div>
+                                <div class="arm-right"></div>
+                                <div class="leg-left"></div>
+                                <div class="leg-right"></div>
+                            </div>
+                        </div>
+                        <div class="status-bars">
+                            <div class="health-bar">
+                                <div class="bar-label">HEALTH</div>
+                                <div class="bar">
+                                    <div class="fill health-fill" id="enemy-health-fill"></div>
+                                </div>
+                            </div>
+                            <div class="energy-bar">
+                                <div class="bar-label">ENERGY</div>
+                                <div class="bar">
+                                    <div class="fill energy-fill" id="enemy-energy-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-label" id="enemy-action">[?????]</div>
+                    </div>
+                </div>
+
+                <div class="battle-controls">
+                    <div class="controls-title">SELECT YOUR MOVE:</div>
+                    <div class="move-buttons">
+                        <button class="move-btn" data-move="ATK">ATK</button>
+                        <button class="move-btn" data-move="DEF">DEF</button>
+                        <button class="move-btn" data-move="CHR">CHR</button>
+                        <button class="move-btn" data-move="SPEC">SPEC</button>
+                    </div>
+                    <div class="round-timer">РАУНД <span id="round-number">1</span> | <span id="timer">00:05</span></div>
                 </div>
             </div>
             
@@ -109,136 +208,57 @@
             <div class="screen-glare"></div>
         </div>
 
-        <!-- Нижняя рамка с навигацией -->
-        <div class="pipboy-frame bottom-frame">
-            <button class="menu-toggle" id="menu-toggle">
-                ☰ OPEN MENU
-            </button>
+        <!-- Объединенная нижняя панель -->
+        <div class="unified-bottom-panel">
+            <!-- Информационная панель -->
+            <div class="info-panel">
+                <span id="time-display">🕐 00:00</span>
+                <span id="balance-display">BAL: 0.0 TON</span>
+                <span id="clan-display">CLAN: NONE</span>
+            </div>
             
-            <nav class="pipboy-nav" id="pipboy-nav">
-                <div class="menu-header">
-                    <span>MENU</span>
-                    <button class="close-menu-btn" id="close-menu">✕</button>
-                </div>
-                <button class="nav-btn" data-section="stat">
-                    <span class="nav-icon">☢</span>STAT
+            <!-- Кнопка меню, интегрированная в панель -->
+            <div class="menu-panel">
+                <button class="menu-toggle" id="menu-toggle">
+                    <span class="menu-toggle-icon">≡</span>
+                    <span class="menu-toggle-text">MENU</span>
                 </button>
-                <button class="nav-btn" data-section="wallet">
-                    <span class="nav-icon">💎</span>WALLET
-                </button>
-                <button class="nav-btn" data-section="runner">
-                    <span class="nav-icon">🏃</span>RUNNER
-                </button>
-                <button class="nav-btn" data-section="shop">
-                    <span class="nav-icon">🛒</span>SHOP
-                </button>
-                <button class="nav-btn" data-section="inventory">
-                    <span class="nav-icon">🎒</span>INVENTORY
-                </button>
-                <button class="nav-btn" data-section="radio">
-                    <span class="nav-icon">📻</span>RADIO
-                </button>
-                <button class="nav-btn" data-section="settings">
-                    <span class="nav-icon">⚙</span>SETTINGS
-                </button>
-            </nav>
-        </div>
-
-        <!-- Нижний колонтитул -->
-        <div class="footer-info">
-            <span id="time-display">🕐 00:00</span>
-            <span id="balance-display">BAL: 0.0 TON</span>
-            <span id="clan-display">CLAN: NONE</span>
+                
+                <nav class="pipboy-nav" id="pipboy-nav">
+                    <div class="menu-header">
+                        <span class="menu-title">SYSTEM MENU</span>
+                        <button class="close-menu-btn" id="close-menu">⨉</button>
+                    </div>
+                    <button class="nav-btn" data-section="stat">
+                        <span class="nav-icon">📊</span>STAT
+                    </button>
+                    <button class="nav-btn" data-section="wallet">
+                        <span class="nav-icon">💳</span>WALLET
+                    </button>
+                    <button class="nav-btn" data-section="runner">
+                        <span class="nav-icon">🏃</span>RUNNER
+                    </button>
+                    <button class="nav-btn" data-section="shop">
+                        <span class="nav-icon">🛒</span>SHOP
+                    </button>
+                    <button class="nav-btn" data-section="inventory">
+                        <span class="nav-icon">🎒</span>INVENTORY
+                    </button>
+                    <button class="nav-btn" data-section="radio">
+                        <span class="nav-icon">📻</span>RADIO
+                    </button>
+                    <button class="nav-btn" data-section="settings">
+                        <span class="nav-icon">⚙️</span>SETTINGS
+                    </button>
+                    <!-- Новая кнопка GAMEBOY -->
+                    <button class="nav-btn" data-section="gameboy">
+                        <span class="nav-icon">🎮</span>GAMEBOY
+                    </button>
+                </nav>
+            </div>
         </div>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Автоматический переход с приветственного экрана
-        setTimeout(function() {
-            document.getElementById('welcome-screen').classList.remove('active');
-            document.getElementById('main-screen').classList.add('active');
-        }, 3000);
-
-        // Управление меню
-        const menuToggle = document.getElementById('menu-toggle');
-        const closeMenuBtn = document.getElementById('close-menu');
-        const pipboyNav = document.getElementById('pipboy-nav');
-        let menuOpen = false;
-        
-        menuToggle.addEventListener('click', function() {
-            openMenu();
-        });
-        
-        closeMenuBtn.addEventListener('click', function() {
-            closeMenu();
-        });
-        
-        // Закрытие меню при выборе пункта
-        const navButtons = document.querySelectorAll('.nav-btn');
-        navButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                closeMenu();
-                
-                // Активация соответствующего экрана
-                const section = this.getAttribute('data-section');
-                showSection(section);
-            });
-        });
-        
-        // Функция открытия меню
-        function openMenu() {
-            menuOpen = true;
-            pipboyNav.classList.add('open');
-            menuToggle.textContent = '✕ CLOSE MENU';
-        }
-        
-        // Функция закрытия меню
-        function closeMenu() {
-            menuOpen = false;
-            pipboyNav.classList.remove('open');
-            menuToggle.textContent = '☰ OPEN MENU';
-        }
-        
-        // Функция показа выбранного раздела
-        function showSection(section) {
-            // Скрываем все разделы
-            document.querySelectorAll('.section-content').forEach(div => {
-                div.classList.remove('active');
-            });
-            
-            // Скрываем дефолтный текст
-            document.querySelector('.default-content').style.display = 'none';
-            
-            // Показываем выбранный раздел
-            const selectedSection = document.getElementById(`${section}-section`);
-            if (selectedSection) {
-                selectedSection.classList.add('active');
-            }
-            
-            // Делаем кнопку активной
-            navButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-section') === section) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-        
-        // Обновление времени
-        function updateTime() {
-            const now = new Date();
-            const timeString = `🕐 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            document.getElementById('time-display').textContent = timeString;
-        }
-        
-        setInterval(updateTime, 60000);
-        updateTime();
-        
-        // Имитация данных (замените на реальные)
-        document.getElementById('balance-display').textContent = 'BAL: 42.5 TON';
-        document.getElementById('clan-display').textContent = 'CLAN: WASTELANDERS';
-    });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
