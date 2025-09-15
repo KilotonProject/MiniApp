@@ -1,27 +1,30 @@
 // Глобальные переменные
 let userData = null;
-let currentSection = null;
 let menuOpen = false;
 let gameState = null;
 let gameTimer = null;
 
 // Функция инициализации приложения
 function initApp() {
+    console.log("Initializing app...");
+    
     // Загружаем данные пользователя
     loadUserData();
-    
-    // Запускаем приветственный экран
-    showWelcomeScreen();
-    
-    // Устанавливаем обновление времени
-    updateDateTime();
-    setInterval(updateDateTime, 60000);
     
     // Настройка обработчиков навигации
     setupNavigation();
     
     // Настройка обработчиков для игры
     setupGameHandlers();
+    
+    // Устанавливаем обновление времени
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+    
+    // Запускаем приветственный экран
+    showWelcomeScreen();
+    
+    console.log("App initialized successfully");
 }
 
 // Загрузка данных пользователя
@@ -57,18 +60,22 @@ function updateDateTime() {
 
 // Показать приветственный экран
 function showWelcomeScreen() {
-    const welcomeScreen = document.getElementById('welcome-screen');
-    const mainScreen = document.getElementById('main-screen');
-    
-    welcomeScreen.classList.add('active');
-    mainScreen.classList.remove('active');
+    hideAllScreens();
+    document.getElementById('welcome-screen').classList.add('active');
     
     // Через 3 секунды переключаем на главный экран
     setTimeout(() => {
-        welcomeScreen.classList.remove('active');
-        mainScreen.classList.add('active');
+        hideAllScreens();
+        document.getElementById('main-screen').classList.add('active');
         showSection('stat');
     }, 3000);
+}
+
+// Скрыть все экраны
+function hideAllScreens() {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
 }
 
 // Настройка навигации
@@ -124,6 +131,8 @@ function closeMenu() {
 
 // Показать раздел
 function showSection(section) {
+    console.log("Showing section:", section);
+    
     // Скрываем все разделы
     const allSections = document.querySelectorAll('.section-content');
     allSections.forEach(sec => sec.classList.remove('active'));
@@ -136,57 +145,61 @@ function showSection(section) {
     if (targetSection) {
         targetSection.classList.add('active');
     }
-    
-    currentSection = section;
 }
 
 // Настройка обработчиков для игры
 function setupGameHandlers() {
+    console.log("Setting up game handlers...");
+    
     // Обработчики для игровых элементов
-    const gameItems = document.querySelectorAll('.game-item');
-    gameItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const game = this.getAttribute('data-game');
-            if (game === 'wasteland-duel') {
-                showGameScreen('wasteland-duel');
-            } else if (game === 'coming-soon') {
-                alert('More games coming soon!');
-            }
-        });
+    document.getElementById('wasteland-duel-btn').addEventListener('click', function() {
+        console.log("Wasteland Duel button clicked");
+        showGameScreen('wasteland-duel');
+    });
+    
+    document.getElementById('coming-soon-btn').addEventListener('click', function() {
+        alert('More games coming soon!');
     });
 
     // Обработчик для кнопки назад в игре
-    const backButton = document.getElementById('back-to-gameboy');
-    if (backButton) {
-        backButton.addEventListener('click', function() {
-            // Останавливаем игру если она запущена
-            if (gameTimer) {
-                clearInterval(gameTimer);
-                gameTimer = null;
-            }
-            
-            showSection('gameboy');
-            document.getElementById('wasteland-duel-screen').classList.remove('active');
-        });
-    }
+    document.getElementById('back-to-gameboy').addEventListener('click', function() {
+        console.log("Back button clicked");
+        // Останавливаем игру если она запущена
+        if (gameTimer) {
+            clearInterval(gameTimer);
+            gameTimer = null;
+        }
+        
+        // Возвращаемся к разделу gameboy
+        hideAllScreens();
+        document.getElementById('main-screen').classList.add('active');
+        showSection('gameboy');
+    });
 }
 
 // Функция показа экрана игры
 function showGameScreen(game) {
-    // Скрываем все экраны
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
+    console.log("Showing game screen:", game);
+    
+    hideAllScreens();
     
     // Показываем экран игры
     if (game === 'wasteland-duel') {
-        document.getElementById('wasteland-duel-screen').classList.add('active');
-        initWastelandDuel();
+        const gameScreen = document.getElementById('wasteland-duel-screen');
+        gameScreen.classList.add('active');
+        console.log("Game screen activated");
+        
+        // Даем время на отрисовку DOM перед инициализацией игры
+        setTimeout(() => {
+            initWastelandDuel();
+        }, 50);
     }
 }
 
 // Инициализация игры Wasteland Duel
 function initWastelandDuel() {
+    console.log("Initializing Wasteland Duel...");
+    
     // Инициализируем элементы игры
     const moveButtons = document.querySelectorAll('.move-btn');
     const playerSprite = document.getElementById('player-sprite');
@@ -219,6 +232,7 @@ function initWastelandDuel() {
     playerAction.textContent = '[?????]';
     enemyAction.textContent = '[?????]';
     roundElement.textContent = gameState.round;
+    timerElement.textContent = '00:05';
     
     // Убираем все классы анимаций
     playerSprite.classList.remove('player-attack', 'player-hit', 'player-charge');
@@ -227,21 +241,18 @@ function initWastelandDuel() {
     // Назначаем обработчики для кнопок действий
     moveButtons.forEach(button => {
         // Сначала удаляем старые обработчики
-        button.removeEventListener('click', handleMoveButtonClick);
+        button.onclick = null;
         // Затем добавляем новые
-        button.addEventListener('click', handleMoveButtonClick);
+        button.addEventListener('click', function() {
+            if (gameState.timeLeft > 0 && !gameState.playerMove) {
+                const move = this.getAttribute('data-move');
+                makeMove(move);
+            }
+        });
     });
     
     // Запускаем таймер
     startGameTimer();
-}
-
-// Обработчик клика по кнопке действия
-function handleMoveButtonClick() {
-    if (gameState.timeLeft > 0 && !gameState.playerMove) {
-        const move = this.getAttribute('data-move');
-        makeMove(move);
-    }
 }
 
 // Запуск таймера игры
@@ -454,23 +465,6 @@ function updateGameUI() {
 
 // Инициализируем приложение после загрузки DOM
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded and parsed");
     initApp();
-    
-    // Добавляем эффект печатания для текста
-    const welcomeText = document.querySelector('.glowing-text');
-    if (welcomeText) {
-        welcomeText.style.opacity = '0';
-        welcomeText.style.transition = 'opacity 2s ease-in-out';
-        
-        setTimeout(() => {
-            welcomeText.style.opacity = '1';
-        }, 500);
-    }
 });
-
-// Обработчик получения данных от бота Telegram
-if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-    Telegram.WebApp.onEvent('webAppDataReceived', (event) => {
-        console.log('Data received from bot:', event);
-    });
-}
