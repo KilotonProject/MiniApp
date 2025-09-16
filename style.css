@@ -1,4 +1,4 @@
-/* Основные стили в стиле Pip-Boy для KILOTON */
+/* RUNNER - Retro Gaming Terminal Styles */
 * {
     margin: 0;
     padding: 0;
@@ -17,12 +17,13 @@
     --pipboy-red: #ff3333;
     --pipboy-orange: #ff9933;
     --combat-active: #ff6600;
-    --health-critical: #ff0000;
-    --energy-full: #00ff00;
+    --retro-purple: #8B00FF;
+    --retro-cyan: #00FFFF;
+    --console-bg: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
 }
 
 body {
-    background-color: #000;
+    background: var(--console-bg);
     font-family: 'Monofonto', 'Courier New', monospace;
     color: var(--pipboy-green);
     overflow: hidden;
@@ -30,12 +31,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle at center, #001a00, #000);
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -44,13 +41,12 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--pipboy-darker);
+    background: var(--console-bg);
     position: relative;
     border: 3px solid var(--pipboy-border);
     box-shadow: 
         0 0 25px var(--pipboy-glow), 
-        inset 0 0 30px var(--pipboy-glow),
-        0 0 50px rgba(0, 255, 0, 0.2);
+        inset 0 0 30px rgba(0, 255, 0, 0.1);
     overflow: hidden;
 }
 
@@ -62,10 +58,6 @@ body {
     z-index: 20;
     position: relative;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-}
-
-.top-frame {
-    border-bottom: 1px solid var(--pipboy-border);
 }
 
 .frame-details {
@@ -80,23 +72,25 @@ body {
     color: var(--pipboy-green);
 }
 
-/* Основной экран */
+/* Основной экран с ретро эффектами */
 .pipboy-screen {
     flex: 1;
     position: relative;
     overflow: hidden;
     padding: 15px;
-    margin: 10px 10px 100px 10px;
-    background: radial-gradient(circle at center, #002a00, var(--pipboy-dark));
-    border-radius: 8px;
+    margin: 10px 10px 80px 10px; /* Уменьшил нижний отступ */
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(139, 0, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #000000 0%, #0d1b2a 50%, #000000 100%);
+    border-radius: 12px;
     box-shadow: 
         0 0 30px rgba(0, 255, 0, 0.4),
-        inset 0 0 60px rgba(0, 0, 0, 0.6),
-        inset 0 0 0 1px rgba(0, 255, 0, 0.2);
-    border: 1px solid rgba(0, 255, 0, 0.3);
+        inset 0 0 40px rgba(0, 0, 0, 0.8),
+        inset 0 0 0 2px rgba(0, 255, 0, 0.3);
+    border: 2px solid var(--pipboy-border);
 }
 
-/* Стили для экранов */
 .screen {
     position: absolute;
     top: 0;
@@ -109,230 +103,167 @@ body {
 
 .screen.active {
     display: flex !important;
-    animation: screenFadeIn 0.5s ease-out;
+    animation: screenBoot 0.8s ease-out;
 }
 
-@keyframes screenFadeIn {
-    from { 
+@keyframes screenBoot {
+    0% { 
         opacity: 0; 
-        transform: translateY(10px);
+        filter: brightness(3) saturate(0);
+        transform: scale(1.05);
     }
-    to { 
+    50% {
+        filter: brightness(1.5) saturate(0.5);
+    }
+    100% { 
         opacity: 1; 
-        transform: translateY(0);
+        filter: brightness(1) saturate(1);
+        transform: scale(1);
     }
 }
 
-/* Улучшенный приветственный экран для KILOTON */
-.welcome-content {
+/* ===== РЕТРО ПРИВЕТСТВЕННЫЙ ЭКРАН ===== */
+.retro-terminal {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
     max-width: 400px;
-    text-align: center;
+    background: #000000;
+    border: 2px solid var(--pipboy-border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.3),
+        inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
-.terminal-boot {
-    margin-bottom: 30px;
-    border-bottom: 1px solid var(--pipboy-border);
+.terminal-header {
+    text-align: center;
+    margin-bottom: 20px;
     padding-bottom: 15px;
+    border-bottom: 1px solid var(--pipboy-border);
+}
+
+.header-line {
+    font-size: 0.7rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+    margin-bottom: 3px;
+    font-family: 'Monofonto', 'Courier New', monospace;
+}
+
+.separator-line {
+    font-size: 0.6rem;
+    color: #007700;
+    margin-top: 8px;
+}
+
+.boot-sequence {
+    margin-bottom: 25px;
+    min-height: 200px;
 }
 
 .boot-line {
     font-size: 0.8rem;
     color: var(--pipboy-green);
     text-shadow: 0 0 3px var(--pipboy-green);
-    margin-bottom: 5px;
-    animation: bootText 0.5s ease-out;
+    margin-bottom: 8px;
+    font-family: 'Monofonto', 'Courier New', monospace;
+    line-height: 1.3;
 }
 
-.boot-line:nth-child(2) {
-    animation-delay: 0.5s;
+.boot-line.yellow {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
 }
 
-.boot-line:nth-child(3) {
-    animation-delay: 1s;
+.boot-line.error {
+    color: #ff6600;
+    text-shadow: 0 0 3px #ff6600;
 }
 
-@keyframes bootText {
-    from { 
-        opacity: 0; 
-        transform: translateX(-20px);
-    }
-    to { 
-        opacity: 1; 
-        transform: translateX(0);
-    }
-}
-
-.logo-section {
-    margin-bottom: 30px;
-}
-
-.project-logo {
-    font-size: 3.2rem;
+.boot-line.success {
     color: var(--pipboy-green);
-    text-shadow: 
-        0 0 10px var(--pipboy-green), 
-        0 0 20px var(--pipboy-green), 
-        0 0 30px var(--pipboy-green),
-        0 0 40px var(--pipboy-green);
-    letter-spacing: 6px;
-    margin-bottom: 10px;
+    text-shadow: 0 0 5px var(--pipboy-green);
+}
+
+.runner-logo-section {
+    text-align: center;
+    margin: 30px 0;
+    padding: 20px 0;
+    border-top: 1px solid var(--pipboy-border);
+    border-bottom: 1px solid var(--pipboy-border);
+}
+
+.ascii-logo {
+    font-size: 0.4rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 8px var(--pipboy-green);
+    line-height: 1;
+    margin-bottom: 15px;
+    white-space: pre;
     animation: logoGlow 3s ease-in-out infinite alternate;
-    font-weight: bold;
 }
 
 @keyframes logoGlow {
     from {
-        text-shadow: 
-            0 0 10px var(--pipboy-green), 
-            0 0 20px var(--pipboy-green), 
-            0 0 30px var(--pipboy-green);
+        text-shadow: 0 0 8px var(--pipboy-green);
     }
     to {
         text-shadow: 
-            0 0 15px var(--pipboy-green), 
-            0 0 30px var(--pipboy-green), 
-            0 0 45px var(--pipboy-green),
-            0 0 60px var(--pipboy-green);
+            0 0 12px var(--pipboy-green),
+            0 0 20px var(--pipboy-green);
     }
 }
 
-.logo-tagline {
-    font-size: 0.9rem;
+.logo-subtitle {
+    font-size: 0.7rem;
     color: var(--pipboy-yellow);
     text-shadow: 0 0 5px var(--pipboy-yellow);
-    letter-spacing: 2px;
-    animation: taglineFlicker 4s infinite;
+    letter-spacing: 1px;
 }
 
-@keyframes taglineFlicker {
-    0%, 96%, 100% { opacity: 1; }
-    97% { opacity: 0.8; }
-    98% { opacity: 0.6; }
-    99% { opacity: 0.9; }
-}
-
-.system-check {
-    margin-bottom: 25px;
-    text-align: left;
-    max-width: 300px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.check-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-}
-
-.check-label {
-    font-size: 0.75rem;
-    color: #007700;
-}
-
-.check-status {
-    font-size: 0.75rem;
-    color: var(--pipboy-green);
-    text-shadow: 0 0 3px var(--pipboy-green);
-}
-
-.loading-progress {
-    width: 100%;
+.continue-section {
+    text-align: center;
     margin-top: 20px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 12px;
-    background-color: #002200;
-    border: 2px solid var(--pipboy-border);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 10px;
-    border-radius: 6px;
-}
-
-.progress-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--pipboy-green) 0%, var(--pipboy-yellow) 100%);
-    box-shadow: 0 0 8px var(--pipboy-green);
-    animation: loading 4s ease-in-out forwards;
-    border-radius: 4px;
-}
-
-@keyframes loading {
-    0% { width: 0%; }
-    25% { width: 30%; }
-    50% { width: 60%; }
-    75% { width: 85%; }
-    100% { width: 100%; }
-}
-
-.progress-text {
-    font-size: 0.8rem;
-    color: var(--pipboy-green);
-    text-shadow: 0 0 3px var(--pipboy-green);
-    animation: progressText 4s ease-in-out;
-}
-
-@keyframes progressText {
-    0% { opacity: 0; }
-    25% { opacity: 1; }
-    75% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
-.boot-complete {
-    animation: bootComplete 1s ease-in;
-}
-
-@keyframes bootComplete {
-    from { 
-        opacity: 0; 
-        transform: translateY(20px);
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0);
-    }
-}
-
-.complete-text {
-    font-size: 1.2rem;
-    color: var(--pipboy-green);
-    text-shadow: 0 0 8px var(--pipboy-green);
-    margin-bottom: 10px;
-    font-weight: bold;
-}
-
-.tap-instruction {
-    font-size: 0.8rem;
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 5px var(--pipboy-yellow);
-    animation: tapBlink 1.5s infinite;
+    padding-top: 20px;
+    border-top: 1px solid var(--pipboy-border);
     cursor: pointer;
 }
 
-@keyframes tapBlink {
+.continue-text {
+    font-size: 0.9rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
+    margin-bottom: 10px;
+    animation: textBlink 2s infinite;
+}
+
+@keyframes textBlink {
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0.5; }
 }
 
-/* Главный экран */
+.cursor-blink {
+    font-size: 1.2rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 5px var(--pipboy-green);
+    animation: cursorBlink 1s infinite;
+}
+
+@keyframes cursorBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* ===== ОСНОВНОЙ ИНТЕРФЕЙС ===== */
 .screen-header {
     text-align: center;
     margin-bottom: 8px;
     padding-bottom: 5px;
     border-bottom: 1px solid var(--pipboy-border);
-    animation: text-flicker 20s infinite;
 }
 
 .screen-header h1 {
@@ -364,50 +295,79 @@ body {
     width: 100%;
     opacity: 0.1;
     z-index: 1;
-    animation: text-flicker 25s infinite;
 }
 
-.default-content p {
+.section-content {
+    display: none;
+    margin-top: 30px;
+    position: relative;
+    z-index: 2;
+    padding: 0 15px;
+}
+
+.section-content.active {
+    display: block !important;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.stat-item {
+    margin-bottom: 12px;
+    padding: 8px;
+    border-bottom: 1px solid #007700;
+}
+
+.stat-label {
+    color: #007700;
+    font-size: 0.85rem;
     margin-bottom: 5px;
-    text-shadow: 0 0 5px var(--pipboy-green);
-    font-size: 0.95rem;
-    color: var(--pipboy-green);
 }
 
-/* Нижняя панель - исправлена для мобильных */
+.stat-value {
+    font-size: 1rem;
+    text-shadow: 0 0 5px var(--pipboy-yellow);
+    color: var(--pipboy-yellow);
+}
+
+.yellow-text {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
+}
+
+.yellow-content p {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
+    margin-bottom: 15px;
+}
+
+/* ===== НАВИГАЦИЯ (ПОДНЯТА) ===== */
 .unified-bottom-panel {
     position: fixed;
-    bottom: 0;
+    bottom: 20px; /* Поднял на 20px */
     left: 0;
     width: 100%;
     z-index: 100;
     background: var(--pipboy-dark);
     border-top: 2px solid var(--pipboy-border);
     box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
+    border-radius: 8px 8px 0 0;
 }
 
 .info-panel {
     display: flex;
     justify-content: space-between;
-    padding: 8px 15px;
+    padding: 10px 15px; /* Увеличил padding */
     background-color: #002200;
     font-size: 0.8rem;
     text-shadow: 0 0 3px var(--pipboy-green);
-    animation: text-flicker 30s infinite;
     color: var(--pipboy-green);
 }
 
-.menu-panel {
-    position: relative;
-}
-
-/* Исправленная кнопка меню для мобильных */
 .menu-toggle {
     display: flex !important;
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 12px 15px;
+    padding: 15px; /* Увеличил padding */
     background: linear-gradient(to bottom, #003300, #002200);
     border: none;
     border-top: 1px solid var(--pipboy-border);
@@ -419,16 +379,9 @@ body {
     cursor: pointer;
     z-index: 103;
     position: relative;
-    animation: text-flicker 15s infinite;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-}
-
-.menu-toggle:hover,
-.menu-toggle:focus {
-    background: linear-gradient(to bottom, #004400, #003300);
-    outline: none;
 }
 
 .menu-toggle:active {
@@ -443,7 +396,6 @@ body {
     font-size: 1.2rem;
 }
 
-/* Исправленное выдвижное меню */
 .pipboy-nav {
     position: fixed;
     bottom: -100%;
@@ -451,25 +403,19 @@ body {
     width: 100%;
     background: rgba(0, 17, 0, 0.98);
     border-top: 2px solid var(--pipboy-border);
-    padding: 15px 10px 20px 10px;
+    padding: 15px 10px 40px 10px; /* Увеличил нижний padding */
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 102;
     box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.2);
-    height: auto;
     max-height: 70vh;
     overflow-y: auto;
 }
 
 .pipboy-nav.open {
-    bottom: 0;
-}
-
-/* Исправление для iOS Safari */
-.pipboy-nav.open ~ .menu-toggle {
-    display: none !important;
+    bottom: 20px; /* Учитываем поднятую панель */
 }
 
 .menu-header {
@@ -491,11 +437,11 @@ body {
     background: transparent;
     border: 1px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 5px 10px;
+    padding: 8px 12px;
     cursor: pointer;
     font-family: 'Monofonto', 'Courier New', monospace;
     text-shadow: 0 0 3px var(--pipboy-green);
-    font-size: 1.1rem;
+    font-size: 1rem;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
@@ -503,35 +449,26 @@ body {
 .close-menu-btn:active {
     background-color: var(--pipboy-green);
     color: var(--pipboy-dark);
+    transform: scale(0.95);
 }
 
 .nav-btn {
     background: transparent;
     border: 1px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 12px 10px;
+    padding: 15px 10px; /* Увеличил padding */
     font-family: 'Monofonto', 'Courier New', monospace;
     font-size: 0.9rem;
     text-shadow: 0 0 3px var(--pipboy-green);
     cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
-    animation: text-flicker 15s infinite;
+    gap: 10px;
     width: 100%;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-}
-
-.nav-btn:hover,
-.nav-btn:focus {
-    background-color: #003300;
-    color: #ffffff;
-    text-shadow: 0 0 10px #ffffff;
-    box-shadow: 0 0 10px var(--pipboy-green);
-    outline: none;
+    border-radius: 4px;
 }
 
 .nav-btn:active {
@@ -542,194 +479,13 @@ body {
 }
 
 .nav-icon {
-    font-size: 0.9rem;
-    display: block;
-}
-
-/* Контент разделов */
-.section-content {
-    display: none;
-    margin-top: 30px;
-    position: relative;
-    z-index: 2;
-    padding-left: 15px;
-    padding-right: 15px;
-}
-
-.section-content.active {
-    display: block !important;
-    animation: fadeIn 0.5s ease-in;
-}
-
-.stat-item {
-    margin-bottom: 12px;
-    padding: 8px;
-    border-bottom: 1px solid #007700;
-    animation: text-flicker 20s infinite;
-}
-
-.stat-label {
-    color: #007700;
-    font-size: 0.85rem;
-    margin-bottom: 5px;
-}
-
-.stat-value {
-    font-size: 1rem;
-    text-shadow: 0 0 5px var(--pipboy-yellow);
+    font-size: 0.8rem;
     color: var(--pipboy-yellow);
+    min-width: 45px;
+    text-align: left;
 }
 
-.yellow-text {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 5px var(--pipboy-yellow), 0 0 10px var(--pipboy-yellow);
-    animation: text-flicker 20s infinite;
-}
-
-.yellow-content {
-    padding-left: 15px;
-}
-
-.yellow-content p {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 3px var(--pipboy-yellow);
-    animation: text-flicker 20s infinite;
-    margin-bottom: 15px;
-}
-
-/* Crypto wallet styles */
-.crypto-balance {
-    margin: 20px 0;
-}
-
-.balance-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    margin-bottom: 10px;
-    border: 1px solid var(--pipboy-border);
-    background: rgba(0, 51, 0, 0.2);
-    border-radius: 4px;
-}
-
-.balance-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.crypto-icon {
-    font-size: 1.2rem;
-}
-
-.crypto-name {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 3px var(--pipboy-yellow);
-    font-weight: bold;
-}
-
-.crypto-amount {
-    color: var(--pipboy-green);
-    text-shadow: 0 0 3px var(--pipboy-green);
-    font-weight: bold;
-}
-
-.wallet-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.wallet-btn {
-    flex: 1;
-    padding: 10px;
-    background: transparent;
-    border: 2px solid var(--pipboy-border);
-    color: var(--pipboy-green);
-    font-family: 'Monofonto', 'Courier New', monospace;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-.wallet-btn:hover {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-}
-
-/* Placeholder контент */
-.quest-placeholder,
-.shop-placeholder {
-    margin-top: 20px;
-}
-
-.quest-item,
-.shop-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    margin-bottom: 8px;
-    border: 1px solid var(--pipboy-border);
-    background: rgba(0, 34, 0, 0.3);
-}
-
-.quest-name,
-.item-name {
-    color: var(--pipboy-green);
-}
-
-.quest-reward,
-.item-price {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 3px var(--pipboy-yellow);
-}
-
-.inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.inventory-slot {
-    aspect-ratio: 1;
-    border: 2px dashed var(--pipboy-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #007700;
-    font-size: 0.7rem;
-}
-
-.inventory-slot.empty {
-    opacity: 0.5;
-}
-
-.settings-list {
-    margin-top: 20px;
-}
-
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    margin-bottom: 8px;
-    border: 1px solid var(--pipboy-border);
-    background: rgba(0, 34, 0, 0.3);
-}
-
-.setting-name {
-    color: var(--pipboy-green);
-}
-
-.setting-value {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 3px var(--pipboy-yellow);
-}
-
-/* Игры */
+/* ===== ИГРЫ ===== */
 .game-list {
     margin-top: 20px;
 }
@@ -739,59 +495,31 @@ body {
     padding: 15px;
     margin-bottom: 15px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, 
-        rgba(0, 51, 0, 0.3) 0%, 
-        rgba(0, 34, 0, 0.5) 100%);
+    transition: all 0.3s ease;
+    background: rgba(0, 51, 0, 0.2);
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border-radius: 4px;
+    border-radius: 6px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+}
+
+.game-item:active {
+    transform: scale(0.98);
+    background: rgba(0, 68, 0, 0.4);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
 }
 
 .game-item.featured-game {
     border-color: var(--pipboy-yellow);
     box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
-    background: linear-gradient(135deg, 
-        rgba(0, 68, 0, 0.4) 0%, 
-        rgba(0, 51, 0, 0.6) 50%,
-        rgba(0, 34, 0, 0.8) 100%);
-}
-
-.game-item::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-                transparent, 
-                rgba(0, 255, 0, 0.2), 
-                transparent);
-    transition: left 0.5s;
-}
-
-.game-item:hover::after,
-.game-item:active::after {
-    left: 100%;
-}
-
-.game-item:hover,
-.game-item:active {
-    background: linear-gradient(135deg, 
-        rgba(0, 68, 0, 0.4) 0%, 
-        rgba(0, 51, 0, 0.6) 100%);
-    box-shadow: 0 0 20px var(--pipboy-glow);
-    transform: translateY(-2px);
 }
 
 .game-icon {
-    font-size: 1.8rem;
+    font-size: 1rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
     margin-bottom: 5px;
 }
 
@@ -817,37 +545,14 @@ body {
 }
 
 /* ===== ИГРОВОЙ ЭКРАН ===== */
-
 #game-screen {
-    display: none;
-    flex-direction: column;
-    padding: 0;
-    background: #000000;
-    font-family: 'Monofonto', 'Courier New', monospace;
-    color: var(--pipboy-green);
-    z-index: 30;
-}
-
-#game-screen.active {
-    display: flex !important;
-    animation: terminalBoot 1s ease-out;
-}
-
-@keyframes terminalBoot {
-    from { 
-        opacity: 0; 
-        filter: brightness(2);
-    }
-    to { 
-        opacity: 1; 
-        filter: brightness(1);
-    }
+    background: var(--console-bg);
 }
 
 .game-header {
     padding: 10px 15px;
     border-bottom: 2px solid var(--pipboy-border);
-    background: linear-gradient(to bottom, #002200 0%, #001100 100%);
+    background: rgba(0, 17, 0, 0.8);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -857,24 +562,17 @@ body {
     background: transparent;
     border: 1px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 5px 10px;
+    padding: 8px 12px;
     cursor: pointer;
     font-family: 'Monofonto', 'Courier New', monospace;
-    text-shadow: 0 0 3px var(--pipboy-green);
     font-size: 0.8rem;
-    transition: all 0.2s ease;
+    border-radius: 4px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
 
-.terminal-btn:hover,
-.terminal-btn:focus {
-    background-color: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-    outline: none;
-}
-
 .terminal-btn:active {
+    background: rgba(0, 255, 0, 0.2);
     transform: scale(0.95);
 }
 
@@ -887,542 +585,857 @@ body {
     letter-spacing: 1px;
 }
 
-/* Mode Selector */
+.score-display {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* ===== ВЫБОР РЕЖИМА ===== */
 .mode-selector {
-    padding: 30px 20px;
+    padding: 40px 20px;
     text-align: center;
 }
 
 .mode-title {
     color: var(--pipboy-yellow);
-    text-shadow: 0 0 5px var(--pipboy-yellow);
-    font-size: 1.2rem;
-    margin-bottom: 30px;
+    text-shadow: 0 0 8px var(--pipboy-yellow);
+    font-size: 1.4rem;
+    margin-bottom: 40px;
+    font-weight: bold;
 }
 
 .mode-options {
     display: flex;
+    flex-direction: column;
     gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
+    align-items: center;
 }
 
 .mode-btn {
-    background: transparent;
-    border: 2px solid var(--pipboy-border);
+    background: rgba(0, 0, 0, 0.6);
+    border: 3px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 20px;
+    padding: 25px 20px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Monofonto', 'Courier New', monospace;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    min-width: 150px;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
     text-align: center;
-    border-radius: 4px;
+    border-radius: 8px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-}
-
-.mode-btn:hover,
-.mode-btn:focus {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-    transform: translateY(-2px);
-    outline: none;
+    position: relative;
+    overflow: hidden;
 }
 
 .mode-btn:active {
-    transform: translateY(0) scale(0.98);
+    transform: scale(0.98);
+    box-shadow: 0 0 20px var(--pipboy-glow);
 }
 
-.mode-btn.solo-mode:hover {
+.mode-btn.solo-mode:active {
     border-color: var(--pipboy-yellow);
     color: var(--pipboy-yellow);
 }
 
-.mode-btn.multiplayer-mode:hover {
+.mode-btn.multiplayer-mode:active {
     border-color: #ff6600;
     color: #ff6600;
 }
 
 .mode-icon {
-    font-size: 2rem;
-    margin-bottom: 5px;
+    font-size: 1.5rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
 }
 
 .mode-name {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: bold;
-    margin-bottom: 5px;
 }
 
 .mode-desc {
-    font-size: 0.8rem;
-    opacity: 0.8;
+    font-size: 0.9rem;
+    opacity: 0.9;
 }
 
-/* Multiplayer Setup */
+/* ===== УЛУЧШЕННЫЙ ИГРОВОЙ ИНТЕРФЕЙС ===== */
+.gaming-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--console-bg);
+}
+
+/* Статус игры перемещен вверх */
+.game-status-bar {
+    padding: 15px;
+    border-bottom: 2px solid var(--pipboy-border);
+    background: rgba(0, 17, 0, 0.6);
+    order: 1; /* Первый элемент */
+}
+
+.game-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-side,
+.opponent-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 80px;
+}
+
+.player-label,
+.opponent-label {
+    font-size: 0.8rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
+    font-weight: bold;
+}
+
+.player-attempts,
+.opponent-attempts {
+    font-size: 0.7rem;
+    color: var(--pipboy-green);
+    font-family: 'Monofonto', 'Courier New', monospace;
+}
+
+.player-status,
+.opponent-status {
+    font-size: 0.6rem;
+    color: var(--pipboy-green);
+    text-transform: uppercase;
+}
+
+.vs-section {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mode-badge {
+    font-size: 0.8rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+    padding: 3px 8px;
+    border: 1px solid var(--pipboy-border);
+    border-radius: 12px;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.stake-info {
+    font-size: 0.7rem;
+    color: #ff6600;
+    text-shadow: 0 0 3px #ff6600;
+    font-weight: bold;
+}
+
+.turn-indicator {
+    text-align: center;
+    padding: 8px;
+    border: 2px solid var(--pipboy-yellow);
+    background: rgba(255, 255, 0, 0.1);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.turn-text {
+    font-size: 0.9rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 5px var(--pipboy-yellow);
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.turn-timer {
+    font-size: 0.8rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+}
+
+.turn-timer.warning {
+    color: #ff6600;
+    text-shadow: 0 0 5px #ff6600;
+    animation: timerPulse 0.5s infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ===== ТЕРМИНАЛЬНЫЙ ИНТЕРФЕЙС (ПЕРЕМЕЩЕН ВНИЗ) ===== */
+.terminal-interface {
+    flex: 1;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--pipboy-border);
+    border-radius: 8px;
+    margin: 10px;
+    order: 2; /* Второй элемент */
+}
+
+.terminal-screen {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #000000;
+    border: 1px solid var(--pipboy-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--pipboy-border);
+    background: rgba(0, 17, 0, 0.5);
+}
+
+.access-text {
+    color: var(--pipboy-green);
+    text-shadow: 0 0 5px var(--pipboy-green);
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.timer-display {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
+    font-size: 0.9rem;
+    font-family: 'Monofonto', 'Courier New', monospace;
+}
+
+/* ===== СЕТКА ПАРОЛЕЙ ===== */
+.password-grid {
+    flex: 1;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    align-content: start;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.password-item {
+    background: rgba(0, 51, 0, 0.3);
+    border: 2px solid var(--pipboy-border);
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+    padding: 15px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Monofonto', 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: bold;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    overflow: hidden;
+}
+
+.password-item:active {
+    transform: scale(0.95);
+    border-color: var(--pipboy-yellow);
+    color: var(--pipboy-yellow);
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+}
+
+.password-item.selected {
+    background: rgba(255, 255, 0, 0.2);
+    border-color: var(--pipboy-yellow);
+    color: var(--pipboy-yellow);
+    animation: selectedPulse 0.6s ease;
+}
+
+.password-item.correct {
+    background: rgba(0, 255, 0, 0.3);
+    border-color: var(--pipboy-green);
+    color: #000000;
+    animation: correctAnimation 1s ease;
+}
+
+.password-item.incorrect {
+    background: rgba(255, 102, 0, 0.3);
+    border-color: #ff6600;
+    color: #ffffff;
+    animation: incorrectShake 0.5s ease;
+}
+
+.password-item.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    filter: grayscale(70%);
+}
+
+@keyframes selectedPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes correctAnimation {
+    0% { background: rgba(0, 255, 0, 0.3); }
+    50% { background: rgba(255, 255, 0, 0.5); }
+    100% { background: rgba(0, 255, 0, 0.3); }
+}
+
+@keyframes incorrectShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+/* ===== ОБРАТНАЯ СВЯЗЬ ===== */
+.feedback-area {
+    padding: 15px;
+    border-top: 1px solid var(--pipboy-border);
+    background: rgba(0, 17, 0, 0.4);
+    min-height: 70px;
+}
+
+.last-attempt {
+    font-size: 0.85rem;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.hint-text {
+    font-size: 0.75rem;
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
+    text-align: center;
+    font-style: italic;
+}
+
+/* ===== СИСТЕМА ПОДСКАЗОК ===== */
+.hint-system {
+    padding: 10px 15px;
+    border-top: 1px solid var(--pipboy-border);
+    background: rgba(0, 0, 0, 0.6);
+    order: 3; /* Третий элемент */
+}
+
+.hint-label {
+    font-size: 0.7rem;
+    color: var(--pipboy-green);
+    display: block;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.bracket-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.hint-bracket {
+    background: rgba(0, 51, 0, 0.3);
+    border: 1px solid var(--pipboy-border);
+    color: var(--pipboy-green);
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Monofonto', 'Courier New', monospace;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    font-size: 0.9rem;
+}
+
+.hint-bracket:active {
+    background: rgba(0, 255, 0, 0.2);
+    transform: scale(0.95);
+}
+
+.hint-bracket.used {
+    background: rgba(255, 102, 0, 0.2);
+    color: #ff6600;
+    cursor: not-allowed;
+}
+
+/* ===== СИСТЕМА ЛОГОВ ===== */
+.action-log {
+    height: 90px;
+    border-top: 2px solid var(--pipboy-border);
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    order: 4; /* Четвертый элемент */
+}
+
+.log-title {
+    padding: 5px 15px;
+    color: var(--pipboy-green);
+    text-shadow: 0 0 3px var(--pipboy-green);
+    font-size: 0.7rem;
+    border-bottom: 1px solid var(--pipboy-border);
+    background: rgba(0, 17, 0, 0.3);
+}
+
+.log-entries {
+    flex: 1;
+    padding: 8px 15px;
+    overflow-y: auto;
+    font-size: 0.7rem;
+}
+
+.log-entry {
+    margin-bottom: 3px;
+    color: var(--pipboy-green);
+    animation: logSlide 0.3s ease-out;
+}
+
+.log-entry.system {
+    color: #00aaff;
+}
+
+.log-entry.success {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
+    font-weight: bold;
+}
+
+.log-entry.error {
+    color: #ff6600;
+    text-shadow: 0 0 3px #ff6600;
+}
+
+.log-entry.opponent {
+    color: #ff6600;
+    font-style: italic;
+}
+
+@keyframes logSlide {
+    from { 
+        opacity: 0; 
+        transform: translateX(-15px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
+}
+
+/* ===== МУЛЬТИПЛЕЕР НАСТРОЙКИ ===== */
 .multiplayer-setup {
-    padding: 20px;
-    max-width: 400px;
-    margin: 0 auto;
+    padding: 30px 20px;
+    text-align: center;
 }
 
 .setup-title {
     color: var(--pipboy-yellow);
-    text-shadow: 0 0 5px var(--pipboy-yellow);
-    font-size: 1.1rem;
-    margin-bottom: 25px;
-    text-align: center;
+    text-shadow: 0 0 8px var(--pipboy-yellow);
+    font-size: 1.3rem;
+    margin-bottom: 30px;
+    font-weight: bold;
 }
 
-.setup-section {
-    margin-bottom: 20px;
-}
-
-.setup-label {
-    display: block;
-    color: var(--pipboy-green);
-    text-shadow: 0 0 3px var(--pipboy-green);
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-}
-
-.currency-selector {
+.currency-options {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
-.currency-btn {
-    flex: 1;
-    background: transparent;
+.crypto-option {
+    background: rgba(0, 0, 0, 0.6);
     border: 2px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 10px;
+    padding: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Monofonto', 'Courier New', monospace;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
+    border-radius: 6px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
 
-.currency-btn.active,
-.currency-btn:hover {
-    background: rgba(0, 255, 0, 0.1);
+.crypto-option.active,
+.crypto-option:active {
+    background: rgba(255, 255, 0, 0.2);
     border-color: var(--pipboy-yellow);
     color: var(--pipboy-yellow);
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
 }
 
-.amount-input {
+.amount-selector {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
 }
 
-.amount-input input {
-    flex: 1;
-    background: transparent;
+.amount-selector input {
+    background: rgba(0, 0, 0, 0.8);
     border: 2px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 10px;
+    padding: 10px 15px;
     font-family: 'Monofonto', 'Courier New', monospace;
     text-align: center;
     border-radius: 4px;
-}
-
-.amount-input input:focus {
-    outline: none;
-    border-color: var(--pipboy-yellow);
-    box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
-}
-
-.currency-display {
-    color: var(--pipboy-yellow);
-    text-shadow: 0 0 3px var(--pipboy-yellow);
-    font-weight: bold;
-    min-width: 50px;
+    width: 120px;
+    font-size: 0.9rem;
 }
 
 .setup-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 25px;
+    gap: 15px;
 }
 
-.setup-btn {
-    background: transparent;
+.action-btn {
+    background: rgba(0, 0, 0, 0.6);
     border: 2px solid var(--pipboy-border);
     color: var(--pipboy-green);
-    padding: 12px;
+    padding: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Monofonto', 'Courier New', monospace;
-    font-size: 0.9rem;
+    font-size: 1rem;
     text-transform: uppercase;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-weight: bold;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
 
-.setup-btn:hover {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-}
-
-.setup-btn:active {
+.action-btn.primary:active {
+    background: rgba(255, 255, 0, 0.2);
+    border-color: var(--pipboy-yellow);
+    color: var(--pipboy-yellow);
     transform: scale(0.98);
 }
 
-/* Gaming Area Styles */
-.gaming-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+.action-btn.secondary:active {
+    background: rgba(255, 102, 0, 0.2);
+    border-color: #ff6600;
+    color: #ff6600;
+    transform: scale(0.98);
 }
 
-.game-info-bar {
+.action-btn.back:active {
+    background: rgba(255, 0, 0, 0.1);
+    border-color: #ff0000;
+    color: #ff0000;
+    transform: scale(0.98);
+}
+
+/* ===== ОЖИДАНИЕ ===== */
+.waiting-lobby {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 20px;
+}
+
+.waiting-content {
+    text-align: center;
+    padding: 40px 30px;
+    border: 3px solid var(--pipboy-border);
+    background: rgba(0, 17, 0, 0.8);
+    border-radius: 12px;
+    max-width: 300px;
+    width: 100%;
+}
+
+.waiting-title {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 8px var(--pipboy-yellow);
+    font-size: 1.2rem;
+    margin-bottom: 25px;
+    font-weight: bold;
+}
+
+.waiting-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 25px 0;
+    font-size: 1.5rem;
+    color: var(--pipboy-green);
+}
+
+.waiting-dots span {
+    animation: waitingPulse 1.5s infinite;
+}
+
+.waiting-dots span:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.waiting-dots span:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@keyframes waitingPulse {
+    0%, 80%, 100% { opacity: 0.3; }
+    40% { opacity: 1; }
+}
+
+/* ===== УТИЛИТЫ ===== */
+.crypto-balance {
+    margin: 20px 0;
+}
+
+.balance-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    border-bottom: 2px solid var(--pipboy-border);
-    background: rgba(0, 17, 0, 0.3);
+    margin-bottom: 10px;
+    border: 1px solid var(--pipboy-border);
+    background: rgba(0, 51, 0, 0.2);
+    border-radius: 4px;
 }
 
-.player-status,
-.opponent-status {
+.balance-info {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    min-width: 100px;
+    gap: 8px;
 }
 
-.player-name,
-.opponent-name {
+.crypto-icon {
+    font-size: 0.8rem;
     color: var(--pipboy-yellow);
     text-shadow: 0 0 3px var(--pipboy-yellow);
-    font-size: 0.8rem;
+}
+
+.crypto-name {
+    color: var(--pipboy-yellow);
+    text-shadow: 0 0 3px var(--pipboy-yellow);
     font-weight: bold;
 }
 
-.terminal-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: #000000;
-    overflow: hidden;
-}
-
-.terminal-panels {
-    flex: 1;
-    display: flex;
-    background: #000000;
-}
-
-.terminal-panel {
-    width: 50%;
-    padding: 12px;
-    font-family: 'Monofonto', 'Courier New', monospace;
-    font-size: 0.75rem;
-    line-height: 1.1;
+.crypto-amount {
     color: var(--pipboy-green);
-    text-shadow: 0 0 2px var(--pipboy-green);
-    overflow-y: auto;
-    cursor: default;
-    user-select: none;
+    text-shadow: 0 0 3px var(--pipboy-green);
+    font-weight: bold;
 }
 
-.terminal-word {
-    color: var(--pipboy-green);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s ease;
-    padding: 1px 2px;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+/* ===== РЕТРО ЭФФЕКТЫ ===== */
+.retro-effects {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
 }
 
-.terminal-word:hover,
-.terminal-word:active {
-    background-color: var(--pipboy-green);
-    color: #000000;
-    text-shadow: none;
-    box-shadow: 0 0 6px var(--pipboy-green);
-}
-
-/* Эффекты */
 .scanlines {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, 
-        rgba(255, 255, 255, 0.03) 50%, 
-        rgba(0, 0, 0, 0.1) 50%);
-    background-size: 100% 3px;
-    pointer-events: none;
-    z-index: 10;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 2px,
+            rgba(0, 255, 0, 0.03) 2px,
+            rgba(0, 255, 0, 0.03) 4px
+        );
+    animation: scanlineMove 0.1s linear infinite;
 }
 
-.flicker {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    animation: flicker 5s linear infinite;
-    pointer-events: none;
-    opacity: 0.02;
-    z-index: 11;
+@keyframes scanlineMove {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(4px); }
 }
 
-.crt-effect {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, 
-        rgba(0, 255, 0, 0.02) 50%, 
-        transparent 50%);
-    background-size: 100% 2px;
-    pointer-events: none;
-    z-index: 12;
-    animation: scan 5s linear infinite;
-}
-
-.screen-glare {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
-    pointer-events: none;
-    z-index: 13;
-}
-
-/* Анимации */
-@keyframes glow {
-    from {
-        text-shadow: 0 0 5px var(--pipboy-green), 0 0 10px var(--pipboy-green), 0 0 15px var(--pipboy-green);
-    }
-    to {
-        text-shadow: 0 0 10px var(--pipboy-green), 0 0 20px var(--pipboy-green), 0 0 30px var(--pipboy-green);
-    }
-}
-
-@keyframes flicker {
-    0% { background: transparent; }
-    5% { background: rgba(255, 255, 255, 0.1); }
-    10% { background: transparent; }
-    100% { background: transparent; }
-}
-
-@keyframes scan {
-    0% { top: -100%; }
-    100% { top: 100%; }
-}
-
-@keyframes text-flicker {
-    0%, 100% { opacity: 1; }
-    97% { opacity: 0.95; }
-    98% { opacity: 0.8; }
-    99% { opacity: 0.95; }
-}
-
+/* ===== АНИМАЦИИ ===== */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-/* Мобильная адаптация */
+.typewriter-effect {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid var(--pipboy-green);
+    animation: typeText 3s steps(40, end), blinkCaret 1s step-end infinite;
+}
+
+@keyframes typeText {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blinkCaret {
+    from, to { border-color: transparent; }
+    50% { border-color: var(--pipboy-green); }
+}
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
 @media (max-width: 768px) {
-    .project-logo {
-        font-size: 2.5rem;
-        letter-spacing: 4px;
+    .pipboy-screen {
+        margin: 10px 10px 60px 10px; /* Меньший отступ снизу */
     }
     
-    .logo-tagline {
-        font-size: 0.8rem;
+    .unified-bottom-panel {
+        bottom: 15px; /* Поднял еще выше на мобильных */
+    }
+    
+    .ascii-logo {
+        font-size: 0.3rem;
     }
     
     .mode-options {
-        flex-direction: column;
-        align-items: center;
+        gap: 15px;
     }
     
     .mode-btn {
-        width: 100%;
-        max-width: 280px;
-        padding: 15px;
+        padding: 20px 15px;
+        max-width: 250px;
     }
     
-    .terminal-panels {
-        flex-direction: column;
+    .password-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 10px;
     }
     
-    .terminal-panel {
-        width: 100%;
-        height: 50%;
-        padding: 8px;
-        font-size: 0.7rem;
+    .password-item {
+        padding: 12px 6px;
+        font-size: 0.75rem;
     }
     
-    .game-info-bar {
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: center;
+    .game-status-bar {
+        padding: 10px;
     }
     
-    .inventory-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .terminal-interface {
+        margin: 5px;
+        padding: 10px;
     }
     
-    .currency-selector {
-        flex-direction: column;
+    .action-log {
+        height: 70px;
     }
     
-    .frame-text {
-        font-size: 0.6rem;
+    .feedback-area {
+        min-height: 50px;
+        padding: 10px;
     }
     
     .info-panel {
         font-size: 0.7rem;
+        padding: 8px 12px;
+    }
+    
+    .menu-toggle {
+        padding: 12px 15px;
+        font-size: 0.9rem;
+    }
+    
+    .nav-btn {
+        padding: 12px 10px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .retro-terminal {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .ascii-logo {
+        font-size: 0.25rem;
+    }
+    
+    .header-line {
+        font-size: 0.6rem;
+    }
+    
+    .boot-line {
+        font-size: 0.7rem;
+    }
+    
+    .password-item {
+        padding: 10px 4px;
+        font-size: 0.7rem;
+    }
+    
+    .game-progress {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .vs-section {
+        order: -1;
+        margin-bottom: 10px;
+    }
+    
+    .turn-indicator {
+        padding: 6px;
+        margin-top: 5px;
+    }
+    
+    .currency-options {
+        gap: 10px;
+    }
+    
+    .info-panel {
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
         padding: 6px 10px;
     }
     
     .menu-toggle {
         padding: 10px 12px;
-        font-size: 0.9rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .project-logo {
-        font-size: 2rem;
-        letter-spacing: 2px;
-    }
-    
-    .logo-tagline {
-        font-size: 0.7rem;
-        letter-spacing: 1px;
-    }
-    
-    .welcome-content {
-        width: 95%;
-        padding: 0 10px;
-    }
-    
-    .system-check {
-        max-width: 250px;
-    }
-    
-    .check-item {
-        flex-direction: column;
-        gap: 5px;
-        text-align: center;
-    }
-    
-    .mode-btn {
-        padding: 15px 10px;
-        min-width: 120px;
-    }
-    
-    .terminal-panel {
-        font-size: 0.65rem;
-        padding: 6px;
-    }
-    
-    .setup-section {
-        margin-bottom: 15px;
-    }
-    
-    .pipboy-nav {
-        padding: 10px 5px 15px 5px;
-    }
-    
-    .nav-btn {
-        padding: 10px 8px;
-        font-size: 0.8rem;
-    }
-    
-    .menu-toggle {
-        padding: 8px 10px;
         font-size: 0.85rem;
-    }
-    
-    .game-item {
-        padding: 12px;
-        margin-bottom: 10px;
-    }
-    
-    .game-title {
-        font-size: 1rem;
-    }
-    
-    .game-desc {
-        font-size: 0.75rem;
     }
 }
 
 @media (max-width: 350px) {
-    .project-logo {
-        font-size: 1.8rem;
-        letter-spacing: 1px;
+    .ascii-logo {
+        font-size: 0.2rem;
     }
     
-    .logo-tagline {
-        font-size: 0.6rem;
+    .password-item {
+        padding: 8px 3px;
+        font-size: 0.65rem;
     }
     
     .mode-btn {
-        min-width: 100px;
-        padding: 12px 8px;
-    }
-    
-    .mode-icon {
-        font-size: 1.5rem;
-    }
-    
-    .mode-name {
-        font-size: 0.9rem;
-    }
-    
-    .mode-desc {
-        font-size: 0.7rem;
-    }
-    
-    .terminal-panel {
-        font-size: 0.6rem;
-        padding: 5px;
-    }
-    
-    .frame-text {
-        font-size: 0.5rem;
+        padding: 15px 10px;
     }
 }
 
-/* Исправления для iOS */
+/* ===== iOS ПОДДЕРЖКА ===== */
 @supports (-webkit-touch-callout: none) {
     .pipboy-screen {
         -webkit-backface-visibility: hidden;
         -webkit-transform: translateZ(0);
-    }
-    
-    .screen {
-        -webkit-backface-visibility: hidden;
     }
     
     button {
@@ -1436,69 +1449,10 @@ body {
     }
 }
 
-/* Оптимизация для слабых устройств */
+/* Убираем лишние эффекты на слабых устройствах */
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
-    .crt-effect, 
-    .flicker, 
+    .phosphor-glow,
     .scanlines {
         display: none;
     }
-    
-    * {
-        animation-duration: 0.1s !important;
-    }
-}
-
-/* Дополнительные стили для улучшенной совместимости */
-.pipboy-container {
-    -webkit-overflow-scrolling: touch;
-}
-
-.content-area {
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Убираем выделение текста на мобильных */
-* {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-input {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-}
-
-/* Эффект выпуклого экрана */
-.pipboy-screen::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 8px;
-    background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 5;
-}
-
-/* Эффект винтажной рамки */
-.pipboy-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 2px solid rgba(0, 204, 0, 0.3);
-    pointer-events: none;
-    z-index: 25;
-    box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
 }

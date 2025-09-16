@@ -1,4 +1,4 @@
-// KILOTON TERMINAL - Gaming Platform v2.1
+// RUNNER TERMINAL - Gaming Platform v2.1
 let userData = null;
 let menuOpen = false;
 let gameActive = false;
@@ -8,48 +8,78 @@ let correctPassword = '';
 let attemptsLeft = 4;
 let currentStake = { amount: 0, currency: 'TON' };
 let gameTimer = null;
+let turnTimer = null;
 let timeLeft = 300;
+let turnTimeLeft = 30;
 let selectedCurrency = 'TON';
+let playerTurn = true;
+let gameScore = 0;
 
-// Упрощенная звуковая система
-class SimpleAudioManager {
+// Ретро звуковая система
+class RetroAudioManager {
     constructor() {
         this.context = null;
-        this.initialized = false;
         this.enabled = true;
     }
 
     async init() {
         try {
             this.context = new (window.AudioContext || window.webkitAudioContext)();
-            this.initialized = true;
         } catch (error) {
-            console.log("Audio not available");
             this.enabled = false;
         }
     }
 
-    click() {
+    // Ретро терминальный звук
+    beep() {
         if (!this.context || !this.enabled) return;
         
         try {
-            const oscillator = this.context.createOscillator();
-            const gainNode = this.context.createGain();
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            const filter = this.context.createBiquadFilter();
             
-            oscillator.connect(gainNode);
-            gainNode.connect(this.context.destination);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.context.destination);
             
-            oscillator.type = 'square';
-            oscillator.frequency.value = 800;
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, this.context.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, this.context.currentTime + 0.05);
             
-            gainNode.gain.setValueAtTime(0.1, this.context.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.05);
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1000, this.context.currentTime);
             
-            oscillator.start(this.context.currentTime);
-            oscillator.stop(this.context.currentTime + 0.05);
-        } catch (error) {
-            console.log("Audio error:", error);
+            gain.gain.setValueAtTime(0.2, this.context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(this.context.currentTime + 0.1);
+        } catch (e) {
+            console.log('Audio error:', e);
         }
+    }
+    
+    // Звук печатания
+    type() {
+        if (!this.context || !this.enabled) return;
+        
+        try {
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            osc.type = 'square';
+            osc.frequency.value = 1200 + Math.random() * 400;
+            
+            gain.gain.setValueAtTime(0.05, this.context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.03);
+            
+            osc.start();
+            osc.stop(this.context.currentTime + 0.03);
+        } catch (e) {}
     }
 }
 
@@ -64,28 +94,29 @@ class MultiplayerManager {
         this.currentGame = {
             id: Math.random().toString(36).substr(2, 6).toUpperCase(),
             stake: stake,
-            status: 'waiting'
+            status: 'waiting',
+            opponentName: null
         };
         return this.currentGame;
     }
 
     simulateOpponent() {
-        const delay = 3000 + Math.random() * 4000;
+        const delay = 2000 + Math.random() * 3000;
         setTimeout(() => {
             if (this.currentGame && this.currentGame.status === 'waiting') {
                 this.currentGame.status = 'playing';
-                this.currentGame.opponentName = 'KILOTON_PLAYER_' + Math.floor(Math.random() * 1000);
+                this.currentGame.opponentName = 'VAULT_DWELLER_' + Math.floor(Math.random() * 1000);
                 startGameSession();
             }
         }, delay);
     }
 
-    simulateOpponentActions() {
-        if (!gameActive || !isMultiplayer) return;
+    simulateOpponentTurn() {
+        if (!gameActive || !isMultiplayer || playerTurn) return;
         
-        const delay = 5000 + Math.random() * 10000;
+        const delay = 3000 + Math.random() * 8000;
         this.opponentTimer = setTimeout(() => {
-            if (gameActive && isMultiplayer) {
+            if (gameActive && !playerTurn) {
                 this.performOpponentMove();
             }
         }, delay);
@@ -93,18 +124,35 @@ class MultiplayerManager {
 
     performOpponentMove() {
         const wrongWords = gameWords.filter(w => w !== correctPassword);
+        if (wrongWords.length === 0) return;
+        
         const selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
         
         addLogEntry(`Opponent selected: ${selectedWord}`, 'opponent');
-        updateOpponentProgress(75);
+        updateOpponentStatus('CHECKING...');
         
         setTimeout(() => {
-            const matches = getMatchingPositions(selectedWord, correctPassword);
-            addLogEntry(`Opponent failed - Likeness: ${matches}`, 'opponent');
-            updateOpponentProgress(100);
-            
-            if (gameActive) {
-                this.simulateOpponentActions();
+            if (selectedWord === correctPassword) {
+                addLogEntry('Opponent found correct password!', 'error');
+                endGame(false);
+            } else {
+                const matches = getMatchingPositions(selectedWord, correctPassword);
+                addLogEntry(`Opponent failed - Likeness: ${matches}`, 'opponent');
+                
+                // Уменьшаем попытки оппонента
+                let oppAttempts = document.getElementById('opponent-attempts').textContent.match(/\[X\]/g).length;
+                oppAttempts = Math.max(0, oppAttempts - 1);
+                
+                let squares = '';
+                for (let i = 0; i < 4; i++) {
+                    squares += i < oppAttempts ? '[X]' : '[ ]';
+                }
+                document.getElementById('opponent-attempts').textContent = squares;
+                
+                updateOpponentStatus('WAITING');
+                playerTurn = true;
+                updateTurnIndicator();
+                startTurnTimer();
             }
         }, 1500);
     }
@@ -118,38 +166,32 @@ class MultiplayerManager {
 }
 
 // Инициализация
-const audioManager = new SimpleAudioManager();
+const audioManager = new RetroAudioManager();
 const multiplayerManager = new MultiplayerManager();
 
-// Основная инициализация
 function initApp() {
-    console.log("Initializing KILOTON terminal...");
+    console.log("Initializing RUNNER terminal...");
     
-    // Инициализируем аудио с задержкой для мобильных
-    setTimeout(() => {
-        audioManager.init();
-    }, 1000);
+    // Инициализируем звук после пользовательского взаимодействия
+    document.addEventListener('click', () => audioManager.init(), { once: true });
+    document.addEventListener('touchstart', () => audioManager.init(), { once: true });
     
     loadUserData();
-    setupEventHandlers();
+    setupAllEventHandlers();
     
     updateDateTime();
     setInterval(updateDateTime, 60000);
     
     showWelcomeScreen();
-    
-    console.log("KILOTON terminal ready");
 }
 
-// Данные пользователя
 function loadUserData() {
     userData = {
-        name: "KILOTON Player",
+        name: "RUNNER Player",
         tonBalance: 0.542,
         tsarBalance: 1250,
         level: 15,
         xp: 1250,
-        nextLevelXp: 2000,
         wins: 23,
         losses: 7,
         gamesPlayed: 30
@@ -168,59 +210,95 @@ function updateUserInfo() {
 function updateDateTime() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    document.getElementById('time-display').textContent = `🕐 ${timeStr}`;
+    document.getElementById('time-display').textContent = `[TIME] ${timeStr}`;
 }
 
-// Приветственный экран с улучшенной анимацией
+// Ретро приветственный экран с печатающимся текстом
 function showWelcomeScreen() {
     hideAllScreens();
     document.getElementById('welcome-screen').classList.add('active');
     
-    const progressFill = document.getElementById('progress-fill');
-    const progressText = document.getElementById('progress-text');
-    const bootComplete = document.getElementById('boot-complete');
-    
-    // Анимация загрузки
-    progressFill.style.animation = 'loading 4s ease-in-out forwards';
-    
-    // Обновляем текст прогресса
-    const loadingTexts = [
-        'INITIALIZING KILOTON TERMINAL...',
-        'CONNECTING TO TON BLOCKCHAIN...',
-        'LOADING TSAR TOKEN PROTOCOL...',
-        'SYSTEM READY'
+    // Последовательность печатающихся строк
+    const bootMessages = [
+        'INITIALIZING RUNNER TERMINAL...',
+        'LOADING BLOCKCHAIN PROTOCOLS...',
+        'CONNECTING TO TON NETWORK......OK',
+        'LOADING TSAR TOKEN SYSTEM......OK',  
+        'CHECKING GAMING MODULES........OK',
+        'SYSTEM DIAGNOSTICS............OK',
+        'TERMINAL READY FOR OPERATION',
+        'WELCOME TO RUNNER GAMING PLATFORM'
     ];
     
-    let textIndex = 0;
-    const textInterval = setInterval(() => {
-        if (textIndex < loadingTexts.length) {
-            progressText.textContent = loadingTexts[textIndex];
-            textIndex++;
-        } else {
-            clearInterval(textInterval);
-        }
-    }, 1000);
+    let currentLine = 0;
     
-    // Показываем кнопку завершения через 4 секунды
-    setTimeout(() => {
-        progressText.style.display = 'none';
-        bootComplete.style.display = 'block';
+    function typeNextLine() {
+        if (currentLine >= bootMessages.length) {
+            showRunnerLogo();
+            return;
+        }
         
-        // Обработчик клика для продолжения
-        const continueHandler = () => {
+        const lineElement = document.getElementById(`boot-line-${currentLine + 1}`);
+        const message = bootMessages[currentLine];
+        
+        // Определяем стиль строки
+        if (message.includes('OK')) {
+            lineElement.className = 'boot-line success';
+        } else if (message.includes('WELCOME')) {
+            lineElement.className = 'boot-line yellow';
+        } else {
+            lineElement.className = 'boot-line';
+        }
+        
+        typeText(lineElement, message, () => {
+            currentLine++;
+            setTimeout(typeNextLine, 500);
+        });
+    }
+    
+    // Начинаем через секунду
+    setTimeout(typeNextLine, 1000);
+}
+
+function typeText(element, text, callback) {
+    element.textContent = '';
+    let i = 0;
+    
+    const typeInterval = setInterval(() => {
+        audioManager.type();
+        element.textContent += text[i];
+        i++;
+        
+        if (i >= text.length) {
+            clearInterval(typeInterval);
+            if (callback) setTimeout(callback, 200);
+        }
+    }, 50);
+}
+
+function showRunnerLogo() {
+    document.getElementById('runner-logo-section').style.display = 'block';
+    
+    setTimeout(() => {
+        document.getElementById('continue-section').style.display = 'block';
+        
+        // Обработчик продолжения
+        const continueHandler = (e) => {
+            e.preventDefault();
+            audioManager.beep();
             hideAllScreens();
             document.getElementById('main-screen').classList.add('active');
             showSection('stat');
-            
-            // Удаляем обработчики
-            bootComplete.removeEventListener('click', continueHandler);
-            bootComplete.removeEventListener('touchstart', continueHandler);
         };
         
-        bootComplete.addEventListener('click', continueHandler);
-        bootComplete.addEventListener('touchstart', continueHandler);
+        const continueSection = document.getElementById('continue-section');
+        continueSection.addEventListener('click', continueHandler);
+        continueSection.addEventListener('touchstart', continueHandler);
         
-    }, 4000);
+        // Также обработчик для всего документа
+        document.addEventListener('keydown', continueHandler, { once: true });
+        
+    }, 2000);
 }
 
 function hideAllScreens() {
@@ -229,89 +307,90 @@ function hideAllScreens() {
     });
 }
 
-// Настройка всех обработчиков событий
-function setupEventHandlers() {
-    // Навигация
+function setupAllEventHandlers() {
     setupNavigation();
-    
-    // Игровые обработчики
     setupGameHandlers();
-    
-    // Обработчики мультиплеера
     setupMultiplayerHandlers();
-    
-    // Общие улучшения UX
     enhanceUserExperience();
 }
 
 function setupNavigation() {
+    // Исправленная навигация
     const menuToggle = document.getElementById('menu-toggle');
     const closeMenuBtn = document.getElementById('close-menu');
-    const navButtons = document.querySelectorAll('.nav-btn');
     
-    // Меню - с поддержкой touch событий
-    menuToggle.addEventListener('click', handleMenuToggle);
-    menuToggle.addEventListener('touchstart', handleMenuToggle);
+    // Обработчик меню с правильной логикой
+    function toggleMenu(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        audioManager.beep();
+        
+        if (menuOpen) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    }
     
-    closeMenuBtn.addEventListener('click', handleMenuClose);
-    closeMenuBtn.addEventListener('touchstart', handleMenuClose);
+    function closeMenuHandler(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        audioManager.beep();
+        closeMenu();
+    }
+    
+    // Удаляем старые обработчики и добавляем новые
+    menuToggle.removeEventListener('click', toggleMenu);
+    menuToggle.removeEventListener('touchstart', toggleMenu);
+    closeMenuBtn.removeEventListener('click', closeMenuHandler);
+    closeMenuBtn.removeEventListener('touchstart', closeMenuHandler);
+    
+    menuToggle.addEventListener('click', toggleMenu);
+    menuToggle.addEventListener('touchstart', toggleMenu);
+    closeMenuBtn.addEventListener('click', closeMenuHandler);
+    closeMenuBtn.addEventListener('touchstart', closeMenuHandler);
     
     // Навигационные кнопки
-    navButtons.forEach(button => {
-        const handler = function(e) {
+    document.querySelectorAll('.nav-btn').forEach(button => {
+        function navHandler(e) {
             e.preventDefault();
             e.stopPropagation();
-            audioManager.click();
-            const section = this.getAttribute('data-section');
+            audioManager.beep();
+            
+            const section = button.getAttribute('data-section');
             showSection(section);
             closeMenu();
-        };
+        }
         
-        button.addEventListener('click', handler);
-        button.addEventListener('touchstart', handler);
+        button.removeEventListener('click', navHandler);
+        button.removeEventListener('touchstart', navHandler);
+        button.addEventListener('click', navHandler);
+        button.addEventListener('touchstart', navHandler);
     });
 }
 
-function handleMenuToggle(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    audioManager.click();
-    
-    if (menuOpen) {
-        closeMenu();
-    } else {
-        openMenu();
-    }
-}
-
-function handleMenuClose(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    audioManager.click();
-    closeMenu();
-}
-
 function openMenu() {
-    const pipboyNav = document.getElementById('pipboy-nav');
-    const menuToggle = document.getElementById('menu-toggle');
+    const nav = document.getElementById('pipboy-nav');
+    const toggle = document.getElementById('menu-toggle');
     
-    pipboyNav.classList.add('open');
-    menuToggle.style.display = 'none';
+    nav.classList.add('open');
+    toggle.style.display = 'none';
     menuOpen = true;
 }
 
 function closeMenu() {
-    const pipboyNav = document.getElementById('pipboy-nav');
-    const menuToggle = document.getElementById('menu-toggle');
+    const nav = document.getElementById('pipboy-nav');
+    const toggle = document.getElementById('menu-toggle');
     
-    pipboyNav.classList.remove('open');
-    menuToggle.style.display = 'flex';
+    nav.classList.remove('open');
+    toggle.style.display = 'flex';
     menuOpen = false;
 }
 
 function showSection(section) {
-    const allSections = document.querySelectorAll('.section-content');
-    allSections.forEach(sec => sec.classList.remove('active'));
+    document.querySelectorAll('.section-content').forEach(sec => {
+        sec.classList.remove('active');
+    });
     
     document.getElementById('default-content').style.display = 'none';
     
@@ -324,44 +403,57 @@ function showSection(section) {
 function setupGameHandlers() {
     // Запуск игры
     const gameBtn = document.getElementById('terminal-hack-btn');
-    const clickHandler = function(e) {
+    function gameHandler(e) {
         e.preventDefault();
-        audioManager.click();
+        audioManager.beep();
         showGameScreen();
-    };
+    }
     
-    gameBtn.addEventListener('click', clickHandler);
-    gameBtn.addEventListener('touchstart', clickHandler);
+    gameBtn.removeEventListener('click', gameHandler);
+    gameBtn.removeEventListener('touchstart', gameHandler);
+    gameBtn.addEventListener('click', gameHandler);
+    gameBtn.addEventListener('touchstart', gameHandler);
 
-    // Возврат в аркаду
+    // Возврат
     const backBtn = document.getElementById('back-to-arcade');
-    const backHandler = function(e) {
+    function backHandler(e) {
         e.preventDefault();
-        audioManager.click();
+        audioManager.beep();
         resetGame();
         hideAllScreens();
         document.getElementById('main-screen').classList.add('active');
         showSection('gameboy');
-    };
+    }
     
+    backBtn.removeEventListener('click', backHandler);
+    backBtn.removeEventListener('touchstart', backHandler);
     backBtn.addEventListener('click', backHandler);
     backBtn.addEventListener('touchstart', backHandler);
 
-    // Выбор режимов
+    // Режимы
+    setupModeHandlers();
+}
+
+function setupModeHandlers() {
     const soloBtn = document.getElementById('solo-mode-btn');
     const mpBtn = document.getElementById('multiplayer-mode-btn');
     
-    const soloHandler = function(e) {
+    function soloHandler(e) {
         e.preventDefault();
-        audioManager.click();
+        audioManager.beep();
         selectGameMode('solo');
-    };
+    }
     
-    const mpHandler = function(e) {
+    function mpHandler(e) {
         e.preventDefault();
-        audioManager.click();
+        audioManager.beep();
         selectGameMode('multiplayer');
-    };
+    }
+    
+    soloBtn.removeEventListener('click', soloHandler);
+    soloBtn.removeEventListener('touchstart', soloHandler);
+    mpBtn.removeEventListener('click', mpHandler);
+    mpBtn.removeEventListener('touchstart', mpHandler);
     
     soloBtn.addEventListener('click', soloHandler);
     soloBtn.addEventListener('touchstart', soloHandler);
@@ -370,28 +462,26 @@ function setupGameHandlers() {
 }
 
 function setupMultiplayerHandlers() {
-    // Выбор валюты
-    document.querySelectorAll('.currency-btn').forEach(btn => {
-        const handler = function(e) {
+    // Валюта
+    document.querySelectorAll('.crypto-option').forEach(btn => {
+        function handler(e) {
             e.preventDefault();
-            audioManager.click();
+            audioManager.beep();
             
-            document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+            document.querySelectorAll('.crypto-option').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            selectedCurrency = this.getAttribute('data-currency');
+            selectedCurrency = btn.getAttribute('data-currency');
             document.getElementById('currency-display').textContent = selectedCurrency;
-        };
+        }
         
+        btn.removeEventListener('click', handler);
+        btn.removeEventListener('touchstart', handler);
         btn.addEventListener('click', handler);
         btn.addEventListener('touchstart', handler);
     });
 
-    // Остальные кнопки мультиплеера
-    setupMultiplayerButtons();
-}
-
-function setupMultiplayerButtons() {
+    // Кнопки мультиплеера
     const buttons = [
         { id: 'create-game', handler: createMultiplayerGame },
         { id: 'find-game', handler: showAvailableGames },
@@ -402,12 +492,14 @@ function setupMultiplayerButtons() {
     buttons.forEach(({ id, handler }) => {
         const element = document.getElementById(id);
         if (element) {
-            const eventHandler = function(e) {
+            function eventHandler(e) {
                 e.preventDefault();
-                audioManager.click();
+                audioManager.beep();
                 handler();
-            };
+            }
             
+            element.removeEventListener('click', eventHandler);
+            element.removeEventListener('touchstart', eventHandler);
             element.addEventListener('click', eventHandler);
             element.addEventListener('touchstart', eventHandler);
         }
@@ -418,6 +510,8 @@ function showGameScreen() {
     hideAllScreens();
     document.getElementById('game-screen').classList.add('active');
     showModeSelector();
+    gameScore = 0;
+    updateScoreDisplay();
 }
 
 function showModeSelector() {
@@ -428,11 +522,11 @@ function showModeSelector() {
 }
 
 function selectGameMode(mode) {
+    isMultiplayer = mode === 'multiplayer';
+    
     if (mode === 'solo') {
-        isMultiplayer = false;
         startGameSession();
     } else {
-        isMultiplayer = true;
         showMultiplayerSetup();
     }
 }
@@ -440,7 +534,6 @@ function selectGameMode(mode) {
 function showMultiplayerSetup() {
     document.getElementById('mode-selector').style.display = 'none';
     document.getElementById('multiplayer-setup').style.display = 'block';
-    document.getElementById('available-games').style.display = 'none';
 }
 
 function createMultiplayerGame() {
@@ -458,23 +551,14 @@ function createMultiplayerGame() {
     }
 
     currentStake = { amount, currency: selectedCurrency };
-    const game = multiplayerManager.createGame(currentStake);
+    multiplayerManager.createGame(currentStake);
     
     showWaitingLobby();
     multiplayerManager.simulateOpponent();
 }
 
 function showAvailableGames() {
-    // Показываем список доступных игр (пока заглушка)
-    const gamesContainer = document.getElementById('games-container');
-    gamesContainer.innerHTML = `
-        <div class="game-listing" style="text-align: center; padding: 20px; color: var(--pipboy-green);">
-            <p>No games available at the moment</p>
-            <p style="font-size: 0.7rem; margin-top: 10px;">Try creating your own game!</p>
-        </div>
-    `;
-    
-    document.getElementById('available-games').style.display = 'block';
+    alert('No games available.\nCreate your own game!');
 }
 
 function showWaitingLobby() {
@@ -496,60 +580,62 @@ function startGameSession() {
     document.getElementById('waiting-lobby').style.display = 'none';
     document.getElementById('gaming-area').style.display = 'flex';
     
-    initializeGameSession();
+    initializeGame();
 }
 
-function initializeGameSession() {
+function initializeGame() {
     gameActive = true;
     attemptsLeft = 4;
     timeLeft = 300;
+    turnTimeLeft = 30;
+    playerTurn = true;
     
     // Настройка интерфейса
-    document.getElementById('mode-display').textContent = isMultiplayer ? 'MULTIPLAYER' : 'SOLO MODE';
+    document.getElementById('mode-badge').textContent = isMultiplayer ? 'VERSUS' : 'SOLO';
     
     if (isMultiplayer) {
-        document.getElementById('opponent-status').style.display = 'flex';
-        document.getElementById('stake-display').style.display = 'block';
-        document.getElementById('stake-display').textContent = `STAKE: ${currentStake.amount} ${currentStake.currency}`;
-        document.getElementById('opponent-name').textContent = multiplayerManager.currentGame?.opponentName || 'OPPONENT';
+        document.getElementById('opponent-side').style.display = 'flex';
+        document.getElementById('stake-info').style.display = 'block';
+        document.getElementById('stake-info').textContent = `${currentStake.amount} ${currentStake.currency}`;
+        document.getElementById('opponent-label').textContent = multiplayerManager.currentGame?.opponentName || 'OPPONENT';
     } else {
-        document.getElementById('opponent-status').style.display = 'none';
-        document.getElementById('stake-display').style.display = 'none';
+        document.getElementById('opponent-side').style.display = 'none';
+        document.getElementById('stake-info').style.display = 'none';
     }
     
-    // Сброс прогресса
-    updatePlayerProgress(0);
-    updateOpponentProgress(0);
-    updateAttempts(4);
+    // Сброс статусов
+    updatePlayerStatus('READY');
+    updateOpponentStatus('READY');
+    updateAttempts(4, 'player');
+    updateAttempts(4, 'opponent');
+    updateTurnIndicator();
     
-    // Генерируем поле
+    // Генерируем игру
     generateGameField();
+    generateHintBrackets();
     
-    // Запускаем таймер
-    startTimer();
+    // Запускаем таймеры
+    startMainTimer();
+    startTurnTimer();
     
-    // Очищаем и инициализируем лог
+    // Очищаем лог
     clearLog();
-    addLogEntry('KILOTON Terminal access initiated', 'system');
-    addLogEntry(`Password database loaded: ${gameWords.length} entries`, 'system');
-    addLogEntry('Select password to attempt access', 'system');
-    
-    // Запускаем симуляцию оппонента
-    if (isMultiplayer) {
-        multiplayerManager.simulateOpponentActions();
-    }
+    addLogEntry('RUNNER Terminal access initiated', 'system');
+    addLogEntry(`Password database: ${gameWords.length} entries loaded`, 'system');
+    addLogEntry(isMultiplayer ? 'Multiplayer duel started' : 'Solo practice mode', 'system');
+    addLogEntry('Your turn - select password', 'success');
 }
 
 function generateGameField() {
     const wordLists = {
-        6: ['KILOTON', 'ACCESS', 'SECURE', 'MATRIX', 'CIPHER', 'BINARY', 'SYNTAX', 'VECTOR', 'KERNEL', 'BUFFER'],
+        6: ['RUNNER', 'ACCESS', 'SECURE', 'MATRIX', 'CIPHER', 'BINARY', 'SYNTAX', 'VECTOR', 'KERNEL', 'BUFFER'],
         7: ['COMMAND', 'NETWORK', 'PROGRAM', 'PROCESS', 'CONNECT', 'SESSION', 'EXECUTE', 'MACHINE', 'CONTROL', 'SCANNER'],
         8: ['PASSWORD', 'SECURITY', 'DATABASE', 'TERMINAL', 'PROTOCOL', 'FUNCTION', 'VARIABLE', 'COMPILER', 'OPERATOR', 'REGISTRY']
     };
     
     const wordLength = [6, 7, 8][Math.floor(Math.random() * 3)];
     const availableWords = [...wordLists[wordLength]];
-    const numWords = 5 + Math.floor(Math.random() * 3);
+    const numWords = 6;
     
     gameWords = [];
     for (let i = 0; i < numWords; i++) {
@@ -560,140 +646,242 @@ function generateGameField() {
     correctPassword = gameWords[Math.floor(Math.random() * gameWords.length)];
     console.log("Correct password:", correctPassword);
     
-    const fillerChars = '!@#$%^&*()_+-=[]{}|;:,.<>?~';
-    const leftPanel = document.getElementById('left-panel');
-    const rightPanel = document.getElementById('right-panel');
+    const passwordGrid = document.getElementById('password-grid');
+    passwordGrid.innerHTML = gameWords.map(word => 
+        `<div class="password-item" data-word="${word}">${word}</div>`
+    ).join('');
     
-    leftPanel.innerHTML = '';
-    rightPanel.innerHTML = '';
-    
-    let currentWordIndex = 0;
-    let leftContent = '';
-    let rightContent = '';
-    
-    for (let i = 0; i < 16; i++) {
-        const hexAddress = '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-        
-        let lineContent = '';
-        let charsInLine = 0;
-        const maxCharsPerLine = 12;
-        
-        while (charsInLine < maxCharsPerLine) {
-            if (currentWordIndex < gameWords.length && Math.random() < 0.3 && (maxCharsPerLine - charsInLine) >= gameWords[currentWordIndex].length) {
-                lineContent += `<span class="terminal-word" data-word="${gameWords[currentWordIndex]}">${gameWords[currentWordIndex]}</span>`;
-                charsInLine += gameWords[currentWordIndex].length;
-                currentWordIndex++;
-            } else if (Math.random() < 0.15) {
-                const bracketContent = fillerChars.charAt(Math.floor(Math.random() * fillerChars.length));
-                lineContent += `<span class="terminal-bracket" data-bracket="true">[${bracketContent}]</span>`;
-                charsInLine += 3;
-            } else {
-                const randomChar = fillerChars.charAt(Math.floor(Math.random() * fillerChars.length));
-                lineContent += `<span class="terminal-symbol">${randomChar}</span>`;
-                charsInLine++;
-            }
-        }
-        
-        const fullLine = `<div class="terminal-line">
-            <span class="hex-address">${hexAddress}</span>
-            <span class="terminal-content">${lineContent}</span>
-        </div>`;
-        
-        if (i % 2 === 0) {
-            leftContent += fullLine;
-        } else {
-            rightContent += fullLine;
-        }
-    }
-    
-    leftPanel.innerHTML = leftContent;
-    rightPanel.innerHTML = rightContent;
-    
-    setupTerminalHandlers();
+    setupPasswordHandlers();
 }
 
-function setupTerminalHandlers() {
-    document.querySelectorAll('.terminal-word').forEach(word => {
-        const handler = function(e) {
-            e.preventDefault();
-            if (!gameActive) return;
-            
-            audioManager.click();
-            const selectedWord = this.getAttribute('data-word');
-            attemptPassword(selectedWord, this);
-        };
-        
-        word.addEventListener('click', handler);
-        word.addEventListener('touchstart', handler);
-    });
+function generateHintBrackets() {
+    const bracketContainer = document.getElementById('bracket-container');
+    const brackets = ['( )', '[ ]', '{ }', '< >'];
     
-    document.querySelectorAll('.terminal-bracket').forEach(bracket => {
-        const handler = function(e) {
+    bracketContainer.innerHTML = brackets.map((bracket, index) => 
+        `<div class="hint-bracket" data-bracket="${index}">${bracket}</div>`
+    ).join('');
+    
+    setupBracketHandlers();
+}
+
+function setupPasswordHandlers() {
+    document.querySelectorAll('.password-item').forEach(item => {
+        function handler(e) {
             e.preventDefault();
-            if (!gameActive || this.classList.contains('used')) return;
+            if (!gameActive || !playerTurn) return;
             
-            audioManager.click();
-            
-            if (Math.random() < 0.4 && attemptsLeft < 4) {
-                attemptsLeft = Math.min(4, attemptsLeft + 1);
-                updateAttempts(attemptsLeft);
-                addLogEntry('Dud removed - attempt restored', 'success');
-                this.style.backgroundColor = 'rgba(0, 255, 0, 0.3)';
-            } else {
-                addLogEntry('No effect', 'error');
-                this.style.backgroundColor = 'rgba(255, 102, 0, 0.3)';
-            }
-            
-            this.classList.add('used');
-        };
+            audioManager.beep();
+            const word = item.getAttribute('data-word');
+            attemptPassword(word, item);
+        }
         
+        item.removeEventListener('click', handler);
+        item.removeEventListener('touchstart', handler);
+        item.addEventListener('click', handler);
+        item.addEventListener('touchstart', handler);
+    });
+}
+
+function setupBracketHandlers() {
+    document.querySelectorAll('.hint-bracket').forEach(bracket => {
+        function handler(e) {
+            e.preventDefault();
+            if (!gameActive || !playerTurn || bracket.classList.contains('used')) return;
+            
+            audioManager.beep();
+            useBracketHint(bracket);
+        }
+        
+        bracket.removeEventListener('click', handler);
+        bracket.removeEventListener('touchstart', handler);
         bracket.addEventListener('click', handler);
         bracket.addEventListener('touchstart', handler);
     });
 }
 
 function attemptPassword(selectedWord, element) {
-    if (!gameActive) return;
+    if (!gameActive || !playerTurn) return;
     
+    playerTurn = false;
     element.classList.add('selected');
-    updatePlayerProgress(60);
+    updatePlayerStatus('CHECKING...');
+    updateTurnIndicator();
     
-    addLogEntry(`Password attempt: ${selectedWord}`, 'normal');
+    // Отключаем все пароли
+    document.querySelectorAll('.password-item').forEach(item => {
+        item.classList.add('disabled');
+    });
+    
+    addLogEntry(`You selected: ${selectedWord}`, 'normal');
+    document.getElementById('last-attempt').textContent = `Attempting: ${selectedWord}`;
     
     setTimeout(() => {
         if (selectedWord === correctPassword) {
+            element.classList.remove('selected');
             element.classList.add('correct');
-            addLogEntry('SUCCESS: Access granted!', 'success');
-            updatePlayerProgress(100);
+            addLogEntry('SUCCESS: Password correct!', 'success');
+            updatePlayerStatus('ACCESS GRANTED');
+            document.getElementById('hint-text').textContent = 'Terminal access granted!';
+            gameScore += 100;
+            updateScoreDisplay();
             endGame(true);
         } else {
+            element.classList.remove('selected');
             element.classList.add('incorrect');
             attemptsLeft--;
-            updateAttempts(attemptsLeft);
-            updatePlayerProgress(80);
+            updateAttempts(attemptsLeft, 'player');
+            updatePlayerStatus('ACCESS DENIED');
             
             const matches = getMatchingPositions(selectedWord, correctPassword);
             addLogEntry(`Access denied - Likeness: ${matches}`, 'error');
+            document.getElementById('hint-text').textContent = `${matches} characters match correct password`;
             
             if (attemptsLeft <= 0) {
-                addLogEntry('Terminal locked - all attempts failed', 'error');
+                addLogEntry('All attempts failed - terminal locked', 'error');
                 endGame(false);
+            } else {
+                // Включаем пароли обратно
+                setTimeout(() => {
+                    document.querySelectorAll('.password-item').forEach(item => {
+                        if (!item.classList.contains('correct') && !item.classList.contains('incorrect')) {
+                            item.classList.remove('disabled');
+                        }
+                    });
+                    
+                    if (isMultiplayer) {
+                        playerTurn = false;
+                        updateTurnIndicator();
+                        updateOpponentStatus('THINKING...');
+                        addLogEntry('Opponent\'s turn', 'system');
+                        multiplayerManager.simulateOpponentTurn();
+                    } else {
+                        playerTurn = true;
+                        updateTurnIndicator();
+                        updatePlayerStatus('READY');
+                        startTurnTimer();
+                    }
+                }, 2000);
             }
         }
+    }, 1000);
+}
+
+function useBracketHint(bracket) {
+    bracket.classList.add('used');
+    
+    if (Math.random() < 0.5 && attemptsLeft < 4) {
+        attemptsLeft++;
+        updateAttempts(attemptsLeft, 'player');
+        addLogEntry('Hint found: Attempt restored', 'success');
+        bracket.style.background = 'rgba(0, 255, 0, 0.3)';
+        document.getElementById('hint-text').textContent = 'Dud removed! Attempt restored.';
+    } else {
+        addLogEntry('Hint found: No effect', 'error');
+        bracket.style.background = 'rgba(255, 102, 0, 0.3)';
+        document.getElementById('hint-text').textContent = 'No useful data found.';
+    }
+}
+
+function updateTurnIndicator() {
+    const turnText = document.querySelector('.turn-text');
+    
+    if (!isMultiplayer) {
+        turnText.textContent = 'YOUR TURN';
+        turnText.style.color = 'var(--pipboy-yellow)';
+    } else {
+        if (playerTurn) {
+            turnText.textContent = 'YOUR TURN';
+            turnText.style.color = 'var(--pipboy-yellow)';
+        } else {
+            turnText.textContent = 'OPPONENT\'S TURN';
+            turnText.style.color = '#ff6600';
+        }
+    }
+}
+
+function startTurnTimer() {
+    if (turnTimer) clearInterval(turnTimer);
+    
+    turnTimeLeft = 30;
+    
+    turnTimer = setInterval(() => {
+        turnTimeLeft--;
+        document.getElementById('turn-timer').textContent = `${turnTimeLeft}s`;
         
-        setTimeout(() => {
-            element.classList.remove('selected');
-        }, 500);
-    }, 500);
+        if (turnTimeLeft <= 10) {
+            document.getElementById('turn-timer').classList.add('warning');
+        }
+        
+        if (turnTimeLeft <= 0) {
+            if (playerTurn) {
+                // Время истекло - случайный выбор
+                const availableWords = document.querySelectorAll('.password-item:not(.disabled):not(.correct):not(.incorrect)');
+                if (availableWords.length > 0) {
+                    const randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+                    const word = randomWord.getAttribute('data-word');
+                    attemptPassword(word, randomWord);
+                }
+            }
+            clearInterval(turnTimer);
+        }
+    }, 1000);
+}
+
+function startMainTimer() {
+    if (gameTimer) clearInterval(gameTimer);
+    
+    gameTimer = setInterval(() => {
+        timeLeft--;
+        updateMainTimerDisplay();
+        
+        if (timeLeft <= 0) {
+            addLogEntry('Session timeout - access denied', 'error');
+            endGame(false);
+        }
+    }, 1000);
+}
+
+function updateMainTimerDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    document.getElementById('main-timer').textContent = display;
+}
+
+function updatePlayerStatus(status) {
+    document.getElementById('player-status').textContent = status;
+}
+
+function updateOpponentStatus(status) {
+    if (isMultiplayer) {
+        document.getElementById('opponent-status').textContent = status;
+    }
+}
+
+function updateAttempts(attempts, player) {
+    let squares = '';
+    for (let i = 0; i < 4; i++) {
+        squares += i < attempts ? '[X]' : '[ ]';
+    }
+    
+    const elementId = player === 'player' ? 'player-attempts' : 'opponent-attempts';
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = squares;
+    }
+}
+
+function updateScoreDisplay() {
+    document.getElementById('score-display').textContent = `SCORE: ${gameScore}`;
 }
 
 function endGame(won) {
     gameActive = false;
+    playerTurn = false;
     
-    if (gameTimer) {
-        clearInterval(gameTimer);
-        gameTimer = null;
-    }
+    if (gameTimer) clearInterval(gameTimer);
+    if (turnTimer) clearInterval(turnTimer);
     
     multiplayerManager.stopSimulation();
     
@@ -712,8 +900,9 @@ function showGameResult(won) {
             }
             userData.wins++;
             userData.xp += 50;
+            gameScore += 200;
             
-            alert(`🎉 VICTORY! 🎉\n\nYou won ${currentStake.amount} ${currentStake.currency}!\n+50 XP\n\nNew balance: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
+            alert(`[VICTORY!]\n\nYou won ${currentStake.amount} ${currentStake.currency}!\n+50 XP | Score: ${gameScore}\n\nNew balance: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
         } else {
             if (currentStake.currency === 'TON') {
                 userData.tonBalance = Math.max(0, userData.tonBalance - currentStake.amount);
@@ -723,15 +912,16 @@ function showGameResult(won) {
             userData.losses++;
             userData.xp += 10;
             
-            alert(`💀 DEFEAT! 💀\n\nYou lost ${currentStake.amount} ${currentStake.currency}\n+10 XP\n\nRemaining: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
+            alert(`[DEFEAT!]\n\nYou lost ${currentStake.amount} ${currentStake.currency}\n+10 XP | Score: ${gameScore}\n\nRemaining: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
         }
     } else {
         if (won) {
             userData.xp += 25;
-            alert('🎉 ACCESS GRANTED! 🎉\n\n+25 XP\nTerminal successfully hacked!');
+            gameScore += 100;
+            alert(`[ACCESS GRANTED!]\n\n+25 XP | Score: ${gameScore}\nTerminal successfully hacked!`);
         } else {
             userData.xp += 5;
-            alert('❌ ACCESS DENIED ❌\n\nTerminal locked.\n\n+5 XP for effort');
+            alert(`[ACCESS DENIED]\n\n+5 XP | Score: ${gameScore}\nTry again!`);
         }
     }
     
@@ -747,103 +937,13 @@ function resetGame() {
     correctPassword = '';
     attemptsLeft = 4;
     timeLeft = 300;
-    selectedCurrency = 'TON';
+    playerTurn = true;
     
-    if (gameTimer) {
-        clearInterval(gameTimer);
-        gameTimer = null;
-    }
+    if (gameTimer) clearInterval(gameTimer);
+    if (turnTimer) clearInterval(turnTimer);
     
     multiplayerManager.stopSimulation();
     multiplayerManager.currentGame = null;
-}
-
-function startTimer() {
-    if (gameTimer) clearInterval(gameTimer);
-    
-    gameTimer = setInterval(() => {
-        if (!gameActive) {
-            clearInterval(gameTimer);
-            return;
-        }
-        
-        timeLeft--;
-        updateTimerDisplay();
-        
-        if (timeLeft <= 0) {
-            addLogEntry('Time expired - access denied', 'error');
-            endGame(false);
-        }
-    }, 1000);
-}
-
-function updateTimerDisplay() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
-    const timerElement = document.getElementById('terminal-timer');
-    if (timerElement) {
-        timerElement.textContent = display;
-        
-        if (timeLeft <= 30) {
-            timerElement.className = 'terminal-timer critical';
-        } else if (timeLeft <= 60) {
-            timerElement.className = 'terminal-timer warning';
-        } else {
-            timerElement.className = 'terminal-timer';
-        }
-    }
-}
-
-function updatePlayerProgress(percentage) {
-    const fillElement = document.getElementById('your-progress-fill');
-    if (fillElement) {
-        fillElement.style.width = percentage + '%';
-    }
-    
-    let status = 'Ready';
-    if (percentage >= 100) status = 'Complete';
-    else if (percentage >= 80) status = 'Finalizing';
-    else if (percentage >= 60) status = 'Processing';
-    else if (percentage >= 30) status = 'Working';
-    
-    const textElement = document.querySelector('#your-progress .progress-text');
-    if (textElement) {
-        textElement.textContent = status;
-    }
-}
-
-function updateOpponentProgress(percentage) {
-    if (!isMultiplayer) return;
-    
-    const fillElement = document.getElementById('opponent-progress-fill');
-    if (fillElement) {
-        fillElement.style.width = percentage + '%';
-    }
-    
-    let status = 'Ready';
-    if (percentage >= 100) status = 'Complete';
-    else if (percentage >= 80) status = 'Finalizing';
-    else if (percentage >= 60) status = 'Processing';
-    else if (percentage >= 30) status = 'Working';
-    
-    const textElement = document.querySelector('#opponent-progress .progress-text');
-    if (textElement) {
-        textElement.textContent = status;
-    }
-}
-
-function updateAttempts(attempts) {
-    let squares = '';
-    for (let i = 0; i < 4; i++) {
-        squares += i < attempts ? '■ ' : '□ ';
-    }
-    
-    const attemptsElement = document.getElementById('your-attempts');
-    if (attemptsElement) {
-        attemptsElement.textContent = squares.trim();
-    }
 }
 
 function getMatchingPositions(word1, word2) {
@@ -860,73 +960,54 @@ function getMatchingPositions(word1, word2) {
 }
 
 function clearLog() {
-    const logContent = document.getElementById('log-content');
-    if (logContent) {
-        logContent.innerHTML = '';
+    const logEntries = document.getElementById('log-entries');
+    if (logEntries) {
+        logEntries.innerHTML = '';
     }
 }
 
 function addLogEntry(message, type = 'normal') {
-    const logContent = document.getElementById('log-content');
-    if (!logContent) return;
+    const logEntries = document.getElementById('log-entries');
+    if (!logEntries) return;
     
     const entry = document.createElement('div');
     entry.className = `log-entry ${type}`;
     entry.textContent = message;
     
-    logContent.appendChild(entry);
-    logContent.scrollTop = logContent.scrollHeight;
+    logEntries.appendChild(entry);
+    logEntries.scrollTop = logEntries.scrollHeight;
     
-    if (logContent.children.length > 15) {
-        logContent.removeChild(logContent.children[0]);
+    if (logEntries.children.length > 12) {
+        logEntries.removeChild(logEntries.children[0]);
     }
 }
 
 function enhanceUserExperience() {
     const supportsVibration = 'vibrate' in navigator;
     
-    // Добавляем touch feedback
-    document.querySelectorAll('button').forEach(button => {
-        button.addEventListener('touchstart', function() {
+    // Touch feedback
+    document.querySelectorAll('button, .password-item, .hint-bracket').forEach(element => {
+        element.addEventListener('touchstart', function() {
             if (supportsVibration) {
-                navigator.vibrate(10);
-            }
-            this.style.transform = 'scale(0.95)';
-        });
-        
-        button.addEventListener('touchend', function() {
-            this.style.transform = 'scale(1)';
-        });
-        
-        button.addEventListener('click', function() {
-            if (supportsVibration) {
-                navigator.vibrate(10);
+                navigator.vibrate(8);
             }
         });
     });
     
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (document.getElementById('game-screen').classList.contains('active')) {
-                resetGame();
-                hideAllScreens();
-                document.getElementById('main-screen').classList.add('active');
-                showSection('gameboy');
-            }
+        if (e.key === 'Escape' && document.getElementById('game-screen').classList.contains('active')) {
+            resetGame();
+            hideAllScreens();
+            document.getElementById('main-screen').classList.add('active');
+            showSection('gameboy');
         }
     });
     
-    // Предотвращаем zoom на iOS
-    document.addEventListener('touchstart', function(e) {
-        if (e.touches.length > 1) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-    
+    // Предотвращаем случайный zoom
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
-        const now = (new Date()).getTime();
+        const now = Date.now();
         if (now - lastTouchEnd <= 300) {
             e.preventDefault();
         }
@@ -934,32 +1015,15 @@ function enhanceUserExperience() {
     }, false);
 }
 
-// Инициализация при загрузке
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("KILOTON DOM loaded");
-    
-    // Добавляем небольшую задержку для мобильных браузеров
-    setTimeout(() => {
-        initApp();
-    }, 100);
+    console.log("RUNNER DOM loaded");
+    initApp();
 });
 
-// Дополнительная инициализация для мобильных
+// Дополнительная инициализация для надежности
 window.addEventListener('load', function() {
-    console.log("KILOTON window loaded");
-    
-    // Убеждаемся что все работает на мобильных
-    setTimeout(() => {
-        if (!userData) {
-            console.log("Reinitializing...");
-            initApp();
-        }
-    }, 500);
-});
-
-// Обработка ориентации экрана
-window.addEventListener('orientationchange', function() {
-    setTimeout(() => {
-        window.scrollTo(0, 0);
-    }, 100);
+    if (!userData) {
+        setTimeout(initApp, 200);
+    }
 });

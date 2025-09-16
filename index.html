@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>KILOTON - TERMINAL INTERFACE</title>
+    <title>RUNNER - KILOTON TERMINAL</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.cdnfonts.com/css/monofonto" rel="stylesheet">
@@ -13,52 +13,48 @@
         <!-- Верхняя рамка -->
         <div class="pipboy-frame top-frame">
             <div class="frame-details">
-                <span class="frame-text">KILOTON TERMINAL KT-2077 v2.1</span>
+                <span class="frame-text">RUNNER TERMINAL RT-2077 v2.1</span>
                 <span class="frame-text">BLOCKCHAIN-POWERED GAMING SYSTEM</span>
             </div>
         </div>
         
         <!-- Основной экран -->
         <div class="pipboy-screen">
-            <!-- Приветственный экран -->
+            <!-- Улучшенный ретро приветственный экран -->
             <div id="welcome-screen" class="screen active">
-                <div class="welcome-content">
-                    <div class="terminal-boot">
-                        <div class="boot-line">KILOTON INDUSTRIES (TM)</div>
-                        <div class="boot-line">TERMINAL INTERFACE v2.1</div>
-                        <div class="boot-line">COPYRIGHT 2024-2077</div>
+                <div class="retro-terminal">
+                    <div class="terminal-header">
+                        <div class="header-line">KILOTON INDUSTRIES (TM) TERMLINK</div>
+                        <div class="header-line">COPYRIGHT 2024-2077</div>
+                        <div class="header-line">ALL RIGHTS RESERVED</div>
+                        <div class="separator-line">=====================================</div>
                     </div>
                     
-                    <div class="logo-section">
-                        <h1 class="project-logo">KILOTON</h1>
-                        <div class="logo-tagline">BLOCKCHAIN GAMING ECOSYSTEM</div>
+                    <div class="boot-sequence" id="boot-sequence">
+                        <div class="boot-line" id="boot-line-1"></div>
+                        <div class="boot-line" id="boot-line-2"></div>
+                        <div class="boot-line" id="boot-line-3"></div>
+                        <div class="boot-line" id="boot-line-4"></div>
+                        <div class="boot-line" id="boot-line-5"></div>
+                        <div class="boot-line" id="boot-line-6"></div>
+                        <div class="boot-line" id="boot-line-7"></div>
+                        <div class="boot-line" id="boot-line-8"></div>
                     </div>
                     
-                    <div class="system-check">
-                        <div class="check-item">
-                            <span class="check-label">BLOCKCHAIN CONNECTION:</span>
-                            <span class="check-status">TON NETWORK ✓</span>
+                    <div class="runner-logo-section" id="runner-logo-section" style="display: none;">
+                        <div class="ascii-logo">
+                        ____  _   _ _   _ _   _ _____ ____  
+                        |  _ \| | | | \ | | \ | | ____|  _ \ 
+                        | |_) | | | |  \| |  \| |  _| | |_) |
+                        |  _ &lt;| |_| | |\  | |\  | |___| _ &lt; 
+                        |_| \_\\___/|_| \_|_| \_|_____|_| \_\
                         </div>
-                        <div class="check-item">
-                            <span class="check-label">TSAR TOKEN:</span>
-                            <span class="check-status">ACTIVE ✓</span>
-                        </div>
-                        <div class="check-item">
-                            <span class="check-label">GAMING PROTOCOLS:</span>
-                            <span class="check-status">LOADED ✓</span>
-                        </div>
+                        <div class="logo-subtitle">BLOCKCHAIN GAMING TERMINAL</div>
                     </div>
                     
-                    <div class="loading-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill"></div>
-                        </div>
-                        <div class="progress-text" id="progress-text">INITIALIZING KILOTON TERMINAL...</div>
-                    </div>
-                    
-                    <div class="boot-complete" id="boot-complete" style="display: none;">
-                        <div class="complete-text">SYSTEM READY</div>
-                        <div class="tap-instruction">TAP TO CONTINUE</div>
+                    <div class="continue-section" id="continue-section" style="display: none;">
+                        <div class="continue-text">PRESS ANY KEY TO CONTINUE</div>
+                        <div class="cursor-blink">_</div>
                     </div>
                 </div>
             </div>
@@ -67,8 +63,8 @@
             <div id="main-screen" class="screen">
                 <!-- Заголовок -->
                 <div class="screen-header">
-                    <h1 class="yellow-text">KILOTON</h1>
-                    <div class="header-details">GAMING TERMINAL v2.1 | STATUS: ONLINE</div>
+                    <h1 class="yellow-text">RUNNER</h1>
+                    <div class="header-details">KILOTON GAMING TERMINAL v2.1 | STATUS: ONLINE</div>
                 </div>
                 
                 <!-- Область контента -->
@@ -76,7 +72,7 @@
                     <!-- Дефолтный текст на заднем плане -->
                     <div class="default-content" id="default-content">
                         <p>SELECT A SECTION FROM MENU</p>
-                        <p>KILOTON INDUSTRIES © 2024</p>
+                        <p>KILOTON INDUSTRIES (C) 2024</p>
                         <p>BLOCKCHAIN GAMING ECOSYSTEM</p>
                     </div>
 
@@ -114,14 +110,14 @@
                         <div class="crypto-balance">
                             <div class="balance-item">
                                 <div class="balance-info">
-                                    <span class="crypto-icon">💎</span>
-                                    <span class="crypto-name">TON</span>
+                                    <span class="crypto-icon">[TON]</span>
+                                    <span class="crypto-name">TONCOIN</span>
                                 </div>
                                 <span class="crypto-amount">0.542</span>
                             </div>
                             <div class="balance-item">
                                 <div class="balance-info">
-                                    <span class="crypto-icon">👑</span>
+                                    <span class="crypto-icon">[TSR]</span>
                                     <span class="crypto-name">TSAR</span>
                                 </div>
                                 <span class="crypto-amount">1,250</span>
@@ -138,11 +134,11 @@
                         <p class="yellow-text">Complete tasks to earn TSAR tokens and experience.</p>
                         <div class="quest-placeholder">
                             <div class="quest-item">
-                                <div class="quest-name">Daily Login</div>
+                                <div class="quest-name">[+] Daily Login</div>
                                 <div class="quest-reward">+10 TSAR</div>
                             </div>
                             <div class="quest-item">
-                                <div class="quest-name">Play 3 Games</div>
+                                <div class="quest-name">[>] Play 3 Games</div>
                                 <div class="quest-reward">+25 TSAR</div>
                             </div>
                         </div>
@@ -153,11 +149,11 @@
                         <p class="yellow-text">Purchase items and upgrades with TSAR tokens.</p>
                         <div class="shop-placeholder">
                             <div class="shop-item">
-                                <div class="item-name">Terminal Skin</div>
+                                <div class="item-name">[SKIN] Terminal Theme</div>
                                 <div class="item-price">100 TSAR</div>
                             </div>
                             <div class="shop-item">
-                                <div class="item-name">XP Booster</div>
+                                <div class="item-name">[BUFF] XP Booster</div>
                                 <div class="item-price">50 TSAR</div>
                             </div>
                         </div>
@@ -167,59 +163,49 @@
                         <h2 class="yellow-text">INVENTORY</h2>
                         <p class="yellow-text">Your collected items and power-ups.</p>
                         <div class="inventory-grid">
-                            <div class="inventory-slot empty">EMPTY</div>
-                            <div class="inventory-slot empty">EMPTY</div>
-                            <div class="inventory-slot empty">EMPTY</div>
-                            <div class="inventory-slot empty">EMPTY</div>
+                            <div class="inventory-slot empty">[EMPTY]</div>
+                            <div class="inventory-slot empty">[EMPTY]</div>
+                            <div class="inventory-slot empty">[EMPTY]</div>
+                            <div class="inventory-slot empty">[EMPTY]</div>
                         </div>
                     </div>
 
                     <div id="radio-section" class="section-content yellow-content">
                         <h2 class="yellow-text">KILOTON RADIO</h2>
-                        <p class="yellow-text">Listen to blockchain gaming podcasts and updates.</p>
+                        <p class="yellow-text">Blockchain gaming news and updates.</p>
                     </div>
 
                     <div id="settings-section" class="section-content yellow-content">
                         <h2 class="yellow-text">SETTINGS</h2>
                         <div class="settings-list">
                             <div class="setting-item">
-                                <span class="setting-name">Sound Effects</span>
+                                <span class="setting-name">[SND] Sound Effects</span>
                                 <span class="setting-value">ON</span>
                             </div>
                             <div class="setting-item">
-                                <span class="setting-name">Animations</span>
+                                <span class="setting-name">[VFX] Animations</span>
                                 <span class="setting-value">ON</span>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-name">Language</span>
-                                <span class="setting-value">ENGLISH</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Раздел Games -->
                     <div id="gameboy-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">KILOTON ARCADE</h2>
+                        <h2 class="yellow-text">RUNNER ARCADE</h2>
                         <p class="yellow-text">BLOCKCHAIN GAMING PLATFORM:</p>
                         
                         <div class="game-list">
                             <div class="game-item featured-game" id="terminal-hack-btn">
-                                <span class="game-icon">💻</span>
+                                <span class="game-icon">[HACK]</span>
                                 <span class="game-title">Terminal Hacking</span>
                                 <span class="game-desc">Solo & Multiplayer Password Cracking</span>
                                 <span class="game-status">ONLINE</span>
                             </div>
                             <div class="game-item" id="coming-soon-btn">
-                                <span class="game-icon">🎯</span>
+                                <span class="game-icon">[LOCK]</span>
                                 <span class="game-title">Battle Arena</span>
-                                <span class="game-desc">Coming in Next Update</span>
+                                <span class="game-desc">PvP Combat System</span>
                                 <span class="game-status">SOON</span>
-                            </div>
-                            <div class="game-item" id="nft-games-btn">
-                                <span class="game-icon">🖼️</span>
-                                <span class="game-title">NFT Games</span>
-                                <span class="game-desc">Use your NFTs in games</span>
-                                <span class="game-status">BETA</span>
                             </div>
                         </div>
                     </div>
@@ -229,172 +215,150 @@
             <!-- Экран игры -->
             <div id="game-screen" class="screen">
                 <div class="game-header">
-                    <button class="terminal-btn" id="back-to-arcade">← EXIT</button>
+                    <button class="terminal-btn" id="back-to-arcade">&lt; EXIT</button>
                     <h2 class="game-title">KILOTON TERMINAL HACKING</h2>
-                    <button class="terminal-btn" id="game-settings">⚙️</button>
+                    <div class="score-display" id="score-display">SCORE: 0</div>
                 </div>
                 
                 <!-- Выбор режима игры -->
                 <div class="mode-selector" id="mode-selector">
-                    <h3 class="mode-title">SELECT GAME MODE</h3>
+                    <h3 class="mode-title">SELECT MODE</h3>
                     <div class="mode-options">
                         <button class="mode-btn solo-mode" id="solo-mode-btn">
-                            <span class="mode-icon">🏛️</span>
-                            <span class="mode-name">SOLO MODE</span>
-                            <span class="mode-desc">Practice and earn XP</span>
+                            <span class="mode-icon">[SOLO]</span>
+                            <span class="mode-name">PRACTICE</span>
+                            <span class="mode-desc">Train your skills</span>
                         </button>
                         <button class="mode-btn multiplayer-mode" id="multiplayer-mode-btn">
-                            <span class="mode-icon">⚔️</span>
-                            <span class="mode-name">MULTIPLAYER</span>
-                            <span class="mode-desc">Play for TON/TSAR stakes</span>
+                            <span class="mode-icon">[vs]</span>
+                            <span class="mode-name">VERSUS</span>
+                            <span class="mode-desc">Play for crypto</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Настройка мультиплеера -->
                 <div class="multiplayer-setup" id="multiplayer-setup" style="display: none;">
-                    <h3 class="setup-title">MULTIPLAYER SETUP</h3>
+                    <h3 class="setup-title">CRYPTO STAKES</h3>
                     
-                    <div class="setup-section">
-                        <label class="setup-label">STAKE CURRENCY:</label>
-                        <div class="currency-selector">
-                            <button class="currency-btn active" data-currency="TON">
-                                <span class="crypto-icon">💎</span>TON
+                    <div class="stake-selector">
+                        <div class="currency-options">
+                            <button class="crypto-option active" data-currency="TON">
+                                [TON] TONCOIN
                             </button>
-                            <button class="currency-btn" data-currency="TSAR">
-                                <span class="crypto-icon">👑</span>TSAR
+                            <button class="crypto-option" data-currency="TSAR">
+                                [TSR] TSAR
                             </button>
                         </div>
-                    </div>
-
-                    <div class="setup-section">
-                        <label class="setup-label">STAKE AMOUNT:</label>
-                        <div class="amount-input">
+                        
+                        <div class="amount-selector">
+                            <label>AMOUNT:</label>
                             <input type="number" id="stake-amount" min="0.001" step="0.001" value="0.1">
-                            <span class="currency-display" id="currency-display">TON</span>
+                            <span id="currency-display">TON</span>
                         </div>
                     </div>
 
                     <div class="setup-actions">
-                        <button class="setup-btn create-btn" id="create-game">CREATE GAME</button>
-                        <button class="setup-btn join-btn" id="find-game">FIND GAME</button>
-                        <button class="setup-btn back-btn" id="back-to-modes">← BACK</button>
-                    </div>
-
-                    <!-- Список доступных игр -->
-                    <div class="available-games" id="available-games" style="display: none;">
-                        <h4 class="games-title">AVAILABLE GAMES</h4>
-                        <div class="games-container" id="games-container">
-                            <!-- Список игр будет здесь -->
-                        </div>
+                        <button class="action-btn primary" id="create-game">CREATE GAME</button>
+                        <button class="action-btn secondary" id="find-game">FIND OPPONENT</button>
+                        <button class="action-btn back" id="back-to-modes">&lt; BACK</button>
                     </div>
                 </div>
 
                 <!-- Ожидание игрока -->
                 <div class="waiting-lobby" id="waiting-lobby" style="display: none;">
                     <div class="waiting-content">
-                        <h3 class="waiting-title">SEARCHING FOR OPPONENT</h3>
-                        <div class="game-info">
-                            <div class="info-item">
-                                <span class="info-label">GAME CODE:</span>
-                                <span class="info-value" id="lobby-game-code">XXXX</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">STAKE:</span>
-                                <span class="info-value" id="lobby-stake">0.1 TON</span>
-                            </div>
+                        <h3 class="waiting-title">FINDING OPPONENT</h3>
+                        <div class="game-code">CODE: <span id="lobby-game-code">XXXX</span></div>
+                        <div class="stake-info">STAKE: <span id="lobby-stake">0.1 TON</span></div>
+                        <div class="waiting-dots">
+                            <span>.</span><span>.</span><span>.</span>
                         </div>
-                        <div class="waiting-animation">
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                        </div>
-                        <button class="waiting-btn" id="cancel-waiting">CANCEL</button>
+                        <button class="cancel-btn" id="cancel-waiting">CANCEL</button>
                     </div>
                 </div>
 
                 <!-- Игровой экран -->
                 <div class="gaming-area" id="gaming-area" style="display: none;">
-                    <!-- Информация об игре -->
-                    <div class="game-info-bar" id="game-info-bar">
-                        <div class="player-status">
-                            <span class="player-name">YOU</span>
-                            <div class="player-progress">
-                                <div class="progress-indicator" id="your-progress">
-                                    <span class="progress-text">Ready</span>
-                                    <div class="progress-bar-small">
-                                        <div class="progress-fill-small" id="your-progress-fill"></div>
-                                    </div>
-                                </div>
-                                <div class="attempts-left" id="your-attempts">■ ■ ■ ■</div>
-                            </div>
-                        </div>
-                        
-                        <div class="game-center-info" id="center-info">
-                            <div class="mode-display" id="mode-display">SOLO MODE</div>
-                            <div class="round-display" id="round-display">ROUND 1</div>
-                            <div class="stake-display" id="stake-display" style="display: none;">STAKE: 0.1 TON</div>
-                        </div>
-                        
-                        <div class="opponent-status" id="opponent-status" style="display: none;">
-                            <span class="opponent-name" id="opponent-name">OPPONENT</span>
-                            <div class="opponent-progress">
-                                <div class="progress-indicator" id="opponent-progress">
-                                    <span class="progress-text">Ready</span>
-                                    <div class="progress-bar-small">
-                                        <div class="progress-fill-small" id="opponent-progress-fill"></div>
-                                    </div>
-                                </div>
-                                <div class="attempts-left" id="opponent-attempts">■ ■ ■ ■</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Терминал -->
-                    <div class="terminal-container">
-                        <div class="terminal-screen-display">
-                            <div class="terminal-header-info">
-                                <span class="terminal-status" id="terminal-status">ENTER PASSWORD NOW</span>
-                                <span class="terminal-timer" id="terminal-timer">05:00</span>
+                    <!-- Статус игры (перемещен вверх) -->
+                    <div class="game-status-bar">
+                        <div class="game-progress" id="game-progress">
+                            <div class="player-side">
+                                <div class="player-label">YOU</div>
+                                <div class="player-attempts" id="player-attempts">[X][X][X][X]</div>
+                                <div class="player-status" id="player-status">READY</div>
                             </div>
                             
-                            <div class="terminal-panels">
-                                <div class="terminal-panel left-panel" id="left-panel">
-                                    <!-- Левая панель терминала -->
+                            <div class="vs-section">
+                                <div class="mode-badge" id="mode-badge">SOLO</div>
+                                <div class="stake-info" id="stake-info" style="display: none;">0.1 TON</div>
+                                <div class="turn-indicator" id="turn-indicator">
+                                    <div class="turn-text">YOUR TURN</div>
+                                    <div class="turn-timer" id="turn-timer">30s</div>
                                 </div>
-                                <div class="terminal-panel right-panel" id="right-panel">
-                                    <!-- Правая панель терминала -->
-                                </div>
+                            </div>
+                            
+                            <div class="opponent-side" id="opponent-side" style="display: none;">
+                                <div class="opponent-label" id="opponent-label">OPPONENT</div>
+                                <div class="opponent-attempts" id="opponent-attempts">[X][X][X][X]</div>
+                                <div class="opponent-status" id="opponent-status">WAITING</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Лог событий -->
-                    <div class="event-log" id="event-log">
-                        <div class="log-header">
-                            <span class="log-title">KILOTON SYSTEM LOG</span>
-                            <span class="log-indicator" id="log-indicator">●</span>
+                    <!-- Улучшенный терминал (перемещен вниз) -->
+                    <div class="terminal-interface">
+                        <div class="terminal-screen">
+                            <div class="screen-header">
+                                <span class="access-text">ENTER PASSWORD</span>
+                                <span class="timer-display" id="main-timer">05:00</span>
+                            </div>
+                            
+                            <div class="password-grid" id="password-grid">
+                                <!-- Сюда будут добавлены пароли -->
+                            </div>
+                            
+                            <div class="feedback-area" id="feedback-area">
+                                <div class="last-attempt" id="last-attempt">Select a password...</div>
+                                <div class="hint-text" id="hint-text"></div>
+                            </div>
                         </div>
-                        <div class="log-content" id="log-content">
-                            <div class="log-entry system">Welcome to KILOTON Terminal</div>
-                            <div class="log-entry system">Select password to gain access</div>
+                    </div>
+
+                    <!-- Система подсказок -->
+                    <div class="hint-system" id="hint-system">
+                        <div class="hint-brackets">
+                            <span class="hint-label">FIND BRACKETS FOR HINTS:</span>
+                            <div class="bracket-container" id="bracket-container">
+                                <!-- Скобки будут добавлены динамически -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Лог действий -->
+                    <div class="action-log" id="action-log">
+                        <div class="log-title">SYSTEM LOG</div>
+                        <div class="log-entries" id="log-entries">
+                            <div class="log-entry system">RUNNER Terminal initialized</div>
+                            <div class="log-entry system">Password database ready</div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Эффекты -->
-            <div class="scanlines"></div>
-            <div class="flicker"></div>
-            <div class="crt-effect"></div>
-            <div class="screen-glare"></div>
+            <!-- Эффекты CRT -->
+            <div class="retro-effects">
+                <div class="scanlines"></div>
+                <div class="screen-curve"></div>
+                <div class="phosphor-glow"></div>
+            </div>
         </div>
 
-        <!-- Объединенная нижняя панель -->
+        <!-- Поднятая нижняя панель -->
         <div class="unified-bottom-panel">
             <!-- Информационная панель -->
             <div class="info-panel">
-                <span id="time-display">🕐 00:00</span>
+                <span id="time-display">[TIME] 00:00</span>
                 <span id="balance-display">TON: 0.542</span>
                 <span id="clan-display">W/L: 23/7</span>
             </div>
@@ -402,38 +366,38 @@
             <!-- Кнопка меню -->
             <div class="menu-panel">
                 <button class="menu-toggle" id="menu-toggle">
-                    <span class="menu-toggle-icon">≡</span>
+                    <span class="menu-toggle-icon">===</span>
                     <span class="menu-toggle-text">MENU</span>
                 </button>
                 
                 <nav class="pipboy-nav" id="pipboy-nav">
                     <div class="menu-header">
-                        <span class="menu-title">KILOTON TERMINAL</span>
-                        <button class="close-menu-btn" id="close-menu">⨉</button>
+                        <span class="menu-title">RUNNER TERMINAL</span>
+                        <button class="close-menu-btn" id="close-menu">[X]</button>
                     </div>
                     <button class="nav-btn" data-section="stat">
-                        <span class="nav-icon">📊</span>STATUS
+                        <span class="nav-icon">[STAT]</span>STATUS
                     </button>
                     <button class="nav-btn" data-section="wallet">
-                        <span class="nav-icon">💳</span>WALLET
+                        <span class="nav-icon">[$$$]</span>WALLET
                     </button>
                     <button class="nav-btn" data-section="runner">
-                        <span class="nav-icon">🏃</span>QUESTS
+                        <span class="nav-icon">[RUN]</span>QUESTS
                     </button>
                     <button class="nav-btn" data-section="shop">
-                        <span class="nav-icon">🛒</span>STORE
+                        <span class="nav-icon">[BUY]</span>STORE
                     </button>
                     <button class="nav-btn" data-section="inventory">
-                        <span class="nav-icon">🎒</span>INVENTORY
+                        <span class="nav-icon">[BAG]</span>INVENTORY
                     </button>
                     <button class="nav-btn" data-section="radio">
-                        <span class="nav-icon">📻</span>RADIO
+                        <span class="nav-icon">[RAD]</span>RADIO
                     </button>
                     <button class="nav-btn" data-section="settings">
-                        <span class="nav-icon">⚙️</span>SETTINGS
+                        <span class="nav-icon">[CFG]</span>SETTINGS
                     </button>
                     <button class="nav-btn" data-section="gameboy">
-                        <span class="nav-icon">🎮</span>GAMES
+                        <span class="nav-icon">[GAM]</span>GAMES
                     </button>
                 </nav>
             </div>
