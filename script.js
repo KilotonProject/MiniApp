@@ -1,68 +1,32 @@
-// RUNNER TERMINAL - Gaming Platform v2.1
+// RUNNER TERMINAL - Simple Working Version v2.1
 let userData = null;
 let menuOpen = false;
-let gameActive = false;
-let isMultiplayer = false;
-let gameWords = [];
-let correctPassword = '';
-let attemptsLeft = 4;
-let currentStake = { amount: 0, currency: 'TON' };
-let gameTimer = null;
-let turnTimer = null;
-let timeLeft = 300;
-let turnTimeLeft = 30;
-let selectedCurrency = 'TON';
-let playerTurn = true;
+let messageType = 'public';
+let currentLanguage = 'en';
+let soundEnabled = true;
 let gameScore = 0;
 
-// Ретро звуковая система
-class RetroAudioManager {
+// Упрощенная звуковая система
+class SimpleAudio {
     constructor() {
         this.context = null;
         this.enabled = true;
+        this.initialized = false;
     }
 
     async init() {
+        if (this.initialized) return;
+        
         try {
             this.context = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
         } catch (error) {
             this.enabled = false;
         }
     }
 
-    // Ретро терминальный звук
     beep() {
-        if (!this.context || !this.enabled) return;
-        
-        try {
-            const osc = this.context.createOscillator();
-            const gain = this.context.createGain();
-            const filter = this.context.createBiquadFilter();
-            
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(this.context.destination);
-            
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, this.context.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, this.context.currentTime + 0.05);
-            
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(1000, this.context.currentTime);
-            
-            gain.gain.setValueAtTime(0.2, this.context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(this.context.currentTime + 0.1);
-        } catch (e) {
-            console.log('Audio error:', e);
-        }
-    }
-    
-    // Звук печатания
-    type() {
-        if (!this.context || !this.enabled) return;
+        if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
         
         try {
             const osc = this.context.createOscillator();
@@ -71,130 +35,164 @@ class RetroAudioManager {
             osc.connect(gain);
             gain.connect(this.context.destination);
             
-            osc.type = 'square';
-            osc.frequency.value = 1200 + Math.random() * 400;
+            osc.type = 'sine';
+            osc.frequency.value = 800;
             
             gain.gain.setValueAtTime(0.05, this.context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.08);
             
             osc.start();
-            osc.stop(this.context.currentTime + 0.03);
+            osc.stop(this.context.currentTime + 0.08);
         } catch (e) {}
+    }
+    
+    playWelcomeMelody() {
+        if (!this.enabled || !this.initialized || !this.context) return;
+        
+        const notes = [220, 246, 261, 293, 261, 220];
+        let time = this.context.currentTime + 0.5;
+        
+        notes.forEach((note, i) => {
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            osc.type = 'triangle';
+            osc.frequency.value = note;
+            
+            gain.gain.setValueAtTime(0.03, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+            
+            osc.start(time);
+            osc.stop(time + 0.4);
+            
+            time += 0.5;
+        });
     }
 }
 
-// Мультиплеер система
-class MultiplayerManager {
+// Упрощенная система радио
+class SimpleRadio {
+    constructor() {
+        this.messages = [
+            {
+                id: 1,
+                author: 'VAULT_DWELLER_101',
+                text: 'Anyone found any good loot in the northern sectors?',
+                time: '12:34',
+                type: 'public'
+            },
+            {
+                id: 2,
+                author: 'ANONYMOUS',
+                text: 'Radiation storm incoming from the east. Take shelter.',
+                time: '12:45',
+                type: 'anonymous'
+            }
+        ];
+        this.nextId = 3;
+    }
+
+    addMessage(text, author, type = 'public') {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        const message = {
+            id: this.nextId++,
+            author: type === 'anonymous' ? 'ANONYMOUS_USER' : author,
+            text: text.substring(0, 200),
+            time: timeStr,
+            type: type
+        };
+        
+        this.messages.unshift(message);
+        return message;
+    }
+
+    getMessages() {
+        return this.messages;
+    }
+}
+
+// Простые классы-заглушки
+class SimpleMultiplayer {
     constructor() {
         this.currentGame = null;
-        this.opponentTimer = null;
     }
+    
+    stopSimulation() {}
+}
 
-    createGame(stake) {
-        this.currentGame = {
-            id: Math.random().toString(36).substr(2, 6).toUpperCase(),
-            stake: stake,
-            status: 'waiting',
-            opponentName: null
-        };
-        return this.currentGame;
-    }
-
-    simulateOpponent() {
-        const delay = 2000 + Math.random() * 3000;
-        setTimeout(() => {
-            if (this.currentGame && this.currentGame.status === 'waiting') {
-                this.currentGame.status = 'playing';
-                this.currentGame.opponentName = 'VAULT_DWELLER_' + Math.floor(Math.random() * 1000);
-                startGameSession();
+class SimpleMarket {
+    constructor() {
+        this.listings = [
+            {
+                title: 'Rare Terminal Skin',
+                description: 'Unique blue-glow terminal theme',
+                price: 100,
+                currency: 'TSAR',
+                seller: 'TECH_TRADER_99'
             }
-        }, delay);
+        ];
     }
-
-    simulateOpponentTurn() {
-        if (!gameActive || !isMultiplayer || playerTurn) return;
-        
-        const delay = 3000 + Math.random() * 8000;
-        this.opponentTimer = setTimeout(() => {
-            if (gameActive && !playerTurn) {
-                this.performOpponentMove();
-            }
-        }, delay);
+    
+    getListings() {
+        return this.listings;
     }
+}
 
-    performOpponentMove() {
-        const wrongWords = gameWords.filter(w => w !== correctPassword);
-        if (wrongWords.length === 0) return;
-        
-        const selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
-        
-        addLogEntry(`Opponent selected: ${selectedWord}`, 'opponent');
-        updateOpponentStatus('CHECKING...');
-        
-        setTimeout(() => {
-            if (selectedWord === correctPassword) {
-                addLogEntry('Opponent found correct password!', 'error');
-                endGame(false);
-            } else {
-                const matches = getMatchingPositions(selectedWord, correctPassword);
-                addLogEntry(`Opponent failed - Likeness: ${matches}`, 'opponent');
-                
-                // Уменьшаем попытки оппонента
-                let oppAttempts = document.getElementById('opponent-attempts').textContent.match(/\[X\]/g).length;
-                oppAttempts = Math.max(0, oppAttempts - 1);
-                
-                let squares = '';
-                for (let i = 0; i < 4; i++) {
-                    squares += i < oppAttempts ? '[X]' : '[ ]';
-                }
-                document.getElementById('opponent-attempts').textContent = squares;
-                
-                updateOpponentStatus('WAITING');
-                playerTurn = true;
-                updateTurnIndicator();
-                startTurnTimer();
-            }
-        }, 1500);
-    }
-
-    stopSimulation() {
-        if (this.opponentTimer) {
-            clearTimeout(this.opponentTimer);
-            this.opponentTimer = null;
-        }
+class SimpleCrafting {
+    constructor() {}
+    
+    canCraft() {
+        return userData && userData.tsarBalance >= 500000;
     }
 }
 
 // Инициализация
-const audioManager = new RetroAudioManager();
-const multiplayerManager = new MultiplayerManager();
+const audioManager = new SimpleAudio();
+const radioManager = new SimpleRadio();
+const multiplayerManager = new SimpleMultiplayer();
+const tradingPost = new SimpleMarket();
+const craftingManager = new SimpleCrafting();
+
+let initStarted = false;
 
 function initApp() {
-    console.log("Initializing RUNNER terminal...");
+    if (initStarted) {
+        console.log("Init already started, skipping...");
+        return;
+    }
     
-    // Инициализируем звук после пользовательского взаимодействия
-    document.addEventListener('click', () => audioManager.init(), { once: true });
-    document.addEventListener('touchstart', () => audioManager.init(), { once: true });
+    initStarted = true;
+    console.log("🚀 Starting RUNNER terminal initialization...");
     
     loadUserData();
-    setupAllEventHandlers();
+    setupEventHandlers();
+    loadRadioMessages();
+    loadMarketListings();
     
     updateDateTime();
     setInterval(updateDateTime, 60000);
     
     showWelcomeScreen();
+    
+    console.log("✅ RUNNER terminal ready");
 }
 
 function loadUserData() {
     userData = {
-        name: "RUNNER Player",
+        name: "RUNNER_PLAYER",
         tonBalance: 0.542,
         tsarBalance: 1250,
+        starsBalance: 45,
+        bottleCaps: 1250,
         level: 15,
-        xp: 1250,
         wins: 23,
         losses: 7,
-        gamesPlayed: 30
+        clan: null
     };
     
     updateUserInfo();
@@ -202,52 +200,84 @@ function loadUserData() {
 
 function updateUserInfo() {
     if (userData) {
-        document.getElementById('balance-display').textContent = `TON: ${userData.tonBalance}`;
-        document.getElementById('clan-display').textContent = `W/L: ${userData.wins}/${userData.losses}`;
+        const balanceDisplay = document.getElementById('balance-display');
+        const capsDisplay = document.getElementById('caps-display');
+        
+        if (balanceDisplay) balanceDisplay.textContent = `TON: ${userData.tonBalance}`;
+        if (capsDisplay) capsDisplay.textContent = `CAPS: ${userData.bottleCaps}`;
+        
+        const balanceItems = document.querySelectorAll('.crypto-amount');
+        if (balanceItems.length >= 3) {
+            balanceItems[0].textContent = userData.tonBalance.toString();
+            balanceItems[1].textContent = userData.tsarBalance.toLocaleString();
+            balanceItems[2].textContent = userData.starsBalance.toString();
+        }
+        
+        const capsValue = document.getElementById('caps-value');
+        if (capsValue) {
+            capsValue.textContent = userData.bottleCaps.toString();
+        }
+        
+        const clanStatus = document.getElementById('clan-status');
+        if (clanStatus) {
+            clanStatus.textContent = userData.clan || 'NO CLAN';
+        }
+        
+        updateCraftingAccess();
     }
 }
 
 function updateDateTime() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    document.getElementById('time-display').textContent = `[TIME] ${timeStr}`;
+    const timeDisplay = document.getElementById('time-display');
+    if (timeDisplay) {
+        timeDisplay.textContent = `[TIME] ${timeStr}`;
+    }
 }
 
-// Ретро приветственный экран с печатающимся текстом
 function showWelcomeScreen() {
     hideAllScreens();
     document.getElementById('welcome-screen').classList.add('active');
     
-    // Последовательность печатающихся строк
+    const initAudio = () => {
+        audioManager.init().then(() => {
+            setTimeout(() => {
+                audioManager.playWelcomeMelody();
+            }, 1000);
+        });
+    };
+    
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('touchstart', initAudio, { once: true });
+    
     const bootMessages = [
         'INITIALIZING RUNNER TERMINAL...',
         'LOADING BLOCKCHAIN PROTOCOLS...',
         'CONNECTING TO TON NETWORK......OK',
         'LOADING TSAR TOKEN SYSTEM......OK',  
-        'CHECKING GAMING MODULES........OK',
-        'SYSTEM DIAGNOSTICS............OK',
-        'TERMINAL READY FOR OPERATION',
-        'WELCOME TO RUNNER GAMING PLATFORM'
+        'TERMINAL READY FOR OPERATION'
     ];
     
     let currentLine = 0;
     
     function typeNextLine() {
         if (currentLine >= bootMessages.length) {
-            showRunnerLogo();
+            showContinuePrompt();
             return;
         }
         
         const lineElement = document.getElementById(`boot-line-${currentLine + 1}`);
+        if (!lineElement) {
+            currentLine++;
+            setTimeout(typeNextLine, 100);
+            return;
+        }
+        
         const message = bootMessages[currentLine];
         
-        // Определяем стиль строки
-        if (message.includes('OK')) {
+        if (message.includes('OK') || message.includes('READY')) {
             lineElement.className = 'boot-line success';
-        } else if (message.includes('WELCOME')) {
-            lineElement.className = 'boot-line yellow';
-        } else {
-            lineElement.className = 'boot-line';
         }
         
         typeText(lineElement, message, () => {
@@ -256,49 +286,65 @@ function showWelcomeScreen() {
         });
     }
     
-    // Начинаем через секунду
     setTimeout(typeNextLine, 1000);
 }
 
 function typeText(element, text, callback) {
+    if (!element) {
+        if (callback) callback();
+        return;
+    }
+    
     element.textContent = '';
     let i = 0;
     
     const typeInterval = setInterval(() => {
-        audioManager.type();
-        element.textContent += text[i];
-        i++;
-        
-        if (i >= text.length) {
+        if (i < text.length) {
+            element.textContent += text[i];
+            i++;
+        } else {
             clearInterval(typeInterval);
-            if (callback) setTimeout(callback, 200);
+            if (callback) {
+                setTimeout(callback, 200);
+            }
         }
-    }, 50);
+    }, 60);
 }
 
-function showRunnerLogo() {
-    document.getElementById('runner-logo-section').style.display = 'block';
+function showContinuePrompt() {
+    const progressText = document.getElementById('progress-text');
+    const continueSection = document.getElementById('continue-section');
     
-    setTimeout(() => {
-        document.getElementById('continue-section').style.display = 'block';
+    if (progressText) {
+        progressText.textContent = 'SYSTEM READY';
+    }
+    
+    if (continueSection) {
+        continueSection.style.display = 'block';
         
-        // Обработчик продолжения
         const continueHandler = (e) => {
             e.preventDefault();
+            
+            if (!audioManager.initialized) {
+                audioManager.init();
+            }
             audioManager.beep();
+            
             hideAllScreens();
             document.getElementById('main-screen').classList.add('active');
             showSection('stat');
+            
+            continueSection.removeEventListener('click', continueHandler);
+            continueSection.removeEventListener('touchstart', continueHandler);
+            document.removeEventListener('keydown', keyHandler);
         };
         
-        const continueSection = document.getElementById('continue-section');
+        const keyHandler = continueHandler;
+        
         continueSection.addEventListener('click', continueHandler);
         continueSection.addEventListener('touchstart', continueHandler);
-        
-        // Также обработчик для всего документа
-        document.addEventListener('keydown', continueHandler, { once: true });
-        
-    }, 2000);
+        document.addEventListener('keydown', keyHandler);
+    }
 }
 
 function hideAllScreens() {
@@ -307,723 +353,425 @@ function hideAllScreens() {
     });
 }
 
-function setupAllEventHandlers() {
-    setupNavigation();
+function setupEventHandlers() {
+    console.log("🔧 Setting up simple event handlers...");
+    
+    setupSimpleNavigation();
     setupGameHandlers();
-    setupMultiplayerHandlers();
-    enhanceUserExperience();
+    setupRadioHandlers();
+    setupWalletHandlers();
+    setupClanHandlers();
+    setupSettingsHandlers();
+    setupMarketHandlers();
+    setupNuclearHandlers();
+    
+    console.log("✅ All handlers setup complete");
 }
 
-function setupNavigation() {
-    // Исправленная навигация
-    const menuToggle = document.getElementById('menu-toggle');
-    const closeMenuBtn = document.getElementById('close-menu');
+// НОВАЯ ПРОСТАЯ НАВИГАЦИЯ БЕЗ ПРОБЛЕМ
+function setupSimpleNavigation() {
+    console.log("🔧 Setting up SIMPLE navigation...");
     
-    // Обработчик меню с правильной логикой
-    function toggleMenu(e) {
+    const menuBtn = document.getElementById('simple-menu-toggle');
+    const closeBtn = document.getElementById('simple-close');
+    const nav = document.getElementById('simple-nav');
+    
+    if (!menuBtn || !closeBtn || !nav) {
+        console.error("❌ Simple menu elements not found!");
+        return;
+    }
+    
+    console.log("✅ Simple menu elements found");
+    
+    // Открытие меню
+    function openSimpleMenu() {
+        console.log("📂 Opening simple menu");
+        nav.style.display = 'block';
+        menuOpen = true;
+        console.log("✅ Simple menu opened");
+    }
+    
+    // Закрытие меню
+    function closeSimpleMenu() {
+        console.log("📁 Closing simple menu");
+        nav.style.display = 'none';
+        menuOpen = false;
+        console.log("✅ Simple menu closed");
+    }
+    
+    // Обработчики
+    menuBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation();
+        console.log("🔄 Simple menu button clicked");
         audioManager.beep();
         
         if (menuOpen) {
-            closeMenu();
+            closeSimpleMenu();
         } else {
-            openMenu();
+            openSimpleMenu();
         }
-    }
+    });
     
-    function closeMenuHandler(e) {
+    closeBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation();
+        console.log("❌ Simple close button clicked");
         audioManager.beep();
-        closeMenu();
-    }
-    
-    // Удаляем старые обработчики и добавляем новые
-    menuToggle.removeEventListener('click', toggleMenu);
-    menuToggle.removeEventListener('touchstart', toggleMenu);
-    closeMenuBtn.removeEventListener('click', closeMenuHandler);
-    closeMenuBtn.removeEventListener('touchstart', closeMenuHandler);
-    
-    menuToggle.addEventListener('click', toggleMenu);
-    menuToggle.addEventListener('touchstart', toggleMenu);
-    closeMenuBtn.addEventListener('click', closeMenuHandler);
-    closeMenuBtn.addEventListener('touchstart', closeMenuHandler);
+        closeSimpleMenu();
+    });
     
     // Навигационные кнопки
-    document.querySelectorAll('.nav-btn').forEach(button => {
-        function navHandler(e) {
+    document.querySelectorAll('.simple-nav-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            audioManager.beep();
             
             const section = button.getAttribute('data-section');
+            console.log(`🎯 Simple nav to: ${section}`);
+            
+            audioManager.beep();
             showSection(section);
-            closeMenu();
-        }
-        
-        button.removeEventListener('click', navHandler);
-        button.removeEventListener('touchstart', navHandler);
-        button.addEventListener('click', navHandler);
-        button.addEventListener('touchstart', navHandler);
+            closeSimpleMenu();
+        });
     });
-}
-
-function openMenu() {
-    const nav = document.getElementById('pipboy-nav');
-    const toggle = document.getElementById('menu-toggle');
     
-    nav.classList.add('open');
-    toggle.style.display = 'none';
-    menuOpen = true;
-}
-
-function closeMenu() {
-    const nav = document.getElementById('pipboy-nav');
-    const toggle = document.getElementById('menu-toggle');
-    
-    nav.classList.remove('open');
-    toggle.style.display = 'flex';
-    menuOpen = false;
+    console.log("✅ Simple navigation setup complete");
 }
 
 function showSection(section) {
+    console.log(`📄 Showing section: ${section}`);
+    
     document.querySelectorAll('.section-content').forEach(sec => {
         sec.classList.remove('active');
     });
     
-    document.getElementById('default-content').style.display = 'none';
+    const defaultContent = document.getElementById('default-content');
+    if (defaultContent) {
+        defaultContent.style.display = 'none';
+    }
     
     const targetSection = document.getElementById(`${section}-section`);
     if (targetSection) {
         targetSection.classList.add('active');
+        console.log(`✅ Section activated: ${section}`);
+    } else {
+        console.error(`❌ Section not found: ${section}`);
     }
 }
 
 function setupGameHandlers() {
-    // Запуск игры
-    const gameBtn = document.getElementById('terminal-hack-btn');
-    function gameHandler(e) {
-        e.preventDefault();
-        audioManager.beep();
-        showGameScreen();
+    const terminalBtn = document.getElementById('terminal-hack-btn');
+    if (terminalBtn) {
+        terminalBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            showGameScreen();
+        });
     }
-    
-    gameBtn.removeEventListener('click', gameHandler);
-    gameBtn.removeEventListener('touchstart', gameHandler);
-    gameBtn.addEventListener('click', gameHandler);
-    gameBtn.addEventListener('touchstart', gameHandler);
 
-    // Возврат
+    const gameButtons = ['chess-btn', 'shmup-btn', 'battle-arena-btn'];
+    gameButtons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                audioManager.beep();
+                alert('[GAME]\nComing in future updates!');
+            });
+        }
+    });
+
     const backBtn = document.getElementById('back-to-arcade');
-    function backHandler(e) {
-        e.preventDefault();
-        audioManager.beep();
-        resetGame();
-        hideAllScreens();
-        document.getElementById('main-screen').classList.add('active');
-        showSection('gameboy');
+    if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            hideAllScreens();
+            document.getElementById('main-screen').classList.add('active');
+            showSection('gameboy');
+        });
     }
-    
-    backBtn.removeEventListener('click', backHandler);
-    backBtn.removeEventListener('touchstart', backHandler);
-    backBtn.addEventListener('click', backHandler);
-    backBtn.addEventListener('touchstart', backHandler);
 
-    // Режимы
-    setupModeHandlers();
-}
-
-function setupModeHandlers() {
     const soloBtn = document.getElementById('solo-mode-btn');
     const mpBtn = document.getElementById('multiplayer-mode-btn');
     
-    function soloHandler(e) {
-        e.preventDefault();
-        audioManager.beep();
-        selectGameMode('solo');
+    if (soloBtn) {
+        soloBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[SOLO MODE]\nFeature in development!');
+        });
     }
-    
-    function mpHandler(e) {
-        e.preventDefault();
-        audioManager.beep();
-        selectGameMode('multiplayer');
+
+    if (mpBtn) {
+        mpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[MULTIPLAYER MODE]\nFeature in development!');
+        });
     }
-    
-    soloBtn.removeEventListener('click', soloHandler);
-    soloBtn.removeEventListener('touchstart', soloHandler);
-    mpBtn.removeEventListener('click', mpHandler);
-    mpBtn.removeEventListener('touchstart', mpHandler);
-    
-    soloBtn.addEventListener('click', soloHandler);
-    soloBtn.addEventListener('touchstart', soloHandler);
-    mpBtn.addEventListener('click', mpHandler);
-    mpBtn.addEventListener('touchstart', mpHandler);
 }
 
-function setupMultiplayerHandlers() {
-    // Валюта
-    document.querySelectorAll('.crypto-option').forEach(btn => {
-        function handler(e) {
+function setupRadioHandlers() {
+    document.querySelectorAll('.message-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
             audioManager.beep();
             
-            document.querySelectorAll('.crypto-option').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.message-type-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            selectedCurrency = btn.getAttribute('data-currency');
-            document.getElementById('currency-display').textContent = selectedCurrency;
-        }
-        
-        btn.removeEventListener('click', handler);
-        btn.removeEventListener('touchstart', handler);
-        btn.addEventListener('click', handler);
-        btn.addEventListener('touchstart', handler);
+            messageType = btn.getAttribute('data-type');
+        });
     });
 
-    // Кнопки мультиплеера
-    const buttons = [
-        { id: 'create-game', handler: createMultiplayerGame },
-        { id: 'find-game', handler: showAvailableGames },
-        { id: 'back-to-modes', handler: showModeSelector },
-        { id: 'cancel-waiting', handler: cancelWaiting }
-    ];
+    const sendBtn = document.getElementById('send-message');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            sendRadioMessage();
+        });
+    }
+
+    const refreshBtn = document.getElementById('refresh-radio');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            loadRadioMessages();
+        });
+    }
+
+    const messageInput = document.getElementById('radio-message');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            const count = this.value.length;
+            const counter = document.getElementById('char-counter');
+            if (counter) {
+                counter.textContent = `${count}/200`;
+            }
+        });
+    }
+}
+
+function setupWalletHandlers() {
+    const buttons = ['deposit-btn', 'withdraw-btn', 'stake-tsar-btn', 'add-tokens-btn'];
     
-    buttons.forEach(({ id, handler }) => {
-        const element = document.getElementById(id);
-        if (element) {
-            function eventHandler(e) {
+    buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 audioManager.beep();
-                handler();
-            }
-            
-            element.removeEventListener('click', eventHandler);
-            element.removeEventListener('touchstart', eventHandler);
-            element.addEventListener('click', eventHandler);
-            element.addEventListener('touchstart', eventHandler);
+                alert(`[${id.toUpperCase()}]\nFeature coming soon!`);
+            });
         }
     });
+}
+
+function setupClanHandlers() {
+    const createBtn = document.getElementById('create-clan-btn');
+    if (createBtn) {
+        createBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            
+            const clanName = prompt('Enter clan name (3-20 characters):');
+            if (clanName && clanName.length >= 3 && clanName.length <= 20) {
+                if (userData.tsarBalance >= 1000) {
+                    userData.tsarBalance -= 1000;
+                    userData.clan = clanName.toUpperCase();
+                    updateUserInfo();
+                    alert(`[SUCCESS] Clan "${userData.clan}" created!\n1000 TSAR spent`);
+                } else {
+                    alert('[ERROR] Insufficient TSAR tokens\nRequired: 1000 TSAR');
+                }
+            }
+        });
+    }
+
+    const joinBtn = document.getElementById('join-clan-btn');
+    if (joinBtn) {
+        joinBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[JOIN CLAN]\nFeature coming soon!');
+        });
+    }
+}
+
+function setupSettingsHandlers() {
+    const soundToggle = document.getElementById('sound-toggle');
+    if (soundToggle) {
+        soundToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            soundEnabled = !soundEnabled;
+            e.target.textContent = soundEnabled ? 'ON' : 'OFF';
+            e.target.classList.toggle('active', soundEnabled);
+            
+            if (soundEnabled) {
+                audioManager.beep();
+            }
+        });
+    }
+
+    const langSelect = document.getElementById('language-select');
+    if (langSelect) {
+        langSelect.addEventListener('change', (e) => {
+            currentLanguage = e.target.value;
+            audioManager.beep();
+            alert(`[LANGUAGE] Changed to ${e.target.value.toUpperCase()}`);
+        });
+    }
+}
+
+function setupMarketHandlers() {
+    const createBtn = document.getElementById('create-shop-btn');
+    if (createBtn) {
+        createBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[CREATE SHOP]\nMarketplace feature coming soon!');
+        });
+    }
+
+    const browseBtn = document.getElementById('browse-market-btn');
+    if (browseBtn) {
+        browseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[BROWSE MARKET]\nShowing available listings.');
+        });
+    }
+}
+
+function setupNuclearHandlers() {
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
+    
+    if (buyBtn) {
+        buyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[BUY ORDER]\nCrypto trading coming soon!');
+        });
+    }
+
+    if (sellBtn) {
+        sellBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            audioManager.beep();
+            alert('[SELL ORDER]\nCrypto trading coming soon!');
+        });
+    }
+}
+
+function sendRadioMessage() {
+    const messageInput = document.getElementById('radio-message');
+    if (!messageInput) return;
+    
+    const messageText = messageInput.value.trim();
+    
+    if (!messageText) {
+        alert('[ERROR] Message cannot be empty');
+        return;
+    }
+
+    if (messageType === 'anonymous' && userData.tsarBalance < 5000) {
+        alert('[ERROR] Insufficient TSAR tokens\nRequired: 5000 TSAR');
+        return;
+    }
+
+    if (messageType === 'sponsored' && userData.tsarBalance < 10000) {
+        alert('[ERROR] Insufficient TSAR tokens\nRequired: 10000 TSAR');
+        return;
+    }
+
+    if (messageType === 'anonymous') {
+        userData.tsarBalance -= 5000;
+        alert('[SUCCESS] Anonymous message posted\n5000 TSAR burned');
+    } else if (messageType === 'sponsored') {
+        userData.tsarBalance -= 10000;
+        alert('[SUCCESS] Sponsored message posted\n10000 TSAR burned');
+    }
+
+    radioManager.addMessage(messageText, userData.name, messageType);
+    
+    messageInput.value = '';
+    const counter = document.getElementById('char-counter');
+    if (counter) {
+        counter.textContent = '0/200';
+    }
+    
+    updateUserInfo();
+    loadRadioMessages();
+}
+
+function loadRadioMessages() {
+    const feedContent = document.getElementById('feed-content');
+    if (!feedContent) return;
+    
+    const messages = radioManager.getMessages();
+    
+    feedContent.innerHTML = messages.map(msg => `
+        <div class="radio-message ${msg.type}">
+            <div class="message-header">
+                <span class="message-author ${msg.type}">${msg.author}</span>
+                <span class="message-time">${msg.time}</span>
+            </div>
+            <div class="message-text">${msg.text}</div>
+        </div>
+    `).join('');
+}
+
+function loadMarketListings() {
+    const listingsContainer = document.getElementById('listings-container');
+    if (!listingsContainer) return;
+    
+    const listings = tradingPost.getListings();
+    
+    listingsContainer.innerHTML = listings.map(listing => `
+        <div class="market-listing">
+            <div class="listing-header">
+                <span class="listing-title">${listing.title}</span>
+                <span class="listing-price">${listing.price} ${listing.currency}</span>
+            </div>
+            <div class="listing-description">${listing.description}</div>
+            <div class="listing-seller">Seller: ${listing.seller}</div>
+        </div>
+    `).join('');
+}
+
+function updateCraftingAccess() {
+    const hasAccess = craftingManager.canCraft();
+    const craftStatus = document.getElementById('craft-status');
+    
+    if (craftStatus) {
+        if (hasAccess) {
+            craftStatus.textContent = 'UNLOCKED';
+            craftStatus.style.color = 'var(--pipboy-green)';
+        } else {
+            craftStatus.textContent = 'LOCKED';
+            craftStatus.style.color = '#ff6600';
+        }
+    }
 }
 
 function showGameScreen() {
     hideAllScreens();
     document.getElementById('game-screen').classList.add('active');
-    showModeSelector();
     gameScore = 0;
-    updateScoreDisplay();
-}
-
-function showModeSelector() {
-    document.getElementById('mode-selector').style.display = 'block';
-    document.getElementById('multiplayer-setup').style.display = 'none';
-    document.getElementById('waiting-lobby').style.display = 'none';
-    document.getElementById('gaming-area').style.display = 'none';
-}
-
-function selectGameMode(mode) {
-    isMultiplayer = mode === 'multiplayer';
-    
-    if (mode === 'solo') {
-        startGameSession();
-    } else {
-        showMultiplayerSetup();
+    const scoreDisplay = document.getElementById('score-display');
+    if (scoreDisplay) {
+        scoreDisplay.textContent = `SCORE: ${gameScore}`;
     }
+    alert('[TERMINAL HACKING]\nGame feature in development!');
 }
 
-function showMultiplayerSetup() {
-    document.getElementById('mode-selector').style.display = 'none';
-    document.getElementById('multiplayer-setup').style.display = 'block';
-}
-
-function createMultiplayerGame() {
-    const amount = parseFloat(document.getElementById('stake-amount').value);
-    
-    if (amount <= 0) {
-        alert('Please enter a valid stake amount');
-        return;
-    }
-
-    const balance = selectedCurrency === 'TON' ? userData.tonBalance : userData.tsarBalance;
-    if (amount > balance) {
-        alert(`Insufficient ${selectedCurrency} balance`);
-        return;
-    }
-
-    currentStake = { amount, currency: selectedCurrency };
-    multiplayerManager.createGame(currentStake);
-    
-    showWaitingLobby();
-    multiplayerManager.simulateOpponent();
-}
-
-function showAvailableGames() {
-    alert('No games available.\nCreate your own game!');
-}
-
-function showWaitingLobby() {
-    document.getElementById('multiplayer-setup').style.display = 'none';
-    document.getElementById('waiting-lobby').style.display = 'flex';
-    
-    document.getElementById('lobby-game-code').textContent = multiplayerManager.currentGame.id;
-    document.getElementById('lobby-stake').textContent = `${currentStake.amount} ${currentStake.currency}`;
-}
-
-function cancelWaiting() {
-    multiplayerManager.currentGame = null;
-    showMultiplayerSetup();
-}
-
-function startGameSession() {
-    document.getElementById('mode-selector').style.display = 'none';
-    document.getElementById('multiplayer-setup').style.display = 'none';
-    document.getElementById('waiting-lobby').style.display = 'none';
-    document.getElementById('gaming-area').style.display = 'flex';
-    
-    initializeGame();
-}
-
-function initializeGame() {
-    gameActive = true;
-    attemptsLeft = 4;
-    timeLeft = 300;
-    turnTimeLeft = 30;
-    playerTurn = true;
-    
-    // Настройка интерфейса
-    document.getElementById('mode-badge').textContent = isMultiplayer ? 'VERSUS' : 'SOLO';
-    
-    if (isMultiplayer) {
-        document.getElementById('opponent-side').style.display = 'flex';
-        document.getElementById('stake-info').style.display = 'block';
-        document.getElementById('stake-info').textContent = `${currentStake.amount} ${currentStake.currency}`;
-        document.getElementById('opponent-label').textContent = multiplayerManager.currentGame?.opponentName || 'OPPONENT';
-    } else {
-        document.getElementById('opponent-side').style.display = 'none';
-        document.getElementById('stake-info').style.display = 'none';
-    }
-    
-    // Сброс статусов
-    updatePlayerStatus('READY');
-    updateOpponentStatus('READY');
-    updateAttempts(4, 'player');
-    updateAttempts(4, 'opponent');
-    updateTurnIndicator();
-    
-    // Генерируем игру
-    generateGameField();
-    generateHintBrackets();
-    
-    // Запускаем таймеры
-    startMainTimer();
-    startTurnTimer();
-    
-    // Очищаем лог
-    clearLog();
-    addLogEntry('RUNNER Terminal access initiated', 'system');
-    addLogEntry(`Password database: ${gameWords.length} entries loaded`, 'system');
-    addLogEntry(isMultiplayer ? 'Multiplayer duel started' : 'Solo practice mode', 'system');
-    addLogEntry('Your turn - select password', 'success');
-}
-
-function generateGameField() {
-    const wordLists = {
-        6: ['RUNNER', 'ACCESS', 'SECURE', 'MATRIX', 'CIPHER', 'BINARY', 'SYNTAX', 'VECTOR', 'KERNEL', 'BUFFER'],
-        7: ['COMMAND', 'NETWORK', 'PROGRAM', 'PROCESS', 'CONNECT', 'SESSION', 'EXECUTE', 'MACHINE', 'CONTROL', 'SCANNER'],
-        8: ['PASSWORD', 'SECURITY', 'DATABASE', 'TERMINAL', 'PROTOCOL', 'FUNCTION', 'VARIABLE', 'COMPILER', 'OPERATOR', 'REGISTRY']
-    };
-    
-    const wordLength = [6, 7, 8][Math.floor(Math.random() * 3)];
-    const availableWords = [...wordLists[wordLength]];
-    const numWords = 6;
-    
-    gameWords = [];
-    for (let i = 0; i < numWords; i++) {
-        const randomIndex = Math.floor(Math.random() * availableWords.length);
-        gameWords.push(availableWords.splice(randomIndex, 1)[0]);
-    }
-    
-    correctPassword = gameWords[Math.floor(Math.random() * gameWords.length)];
-    console.log("Correct password:", correctPassword);
-    
-    const passwordGrid = document.getElementById('password-grid');
-    passwordGrid.innerHTML = gameWords.map(word => 
-        `<div class="password-item" data-word="${word}">${word}</div>`
-    ).join('');
-    
-    setupPasswordHandlers();
-}
-
-function generateHintBrackets() {
-    const bracketContainer = document.getElementById('bracket-container');
-    const brackets = ['( )', '[ ]', '{ }', '< >'];
-    
-    bracketContainer.innerHTML = brackets.map((bracket, index) => 
-        `<div class="hint-bracket" data-bracket="${index}">${bracket}</div>`
-    ).join('');
-    
-    setupBracketHandlers();
-}
-
-function setupPasswordHandlers() {
-    document.querySelectorAll('.password-item').forEach(item => {
-        function handler(e) {
-            e.preventDefault();
-            if (!gameActive || !playerTurn) return;
-            
-            audioManager.beep();
-            const word = item.getAttribute('data-word');
-            attemptPassword(word, item);
-        }
-        
-        item.removeEventListener('click', handler);
-        item.removeEventListener('touchstart', handler);
-        item.addEventListener('click', handler);
-        item.addEventListener('touchstart', handler);
-    });
-}
-
-function setupBracketHandlers() {
-    document.querySelectorAll('.hint-bracket').forEach(bracket => {
-        function handler(e) {
-            e.preventDefault();
-            if (!gameActive || !playerTurn || bracket.classList.contains('used')) return;
-            
-            audioManager.beep();
-            useBracketHint(bracket);
-        }
-        
-        bracket.removeEventListener('click', handler);
-        bracket.removeEventListener('touchstart', handler);
-        bracket.addEventListener('click', handler);
-        bracket.addEventListener('touchstart', handler);
-    });
-}
-
-function attemptPassword(selectedWord, element) {
-    if (!gameActive || !playerTurn) return;
-    
-    playerTurn = false;
-    element.classList.add('selected');
-    updatePlayerStatus('CHECKING...');
-    updateTurnIndicator();
-    
-    // Отключаем все пароли
-    document.querySelectorAll('.password-item').forEach(item => {
-        item.classList.add('disabled');
-    });
-    
-    addLogEntry(`You selected: ${selectedWord}`, 'normal');
-    document.getElementById('last-attempt').textContent = `Attempting: ${selectedWord}`;
-    
-    setTimeout(() => {
-        if (selectedWord === correctPassword) {
-            element.classList.remove('selected');
-            element.classList.add('correct');
-            addLogEntry('SUCCESS: Password correct!', 'success');
-            updatePlayerStatus('ACCESS GRANTED');
-            document.getElementById('hint-text').textContent = 'Terminal access granted!';
-            gameScore += 100;
-            updateScoreDisplay();
-            endGame(true);
-        } else {
-            element.classList.remove('selected');
-            element.classList.add('incorrect');
-            attemptsLeft--;
-            updateAttempts(attemptsLeft, 'player');
-            updatePlayerStatus('ACCESS DENIED');
-            
-            const matches = getMatchingPositions(selectedWord, correctPassword);
-            addLogEntry(`Access denied - Likeness: ${matches}`, 'error');
-            document.getElementById('hint-text').textContent = `${matches} characters match correct password`;
-            
-            if (attemptsLeft <= 0) {
-                addLogEntry('All attempts failed - terminal locked', 'error');
-                endGame(false);
-            } else {
-                // Включаем пароли обратно
-                setTimeout(() => {
-                    document.querySelectorAll('.password-item').forEach(item => {
-                        if (!item.classList.contains('correct') && !item.classList.contains('incorrect')) {
-                            item.classList.remove('disabled');
-                        }
-                    });
-                    
-                    if (isMultiplayer) {
-                        playerTurn = false;
-                        updateTurnIndicator();
-                        updateOpponentStatus('THINKING...');
-                        addLogEntry('Opponent\'s turn', 'system');
-                        multiplayerManager.simulateOpponentTurn();
-                    } else {
-                        playerTurn = true;
-                        updateTurnIndicator();
-                        updatePlayerStatus('READY');
-                        startTurnTimer();
-                    }
-                }, 2000);
-            }
-        }
-    }, 1000);
-}
-
-function useBracketHint(bracket) {
-    bracket.classList.add('used');
-    
-    if (Math.random() < 0.5 && attemptsLeft < 4) {
-        attemptsLeft++;
-        updateAttempts(attemptsLeft, 'player');
-        addLogEntry('Hint found: Attempt restored', 'success');
-        bracket.style.background = 'rgba(0, 255, 0, 0.3)';
-        document.getElementById('hint-text').textContent = 'Dud removed! Attempt restored.';
-    } else {
-        addLogEntry('Hint found: No effect', 'error');
-        bracket.style.background = 'rgba(255, 102, 0, 0.3)';
-        document.getElementById('hint-text').textContent = 'No useful data found.';
-    }
-}
-
-function updateTurnIndicator() {
-    const turnText = document.querySelector('.turn-text');
-    
-    if (!isMultiplayer) {
-        turnText.textContent = 'YOUR TURN';
-        turnText.style.color = 'var(--pipboy-yellow)';
-    } else {
-        if (playerTurn) {
-            turnText.textContent = 'YOUR TURN';
-            turnText.style.color = 'var(--pipboy-yellow)';
-        } else {
-            turnText.textContent = 'OPPONENT\'S TURN';
-            turnText.style.color = '#ff6600';
-        }
-    }
-}
-
-function startTurnTimer() {
-    if (turnTimer) clearInterval(turnTimer);
-    
-    turnTimeLeft = 30;
-    
-    turnTimer = setInterval(() => {
-        turnTimeLeft--;
-        document.getElementById('turn-timer').textContent = `${turnTimeLeft}s`;
-        
-        if (turnTimeLeft <= 10) {
-            document.getElementById('turn-timer').classList.add('warning');
-        }
-        
-        if (turnTimeLeft <= 0) {
-            if (playerTurn) {
-                // Время истекло - случайный выбор
-                const availableWords = document.querySelectorAll('.password-item:not(.disabled):not(.correct):not(.incorrect)');
-                if (availableWords.length > 0) {
-                    const randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
-                    const word = randomWord.getAttribute('data-word');
-                    attemptPassword(word, randomWord);
-                }
-            }
-            clearInterval(turnTimer);
-        }
-    }, 1000);
-}
-
-function startMainTimer() {
-    if (gameTimer) clearInterval(gameTimer);
-    
-    gameTimer = setInterval(() => {
-        timeLeft--;
-        updateMainTimerDisplay();
-        
-        if (timeLeft <= 0) {
-            addLogEntry('Session timeout - access denied', 'error');
-            endGame(false);
-        }
-    }, 1000);
-}
-
-function updateMainTimerDisplay() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    document.getElementById('main-timer').textContent = display;
-}
-
-function updatePlayerStatus(status) {
-    document.getElementById('player-status').textContent = status;
-}
-
-function updateOpponentStatus(status) {
-    if (isMultiplayer) {
-        document.getElementById('opponent-status').textContent = status;
-    }
-}
-
-function updateAttempts(attempts, player) {
-    let squares = '';
-    for (let i = 0; i < 4; i++) {
-        squares += i < attempts ? '[X]' : '[ ]';
-    }
-    
-    const elementId = player === 'player' ? 'player-attempts' : 'opponent-attempts';
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.textContent = squares;
-    }
-}
-
-function updateScoreDisplay() {
-    document.getElementById('score-display').textContent = `SCORE: ${gameScore}`;
-}
-
-function endGame(won) {
-    gameActive = false;
-    playerTurn = false;
-    
-    if (gameTimer) clearInterval(gameTimer);
-    if (turnTimer) clearInterval(turnTimer);
-    
-    multiplayerManager.stopSimulation();
-    
-    setTimeout(() => {
-        showGameResult(won);
-    }, 2000);
-}
-
-function showGameResult(won) {
-    if (isMultiplayer) {
-        if (won) {
-            if (currentStake.currency === 'TON') {
-                userData.tonBalance += currentStake.amount;
-            } else {
-                userData.tsarBalance += currentStake.amount;
-            }
-            userData.wins++;
-            userData.xp += 50;
-            gameScore += 200;
-            
-            alert(`[VICTORY!]\n\nYou won ${currentStake.amount} ${currentStake.currency}!\n+50 XP | Score: ${gameScore}\n\nNew balance: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
-        } else {
-            if (currentStake.currency === 'TON') {
-                userData.tonBalance = Math.max(0, userData.tonBalance - currentStake.amount);
-            } else {
-                userData.tsarBalance = Math.max(0, userData.tsarBalance - currentStake.amount);
-            }
-            userData.losses++;
-            userData.xp += 10;
-            
-            alert(`[DEFEAT!]\n\nYou lost ${currentStake.amount} ${currentStake.currency}\n+10 XP | Score: ${gameScore}\n\nRemaining: ${currentStake.currency === 'TON' ? userData.tonBalance.toFixed(3) : userData.tsarBalance} ${currentStake.currency}`);
-        }
-    } else {
-        if (won) {
-            userData.xp += 25;
-            gameScore += 100;
-            alert(`[ACCESS GRANTED!]\n\n+25 XP | Score: ${gameScore}\nTerminal successfully hacked!`);
-        } else {
-            userData.xp += 5;
-            alert(`[ACCESS DENIED]\n\n+5 XP | Score: ${gameScore}\nTry again!`);
-        }
-    }
-    
-    updateUserInfo();
-    resetGame();
-    showModeSelector();
-}
-
-function resetGame() {
-    gameActive = false;
-    isMultiplayer = false;
-    gameWords = [];
-    correctPassword = '';
-    attemptsLeft = 4;
-    timeLeft = 300;
-    playerTurn = true;
-    
-    if (gameTimer) clearInterval(gameTimer);
-    if (turnTimer) clearInterval(turnTimer);
-    
-    multiplayerManager.stopSimulation();
-    multiplayerManager.currentGame = null;
-}
-
-function getMatchingPositions(word1, word2) {
-    let matches = 0;
-    const minLength = Math.min(word1.length, word2.length);
-    
-    for (let i = 0; i < minLength; i++) {
-        if (word1[i] === word2[i]) {
-            matches++;
-        }
-    }
-    
-    return matches;
-}
-
-function clearLog() {
-    const logEntries = document.getElementById('log-entries');
-    if (logEntries) {
-        logEntries.innerHTML = '';
-    }
-}
-
-function addLogEntry(message, type = 'normal') {
-    const logEntries = document.getElementById('log-entries');
-    if (!logEntries) return;
-    
-    const entry = document.createElement('div');
-    entry.className = `log-entry ${type}`;
-    entry.textContent = message;
-    
-    logEntries.appendChild(entry);
-    logEntries.scrollTop = logEntries.scrollHeight;
-    
-    if (logEntries.children.length > 12) {
-        logEntries.removeChild(logEntries.children[0]);
-    }
-}
-
-function enhanceUserExperience() {
-    const supportsVibration = 'vibrate' in navigator;
-    
-    // Touch feedback
-    document.querySelectorAll('button, .password-item, .hint-bracket').forEach(element => {
-        element.addEventListener('touchstart', function() {
-            if (supportsVibration) {
-                navigator.vibrate(8);
-            }
-        });
-    });
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('game-screen').classList.contains('active')) {
-            resetGame();
-            hideAllScreens();
-            document.getElementById('main-screen').classList.add('active');
-            showSection('gameboy');
-        }
-    });
-    
-    // Предотвращаем случайный zoom
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(e) {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
-            e.preventDefault();
-        }
-        lastTouchEnd = now;
-    }, false);
-}
-
-// Инициализация
+// Инициализация (предотвращаем двойную)
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("RUNNER DOM loaded");
-    initApp();
+    console.log("🚀 RUNNER DOM loaded");
+    setTimeout(initApp, 100);
 });
 
-// Дополнительная инициализация для надежности
-window.addEventListener('load', function() {
-    if (!userData) {
-        setTimeout(initApp, 200);
-    }
-});
+// Убираем повторную инициализацию в window.load
