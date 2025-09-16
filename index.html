@@ -1,19 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILOTON RUNNER</title>
+    <title>KILOTON RUNNER - VAULT-TEC TERMINAL</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.cdnfonts.com/css/monofonto" rel="stylesheet">
 </head>
 <body>
     <div class="pipboy-container">
         <!-- Верхняя рамка -->
         <div class="pipboy-frame top-frame">
             <div class="frame-details">
-                <span class="frame-text">WELCOME TO KILOTON INDUSTRIES</span>
-                <span class="frame-text">TSR690-BOOM Vers 1.02</span>
+                <span class="frame-text">VAULT-TEC TERMINAL KTR-01 v2.1</span>
+                <span class="frame-text">NUCLEAR-POWERED GAMING SYSTEM</span>
             </div>
         </div>
         
@@ -22,9 +23,15 @@
             <!-- Приветственный экран -->
             <div id="welcome-screen" class="screen active">
                 <div class="welcome-content">
-                    <h1 class="glowing-text">WELCOME</h1>
-                    <div class="subtitle">TERMINAL ACTIVATION</div>
-                    <div class="battery-status">BAT.A2.5MOM</div>
+                    <h1 class="glowing-text">VAULT-TEC</h1>
+                    <div class="subtitle">KILOTON RUNNER INITIALIZED</div>
+                    <div class="battery-status">POWER: NUCLEAR (∞)</div>
+                    <div class="loading-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">LOADING GAMING PROTOCOLS...</div>
+                    </div>
                 </div>
             </div>
             
@@ -32,8 +39,8 @@
             <div id="main-screen" class="screen">
                 <!-- Заголовок -->
                 <div class="screen-header">
-                    <h1 class="yellow-text">RUNNER</h1>
-                    <div class="header-details">LAUNCH №30101961</div>
+                    <h1 class="yellow-text">KILOTON RUNNER</h1>
+                    <div class="header-details">GAMING PROTOCOL v2.1 | STATUS: ONLINE</div>
                 </div>
                 
                 <!-- Область контента -->
@@ -41,13 +48,13 @@
                     <!-- Дефолтный текст на заднем плане -->
                     <div class="default-content" id="default-content">
                         <p>SELECT A SECTION FROM MENU</p>
-                        <p>STATUS: ONLINE</p>
-                        <p>SYSTEM: NOMINAL</p>
+                        <p>VAULT-TEC INDUSTRIES © 2077</p>
+                        <p>ALL RIGHTS RESERVED</p>
                     </div>
 
                     <!-- Содержимое разделов -->
                     <div id="stat-section" class="section-content">
-                        <h2 class="yellow-text">STATUS REPORT</h2>
+                        <h2 class="yellow-text">VAULT RESIDENT STATUS</h2>
                         <div class="stat-item">
                             <div class="stat-label">LEVEL</div>
                             <div class="stat-value yellow-text">15</div>
@@ -57,32 +64,51 @@
                             <div class="stat-value yellow-text">1250/2000 XP</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">ENERGY</div>
-                            <div class="stat-value yellow-text">85/100</div>
+                            <div class="stat-label">HACKING SKILL</div>
+                            <div class="stat-value yellow-text">ADVANCED</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">TON BALANCE</div>
-                            <div class="stat-value yellow-text">42.5 TON</div>
+                            <div class="stat-value yellow-text">0.542 TON</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">CLAN AFFILIATION</div>
-                            <div class="stat-value yellow-text">Wastelanders</div>
+                            <div class="stat-label">TSAR BALANCE</div>
+                            <div class="stat-value yellow-text">1,250 TSAR</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">WINS / LOSSES</div>
+                            <div class="stat-value yellow-text">23 / 7</div>
                         </div>
                     </div>
 
                     <div id="wallet-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">WALLET MANAGEMENT</h2>
-                        <p class="yellow-text">Your cryptocurrency wallet details will appear here.</p>
+                        <h2 class="yellow-text">CRYPTO WALLET</h2>
+                        <div class="crypto-balance">
+                            <div class="balance-item">
+                                <span class="crypto-icon">💎</span>
+                                <span class="crypto-name">TON</span>
+                                <span class="crypto-amount">0.542</span>
+                            </div>
+                            <div class="balance-item">
+                                <span class="crypto-icon">👑</span>
+                                <span class="crypto-name">TSAR</span>
+                                <span class="crypto-amount">1,250</span>
+                            </div>
+                        </div>
+                        <div class="wallet-actions">
+                            <button class="wallet-btn">DEPOSIT</button>
+                            <button class="wallet-btn">WITHDRAW</button>
+                        </div>
                     </div>
 
                     <div id="runner-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">QUEST BOARD</h2>
+                        <h2 class="yellow-text">QUEST TERMINAL</h2>
                         <p class="yellow-text">Available missions and tasks will appear here.</p>
                     </div>
 
                     <div id="shop-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">SUPPLY SHOP</h2>
-                        <p class="yellow-text">Items and upgrades available for purchase.</p>
+                        <h2 class="yellow-text">SUPPLY DEPOT</h2>
+                        <p class="yellow-text">Trade your tokens for supplies.</p>
                     </div>
 
                     <div id="inventory-section" class="section-content yellow-content">
@@ -97,107 +123,187 @@
 
                     <div id="settings-section" class="section-content yellow-content">
                         <h2 class="yellow-text">SETTINGS</h2>
-                        <p class="yellow-text">Configure your application preferences.</p>
+                        <p class="yellow-text">Configure your terminal preferences.</p>
                     </div>
 
-                    <!-- Новый раздел Gameboy -->
+                    <!-- Раздел Gameboy -->
                     <div id="gameboy-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">GAMEBOY TERMINAL</h2>
-                        <p class="yellow-text">SELECT A GAME:</p>
+                        <h2 class="yellow-text">VAULT-TEC ARCADE</h2>
+                        <p class="yellow-text">SELECT GAME MODE:</p>
                         
                         <div class="game-list">
-                            <div class="game-item" id="wasteland-duel-btn">
-                                <span class="game-icon">⚔️</span>
-                                <span class="game-title">Wasteland Duel</span>
-                                <span class="game-desc">PVP Battle</span>
+                            <div class="game-item featured-game" id="terminal-hack-btn">
+                                <span class="game-icon">💻</span>
+                                <span class="game-title">Terminal Hacking</span>
+                                <span class="game-desc">Solo & Multiplayer Mode</span>
+                                <span class="game-status">AVAILABLE</span>
                             </div>
                             <div class="game-item" id="coming-soon-btn">
-                                <span class="game-icon">🔄</span>
+                                <span class="game-icon">🔒</span>
                                 <span class="game-title">More Games</span>
                                 <span class="game-desc">Coming Soon</span>
+                                <span class="game-status">LOCKED</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Экран игры Wasteland Duel -->
-            <div id="wasteland-duel-screen" class="screen">
+            <!-- Единый экран игры -->
+            <div id="game-screen" class="screen">
+                <!-- Заголовок игры -->
                 <div class="game-header">
-                    <button class="back-button" id="back-to-gameboy">← BACK</button>
-                    <h2 class="yellow-text">WASTELAND DUEL</h2>
-                    <div class="game-subtitle">PVP BATTLE</div>
+                    <button class="terminal-btn" id="back-to-arcade">← EXIT</button>
+                    <h2 class="game-title">ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL</h2>
+                    <button class="terminal-btn" id="game-settings">⚙️</button>
                 </div>
                 
-                <div class="duel-container">
-                    <div class="player-area">
-                        <div class="sprite" id="player-sprite">
-                            <div class="character">
-                                <div class="head"></div>
-                                <div class="body"></div>
-                                <div class="arm-left"></div>
-                                <div class="arm-right"></div>
-                                <div class="leg-left"></div>
-                                <div class="leg-right"></div>
-                            </div>
-                        </div>
-                        <div class="status-bars">
-                            <div class="health-bar">
-                                <div class="bar-label">HEALTH</div>
-                                <div class="bar">
-                                    <div class="fill health-fill" id="player-health-fill"></div>
-                                </div>
-                            </div>
-                            <div class="energy-bar">
-                                <div class="bar-label">ENERGY</div>
-                                <div class="bar">
-                                    <div class="fill energy-fill" id="player-energy-fill"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="action-label" id="player-action">[?????]</div>
-                    </div>
-
-                    <div class="vs-divider">VS</div>
-
-                    <div class="enemy-area">
-                        <div class="sprite" id="enemy-sprite">
-                            <div class="character enemy">
-                                <div class="head"></div>
-                                <div class="body"></div>
-                                <div class="arm-left"></div>
-                                <div class="arm-right"></div>
-                                <div class="leg-left"></div>
-                                <div class="leg-right"></div>
-                            </div>
-                        </div>
-                        <div class="status-bars">
-                            <div class="health-bar">
-                                <div class="bar-label">HEALTH</div>
-                                <div class="bar">
-                                    <div class="fill health-fill" id="enemy-health-fill"></div>
-                                </div>
-                            </div>
-                            <div class="energy-bar">
-                                <div class="bar-label">ENERGY</div>
-                                <div class="bar">
-                                    <div class="fill energy-fill" id="enemy-energy-fill"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="action-label" id="enemy-action">[?????]</div>
+                <!-- Выбор режима игры -->
+                <div class="mode-selector" id="mode-selector">
+                    <h3 class="mode-title">SELECT GAME MODE</h3>
+                    <div class="mode-options">
+                        <button class="mode-btn solo-mode" id="solo-mode-btn">
+                            <span class="mode-icon">🏛️</span>
+                            <span class="mode-name">SOLO MODE</span>
+                            <span class="mode-desc">Practice your skills</span>
+                        </button>
+                        <button class="mode-btn multiplayer-mode" id="multiplayer-mode-btn">
+                            <span class="mode-icon">⚔️</span>
+                            <span class="mode-name">MULTIPLAYER</span>
+                            <span class="mode-desc">Challenge other players</span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="battle-controls">
-                    <div class="controls-title">SELECT YOUR MOVE:</div>
-                    <div class="move-buttons">
-                        <button class="move-btn" data-move="ATK">ATK</button>
-                        <button class="move-btn" data-move="DEF">DEF</button>
-                        <button class="move-btn" data-move="CHR">CHR</button>
-                        <button class="move-btn" data-move="SPEC">SPEC</button>
+                <!-- Настройка мультиплеера -->
+                <div class="multiplayer-setup" id="multiplayer-setup" style="display: none;">
+                    <h3 class="setup-title">MULTIPLAYER SETUP</h3>
+                    
+                    <div class="setup-section">
+                        <label class="setup-label">STAKE CURRENCY:</label>
+                        <div class="currency-selector">
+                            <button class="currency-btn active" data-currency="TON">
+                                <span class="crypto-icon">💎</span>TON
+                            </button>
+                            <button class="currency-btn" data-currency="TSAR">
+                                <span class="crypto-icon">👑</span>TSAR
+                            </button>
+                        </div>
                     </div>
-                    <div class="round-timer">РАУНД <span id="round-number">1</span> | <span id="timer">00:05</span></div>
+
+                    <div class="setup-section">
+                        <label class="setup-label">STAKE AMOUNT:</label>
+                        <div class="amount-input">
+                            <input type="number" id="stake-amount" min="0.001" step="0.001" value="0.1">
+                            <span class="currency-display" id="currency-display">TON</span>
+                        </div>
+                    </div>
+
+                    <div class="setup-actions">
+                        <button class="setup-btn create-btn" id="create-game">CREATE GAME</button>
+                        <button class="setup-btn join-btn" id="find-game">FIND GAME</button>
+                        <button class="setup-btn back-btn" id="back-to-modes">← BACK</button>
+                    </div>
+
+                    <!-- Список доступных игр -->
+                    <div class="available-games" id="available-games" style="display: none;">
+                        <h4 class="games-title">AVAILABLE GAMES</h4>
+                        <div class="games-container" id="games-container">
+                            <!-- Список игр будет здесь -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ожидание игрока -->
+                <div class="waiting-lobby" id="waiting-lobby" style="display: none;">
+                    <div class="waiting-content">
+                        <h3 class="waiting-title">WAITING FOR OPPONENT</h3>
+                        <div class="game-info">
+                            <div class="info-item">
+                                <span class="info-label">GAME CODE:</span>
+                                <span class="info-value" id="lobby-game-code">XXXX</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">STAKE:</span>
+                                <span class="info-value" id="lobby-stake">0.1 TON</span>
+                            </div>
+                        </div>
+                        <div class="waiting-animation">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <button class="waiting-btn" id="cancel-waiting">CANCEL</button>
+                    </div>
+                </div>
+
+                <!-- Игровой экран -->
+                <div class="gaming-area" id="gaming-area" style="display: none;">
+                    <!-- Информация об игре -->
+                    <div class="game-info-bar" id="game-info-bar">
+                        <div class="player-status">
+                            <span class="player-name">YOU</span>
+                            <div class="player-progress">
+                                <div class="progress-indicator" id="your-progress">
+                                    <span class="progress-text">Ready</span>
+                                    <div class="progress-bar-small">
+                                        <div class="progress-fill-small" id="your-progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="attempts-left" id="your-attempts">■ ■ ■ ■</div>
+                            </div>
+                        </div>
+                        
+                        <div class="game-center-info" id="center-info">
+                            <div class="mode-display" id="mode-display">SOLO MODE</div>
+                            <div class="round-display" id="round-display">ROUND 1</div>
+                            <div class="stake-display" id="stake-display" style="display: none;">STAKE: 0.1 TON</div>
+                        </div>
+                        
+                        <div class="opponent-status" id="opponent-status" style="display: none;">
+                            <span class="opponent-name" id="opponent-name">OPPONENT</span>
+                            <div class="opponent-progress">
+                                <div class="progress-indicator" id="opponent-progress">
+                                    <span class="progress-text">Ready</span>
+                                    <div class="progress-bar-small">
+                                        <div class="progress-fill-small" id="opponent-progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="attempts-left" id="opponent-attempts">■ ■ ■ ■</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Терминал -->
+                    <div class="terminal-container">
+                        <div class="terminal-screen-display">
+                            <div class="terminal-header-info">
+                                <span class="terminal-status" id="terminal-status">ENTER PASSWORD NOW</span>
+                                <span class="terminal-timer" id="terminal-timer">05:00</span>
+                            </div>
+                            
+                            <div class="terminal-panels">
+                                <div class="terminal-panel left-panel" id="left-panel">
+                                    <!-- Левая панель терминала -->
+                                </div>
+                                <div class="terminal-panel right-panel" id="right-panel">
+                                    <!-- Правая панель терминала -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Лог событий -->
+                    <div class="event-log" id="event-log">
+                        <div class="log-header">
+                            <span class="log-title">SYSTEM LOG</span>
+                            <span class="log-indicator" id="log-indicator">●</span>
+                        </div>
+                        <div class="log-content" id="log-content">
+                            <div class="log-entry system">Welcome to ROBCO Terminal</div>
+                            <div class="log-entry system">Select password to gain access</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -213,11 +319,11 @@
             <!-- Информационная панель -->
             <div class="info-panel">
                 <span id="time-display">🕐 00:00</span>
-                <span id="balance-display">BAL: 0.0 TON</span>
-                <span id="clan-display">CLAN: NONE</span>
+                <span id="balance-display">TON: 0.542</span>
+                <span id="clan-display">W/L: 23/7</span>
             </div>
             
-            <!-- Кнопка меню, интегрированная в панель -->
+            <!-- Кнопка меню -->
             <div class="menu-panel">
                 <button class="menu-toggle" id="menu-toggle">
                     <span class="menu-toggle-icon">≡</span>
@@ -226,17 +332,17 @@
                 
                 <nav class="pipboy-nav" id="pipboy-nav">
                     <div class="menu-header">
-                        <span class="menu-title">SYSTEM MENU</span>
+                        <span class="menu-title">VAULT-TEC TERMINAL</span>
                         <button class="close-menu-btn" id="close-menu">⨉</button>
                     </div>
                     <button class="nav-btn" data-section="stat">
-                        <span class="nav-icon">📊</span>STAT
+                        <span class="nav-icon">📊</span>STATUS
                     </button>
                     <button class="nav-btn" data-section="wallet">
                         <span class="nav-icon">💳</span>WALLET
                     </button>
                     <button class="nav-btn" data-section="runner">
-                        <span class="nav-icon">🏃</span>RUNNER
+                        <span class="nav-icon">🏃</span>QUESTS
                     </button>
                     <button class="nav-btn" data-section="shop">
                         <span class="nav-icon">🛒</span>SHOP
@@ -250,9 +356,8 @@
                     <button class="nav-btn" data-section="settings">
                         <span class="nav-icon">⚙️</span>SETTINGS
                     </button>
-                    <!-- Новая кнопка GAMEBOY -->
                     <button class="nav-btn" data-section="gameboy">
-                        <span class="nav-icon">🎮</span>GAMEBOY
+                        <span class="nav-icon">🎮</span>ARCADE
                     </button>
                 </nav>
             </div>
