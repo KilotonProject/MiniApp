@@ -2233,3 +2233,100 @@ body {
         animation-duration: 0.1s !important;
     }
 }
+
+/* Добавить в конец style.css */
+
+/* ===== УПРОЩЕННЫЙ ЗАГОЛОВОК ===== */
+.screen-header-simple {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-bottom: 2px solid var(--pipboy-border);
+    background: rgba(0, 26, 0, 0.3);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.screen-header-simple h1 {
+    font-size: 2rem;
+    text-shadow: 0 0 15px var(--pipboy-yellow), 0 0 25px var(--pipboy-yellow);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    color: var(--pipboy-yellow);
+}
+
+.screen-header-simple .header-details {
+    font-size: 0.8rem;
+    color: var(--pipboy-soft-green);
+}
+
+/* ===== ПОДНЯТАЯ ОБЛАСТЬ КОНТЕНТА ===== */
+.content-area-raised {
+    flex: 1;
+    padding: 15px 8px;
+    overflow-y: auto;
+    position: relative;
+    margin-top: 0; /* Убираем отступ сверху */
+}
+
+.default-content-raised {
+    text-align: center;
+    position: absolute;
+    top: 30%; /* Поднимаем выше */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    opacity: 0.15;
+    z-index: 1;
+}
+
+.default-content-raised p {
+    color: var(--pipboy-green);
+    text-shadow: 0 0 5px var(--pipboy-green);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* ===== МОБИЛЬНАЯ ОПТИМИЗАЦИЯ ===== */
+@media (max-width: 768px) {
+    .screen-header-simple {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .screen-header-simple h1 {
+        font-size: 1.6rem;
+    }
+    
+    .content-area-raised {
+        padding: 10px 5px;
+    }
+    
+    .default-content-raised {
+        top: 25%;
+    }
+    
+    .default-content-raised p {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .screen-header-simple {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .screen-header-simple h1 {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+    }
+    
+    .screen-header-simple .header-details {
+        font-size: 0.7rem;
+    }
+    
+    .content-area-raised {
+        padding: 8px 3px;
+    }
+}

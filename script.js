@@ -1,26 +1,19 @@
-// RUNNER TERMINAL - Complete Production Version v2.2
+// RUNNER TERMINAL - Simple Working Version v2.1
 let userData = null;
 let menuOpen = false;
 let gameActive = false;
 let isMultiplayer = false;
-let gameWords = [];
 let correctPassword = '';
 let attemptsLeft = 4;
 let currentStake = { amount: 0, currency: 'TON' };
-let gameTimer = null;
-let turnTimer = null;
-let timeLeft = 300;
 let selectedCurrency = 'TON';
 let gameScore = 0;
 let messageType = 'public';
-let currentLanguage = 'en';
 let soundEnabled = true;
 let playerTurn = true;
-let walletConnected = false;
-let userWallet = null;
 let referralCode = '';
 
-// Глобальные менеджеры
+// Простые системы
 let audioManager;
 let wastelandRadio;
 let runnerSystem;
@@ -29,17 +22,14 @@ let blockchainManager;
 let marketplace;
 let terminalGame;
 let shmupGameManager;
-let achievementSystem;
-let clanSystem;
 
-// Звуковая система
-class RetroAudioManager {
+// Простая звуковая система БЕЗ мелодии
+class SimpleAudioManager {
     constructor() {
         this.context = null;
         this.enabled = true;
-        this.masterVolume = 0.08;
+        this.masterVolume = 0.05;
         this.initialized = false;
-        this.soundBank = {};
     }
 
     async init() {
@@ -51,31 +41,15 @@ class RetroAudioManager {
                 await this.context.resume();
             }
             this.initialized = true;
-            this.createSoundBank();
-            console.log("Enhanced audio system initialized");
+            console.log("Audio initialized");
         } catch (error) {
-            console.log("Audio initialization failed:", error);
+            console.log("Audio failed:", error);
             this.enabled = false;
         }
     }
 
-    createSoundBank() {
-        this.soundBank = {
-            beep: { freq: 800, duration: 0.08, type: 'sine' },
-            correct: { freq: 600, duration: 0.2, type: 'triangle' },
-            incorrect: { freq: 200, duration: 0.3, type: 'sawtooth' },
-            shoot: { freq: 1000, duration: 0.05, type: 'square' },
-            hit: { freq: 150, duration: 0.15, type: 'sawtooth' },
-            powerup: { freq: 800, duration: 0.4, type: 'sine' },
-            levelup: { freq: 523, duration: 0.6, type: 'triangle' },
-            coin: { freq: 880, duration: 0.2, type: 'sine' }
-        };
-    }
-
-    playSound(soundName) {
+    beep() {
         if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
-        
-        const sound = this.soundBank[soundName] || this.soundBank.beep;
         
         try {
             const osc = this.context.createOscillator();
@@ -84,71 +58,49 @@ class RetroAudioManager {
             osc.connect(gain);
             gain.connect(this.context.destination);
             
-            osc.type = sound.type;
-            osc.frequency.setValueAtTime(sound.freq, this.context.currentTime);
+            osc.type = 'sine';
+            osc.frequency.value = 800;
             
-            if (soundName === 'powerup' || soundName === 'levelup') {
-                osc.frequency.exponentialRampToValueAtTime(sound.freq * 1.5, this.context.currentTime + sound.duration);
+            gain.gain.setValueAtTime(this.masterVolume, this.context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(this.context.currentTime + 0.1);
+        } catch (e) {}
+    }
+
+    playGameSound(type) {
+        if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
+        
+        try {
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            switch(type) {
+                case 'correct': osc.frequency.value = 600; break;
+                case 'incorrect': osc.frequency.value = 200; break;
+                case 'shoot': osc.frequency.value = 1000; break;
+                case 'hit': osc.frequency.value = 150; break;
+                default: osc.frequency.value = 400;
             }
             
             gain.gain.setValueAtTime(this.masterVolume, this.context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + sound.duration);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
             
             osc.start();
-            osc.stop(this.context.currentTime + sound.duration);
-        } catch (e) {
-            console.log("Sound error:", e);
-        }
-    }
-
-    beep() { this.playSound('beep'); }
-    playGameSound(type) { this.playSound(type); }
-    
-    playWelcomeMelody() {
-        if (!this.enabled || !this.initialized || !this.context) return;
-        
-        try {
-            const melody = [
-                { note: 220, duration: 0.5 },
-                { note: 246, duration: 0.5 },
-                { note: 261, duration: 0.7 },
-                { note: 293, duration: 0.5 },
-                { note: 329, duration: 0.5 },
-                { note: 261, duration: 1.0 }
-            ];
-            
-            let time = this.context.currentTime + 0.5;
-            
-            melody.forEach(({ note, duration }) => {
-                const osc = this.context.createOscillator();
-                const gain = this.context.createGain();
-                
-                osc.connect(gain);
-                gain.connect(this.context.destination);
-                
-                osc.type = 'triangle';
-                osc.frequency.value = note;
-                
-                gain.gain.setValueAtTime(this.masterVolume * 0.4, time);
-                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
-                
-                osc.start(time);
-                osc.stop(time + duration);
-                
-                time += duration + 0.1;
-            });
-        } catch (e) {
-            console.log("Melody error:", e);
-        }
+            osc.stop(this.context.currentTime + 0.1);
+        } catch (e) {}
     }
 }
 
-// Радио система с сохранением
-class WastelandRadio {
+// Простая радио система
+class SimpleRadio {
     constructor() {
         this.messages = this.loadMessages();
         this.nextId = this.messages.length > 0 ? Math.max(...this.messages.map(m => m.id)) + 1 : 1;
-        this.bannedWords = ['drug', 'drugs', 'porn', 'sex', 'weapon', 'kill', 'death', 'suicide'];
     }
 
     loadMessages() {
@@ -157,9 +109,7 @@ class WastelandRadio {
             if (saved) {
                 return JSON.parse(saved);
             }
-        } catch (e) {
-            console.log("Failed to load messages:", e);
-        }
+        } catch (e) {}
         
         return [
             {
@@ -179,7 +129,7 @@ class WastelandRadio {
             {
                 id: 3,
                 author: 'TRADER_MIKE',
-                text: '[SPONSORED] Premium weapons available at Diamond City! Best deals for TSAR holders!',
+                text: '[SPONSORED] Premium weapons available at Diamond City!',
                 time: '13:15',
                 type: 'sponsored'
             }
@@ -189,23 +139,17 @@ class WastelandRadio {
     saveMessages() {
         try {
             localStorage.setItem('wasteland_radio_messages', JSON.stringify(this.messages));
-        } catch (e) {
-            console.log("Failed to save messages:", e);
-        }
+        } catch (e) {}
     }
 
     addMessage(text, author, type = 'public') {
-        if (this.containsBannedContent(text)) {
-            throw new Error('Message contains prohibited content');
-        }
-        
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         const message = {
             id: this.nextId++,
             author: type === 'anonymous' ? 'ANONYMOUS_USER' : author,
-            text: this.filterContent(text),
+            text: text.substring(0, 200),
             time: timeStr,
             type: type,
             timestamp: Date.now()
@@ -213,25 +157,12 @@ class WastelandRadio {
         
         this.messages.unshift(message);
         
-        if (this.messages.length > 100) {
-            this.messages = this.messages.slice(0, 100);
+        if (this.messages.length > 50) {
+            this.messages = this.messages.slice(0, 50);
         }
         
         this.saveMessages();
         return message;
-    }
-
-    containsBannedContent(text) {
-        const lowerText = text.toLowerCase();
-        return this.bannedWords.some(word => lowerText.includes(word));
-    }
-
-    filterContent(text) {
-        return text
-            .replace(/https?:\/\/[^\s]+/gi, '[LINK_REMOVED]')
-            .replace(/www\.[^\s]+/gi, '[LINK_REMOVED]')
-            .replace(/[<>]/g, '')
-            .substring(0, 200);
     }
 
     getMessages() {
@@ -239,16 +170,10 @@ class WastelandRadio {
     }
 }
 
-// RUNNER миссии
-class RunnerMissionSystem {
+// Простая RUNNER система
+class SimpleRunnerSystem {
     constructor() {
-        this.missions = this.getDefaultMissions();
-        this.userMissions = this.loadUserMissions();
-        this.nextMissionId = 100;
-    }
-
-    getDefaultMissions() {
-        return [
+        this.missions = [
             {
                 id: 1,
                 title: 'Join Telegram Channel',
@@ -300,6 +225,7 @@ class RunnerMissionSystem {
                 status: 'available'
             }
         ];
+        this.userMissions = this.loadUserMissions();
     }
 
     loadUserMissions() {
@@ -314,9 +240,7 @@ class RunnerMissionSystem {
     saveUserMissions() {
         try {
             localStorage.setItem('user_missions', JSON.stringify(this.userMissions));
-        } catch (e) {
-            console.log("Failed to save user missions:", e);
-        }
+        } catch (e) {}
     }
 
     getAvailableMissions(filter = 'all') {
@@ -379,71 +303,13 @@ class RunnerMissionSystem {
     getCompletedMissionsCount() {
         return this.userMissions.filter(m => m.status === 'completed').length;
     }
-
-    createMission(missionData) {
-        if (!userData || userData.tsarBalance < 350000) {
-            return { success: false, error: 'Insufficient TSAR tokens. Required: 350,000 TSAR' };
-        }
-
-        const mission = {
-            id: this.nextMissionId++,
-            title: missionData.title,
-            description: missionData.description,
-            reward: missionData.reward,
-            type: missionData.type,
-            advertiser: userData.name,
-            requirements: missionData.requirements || { minTsar: 100 },
-            status: 'available',
-            createdAt: Date.now()
-        };
-
-        const commission = missionData.totalBudget * 0.1;
-        userData.tsarBalance -= commission;
-
-        this.missions.push(mission);
-        return { success: true, mission: mission };
-    }
 }
 
-// Реферальная система
-class ReferralSystem {
+// Простая реферальная система
+class SimpleReferralSystem {
     constructor() {
-        this.referrals = this.loadReferrals();
-        this.earnings = this.loadEarnings();
-    }
-
-    loadReferrals() {
-        try {
-            const saved = localStorage.getItem('user_referrals');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    saveReferrals() {
-        try {
-            localStorage.setItem('user_referrals', JSON.stringify(this.referrals));
-        } catch (e) {
-            console.log("Failed to save referrals:", e);
-        }
-    }
-
-    loadEarnings() {
-        try {
-            const saved = localStorage.getItem('referral_earnings');
-            return saved ? JSON.parse(saved) : { total: 0, level1: 0, level2: 0, level3: 0 };
-        } catch (e) {
-            return { total: 0, level1: 0, level2: 0, level3: 0 };
-        }
-    }
-
-    saveEarnings() {
-        try {
-            localStorage.setItem('referral_earnings', JSON.stringify(this.earnings));
-        } catch (e) {
-            console.log("Failed to save earnings:", e);
-        }
+        this.referrals = [];
+        this.earnings = { total: 0, level1: 0, level2: 0, level3: 0 };
     }
 
     generateReferralCode() {
@@ -452,44 +318,23 @@ class ReferralSystem {
     }
 
     processEarning(amount, currency) {
-        const rates = [0.1, 0.05, 0.02];
-        
-        this.referrals.forEach(ref => {
-            if (ref.level <= 3) {
-                const earning = amount * rates[ref.level - 1];
-                ref.earnings += earning;
-                this.earnings[`level${ref.level}`] += earning;
-                this.earnings.total += earning;
-                
-                if (userData) {
-                    if (currency === 'TON') {
-                        userData.tonBalance += earning;
-                    } else if (currency === 'TSAR') {
-                        userData.tsarBalance += earning;
-                    }
-                }
+        // Простая симуляция реферальных
+        if (userData) {
+            const referralBonus = amount * 0.1;
+            if (currency === 'TON') {
+                userData.tonBalance += referralBonus;
+            } else if (currency === 'TSAR') {
+                userData.tsarBalance += referralBonus;
             }
-        });
-
-        this.saveReferrals();
-        this.saveEarnings();
+        }
     }
 }
 
-// Блокчейн менеджер
-class BlockchainManager {
+// Простой блокчейн менеджер
+class SimpleBlockchainManager {
     constructor() {
-        this.tonConnect = null;
         this.connected = false;
         this.userWallet = null;
-    }
-
-    async initTonConnect() {
-        try {
-            console.log("TonConnect initialized (simulation mode)");
-        } catch (error) {
-            console.log("TonConnect initialization failed:", error);
-        }
     }
 
     async connectWallet() {
@@ -497,16 +342,14 @@ class BlockchainManager {
             this.connected = true;
             this.userWallet = {
                 account: {
-                    address: 'EQD' + Math.random().toString(36).substr(2, 40),
-                    publicKey: Math.random().toString(36).substr(2, 64)
+                    address: 'EQD' + Math.random().toString(36).substr(2, 40)
                 }
             };
             
             this.updateWalletUI();
             alert('[SUCCESS] Wallet connected!\nAddress: ' + this.userWallet.account.address.substr(0, 15) + '...');
         } catch (error) {
-            console.log("Wallet connection failed:", error);
-            alert('[ERROR] Failed to connect wallet\nTry again later');
+            alert('[ERROR] Failed to connect wallet');
         }
     }
 
@@ -546,14 +389,12 @@ class BlockchainManager {
     }
 
     async processTokenListing(tokenData) {
-        const requiredUsd = 50;
-        const tsarPriceUsd = 0.001;
-        const requiredTsar = requiredUsd / tsarPriceUsd;
+        const requiredTsar = 50000;
 
         if (!userData || userData.tsarBalance < requiredTsar) {
             return { 
                 success: false, 
-                error: `Insufficient TSAR tokens. Required: ${requiredTsar.toLocaleString()} TSAR ($50 worth)` 
+                error: `Insufficient TSAR tokens. Required: ${requiredTsar.toLocaleString()} TSAR` 
             };
         }
 
@@ -577,49 +418,14 @@ class BlockchainManager {
     }
 }
 
-// Система рынка
-class MarketplaceSystem {
+// Простая система рынка
+class SimpleMarketplace {
     constructor() {
-        this.listings = this.loadListings();
-        this.nftListings = this.loadNFTListings();
-        this.giftListings = this.loadGiftListings();
-        this.commissionRate = 0.025;
-        this.nextId = this.getMaxId() + 1;
-    }
-
-    loadListings() {
-        try {
-            const saved = localStorage.getItem('market_listings');
-            return saved ? JSON.parse(saved) : this.getDefaultListings();
-        } catch (e) {
-            return this.getDefaultListings();
-        }
-    }
-
-    loadNFTListings() {
-        try {
-            const saved = localStorage.getItem('nft_listings');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    loadGiftListings() {
-        try {
-            const saved = localStorage.getItem('gift_listings');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    getDefaultListings() {
-        return [
+        this.listings = [
             {
                 id: 1,
                 title: 'Rare Terminal Skin',
-                description: 'Unique blue-glow terminal theme with special effects',
+                description: 'Unique blue-glow terminal theme',
                 price: 100,
                 currency: 'TSAR',
                 seller: 'TECH_TRADER_99',
@@ -628,7 +434,7 @@ class MarketplaceSystem {
             {
                 id: 2,
                 title: 'Gaming Guide',
-                description: 'Advanced hacking techniques and strategies',
+                description: 'Advanced hacking techniques',
                 price: 50,
                 currency: 'TSAR',
                 seller: 'HACKER_ELITE',
@@ -637,28 +443,14 @@ class MarketplaceSystem {
             {
                 id: 3,
                 title: 'Premium Access Pass',
-                description: 'Access to exclusive gaming tournaments',
+                description: 'Access to exclusive tournaments',
                 price: 0.1,
                 currency: 'TON',
                 seller: 'TOURNAMENT_HOST',
                 type: 'access'
             }
         ];
-    }
-
-    getMaxId() {
-        const allListings = [...this.listings, ...this.nftListings, ...this.giftListings];
-        return allListings.length > 0 ? Math.max(...allListings.map(l => l.id)) : 0;
-    }
-
-    saveListings() {
-        try {
-            localStorage.setItem('market_listings', JSON.stringify(this.listings));
-            localStorage.setItem('nft_listings', JSON.stringify(this.nftListings));
-            localStorage.setItem('gift_listings', JSON.stringify(this.giftListings));
-        } catch (e) {
-            console.log("Failed to save listings:", e);
-        }
+        this.nextId = 10;
     }
 
     createListing(listingData) {
@@ -674,189 +466,39 @@ class MarketplaceSystem {
         };
 
         this.listings.unshift(listing);
-        this.saveListings();
         return { success: true, listing: listing };
     }
 
-    getAllListings(type = 'listings') {
-        switch(type) {
-            case 'nft': return this.nftListings;
-            case 'gifts': return this.giftListings;
-            default: return this.listings;
-        }
+    getAllListings() {
+        return this.listings;
     }
 }
 
-// Система достижений
-class AchievementSystem {
+// Простая игра терминала
+class SimpleTerminalGame {
     constructor() {
-        this.achievements = [
-            {
-                id: 'first_mission',
-                name: 'First Steps',
-                description: 'Complete your first mission',
-                icon: '[1ST]',
-                reward: { amount: 10, currency: 'TSAR' },
-                unlocked: false
-            },
-            {
-                id: 'hacker_novice',
-                name: 'Novice Hacker',
-                description: 'Win 5 terminal hacking games',
-                icon: '[HCK]',
-                reward: { amount: 50, currency: 'TSAR' },
-                unlocked: false,
-                progress: 0,
-                target: 5
-            },
-            {
-                id: 'space_ace',
-                name: 'Space Ace',
-                description: 'Score 1000+ in Wasteland Wings',
-                icon: '[ACE]',
-                reward: { amount: 0.01, currency: 'TON' },
-                unlocked: false
-            },
-            {
-                id: 'clan_leader',
-                name: 'Clan Leader',
-                description: 'Create a clan',
-                icon: '[LDR]',
-                reward: { amount: 100, currency: 'TSAR' },
-                unlocked: false
-            },
-            {
-                id: 'crypto_trader',
-                name: 'Crypto Trader',
-                description: 'Complete 10 trading orders',
-                icon: '[TRD]',
-                reward: { amount: 0.05, currency: 'TON' },
-                unlocked: false,
-                progress: 0,
-                target: 10
-            },
-            {
-                id: 'referral_master',
-                name: 'Referral Master',
-                description: 'Invite 10 active referrals',
-                icon: '[REF]',
-                reward: { amount: 0.1, currency: 'TON' },
-                unlocked: false,
-                progress: 0,
-                target: 10
-            }
-        ];
-        this.loadProgress();
-    }
-
-    loadProgress() {
-        try {
-            const saved = localStorage.getItem('achievements_progress');
-            if (saved) {
-                const progress = JSON.parse(saved);
-                this.achievements.forEach(achievement => {
-                    if (progress[achievement.id]) {
-                        Object.assign(achievement, progress[achievement.id]);
-                    }
-                });
-            }
-        } catch (e) {
-            console.log("Failed to load achievements:", e);
-        }
-    }
-
-    saveProgress() {
-        try {
-            const progress = {};
-            this.achievements.forEach(achievement => {
-                progress[achievement.id] = {
-                    unlocked: achievement.unlocked,
-                    progress: achievement.progress || 0
-                };
-            });
-            localStorage.setItem('achievements_progress', JSON.stringify(progress));
-        } catch (e) {
-            console.log("Failed to save achievements:", e);
-        }
-    }
-
-    checkAchievement(id, increment = 1) {
-        const achievement = this.achievements.find(a => a.id === id);
-        if (!achievement || achievement.unlocked) return;
-
-        if (achievement.target) {
-            achievement.progress = (achievement.progress || 0) + increment;
-            if (achievement.progress >= achievement.target) {
-                this.unlockAchievement(achievement);
-            }
-        } else {
-            this.unlockAchievement(achievement);
-        }
-
-        this.saveProgress();
-    }
-
-    unlockAchievement(achievement) {
-        achievement.unlocked = true;
-        
-        if (userData && achievement.reward) {
-            const reward = achievement.reward;
-            if (reward.currency === 'TON') {
-                userData.tonBalance += reward.amount;
-            } else if (reward.currency === 'TSAR') {
-                userData.tsarBalance += reward.amount;
-            } else if (reward.currency === 'STARS') {
-                userData.starsBalance += reward.amount;
-            }
-        }
-
-        showAchievementNotification(achievement);
-        
-        if (audioManager) {
-            audioManager.playSound('levelup');
-        }
-
-        updateUserInfo();
-    }
-}
-
-// Fallout-style игра взлома
-class TerminalHackingGame {
-    constructor() {
-        this.difficulty = 'normal';
-        this.wordLengths = { easy: 5, normal: 7, hard: 9 };
         this.wordLists = {
-            5: ['ABOUT', 'ABOVE', 'AGENT', 'ALARM', 'ALONE', 'ANGER', 'ARMOR', 'BLADE', 'BRAVE', 'BREAK', 'BRING', 'BUILD', 'CHAOS', 'CHARM', 'CLEAN', 'CLEAR', 'CLIMB', 'CLOSE', 'COINS', 'CROWN', 'DANCE', 'DEATH', 'DREAM', 'DRIVE', 'EARTH', 'EMPTY', 'ENEMY', 'ENTRY', 'ERROR', 'FAITH'],
-            7: ['ABILITY', 'ANCIENT', 'ARCHIVE', 'BALANCE', 'BATTERY', 'BENEFIT', 'BICYCLE', 'CAPTAIN', 'CHAMBER', 'CIRCUIT', 'CLASSES', 'COMMAND', 'COMPLEX', 'CONCEPT', 'CONFORM', 'CONTENT', 'CONTROL', 'COUNTRY', 'CURRENT', 'CUSTOMS', 'DIAGRAM', 'DIGITAL', 'DYNAMIC', 'ECONOMY', 'ELEMENT', 'EMPEROR', 'ENHANCE', 'EVENING', 'EXAMPLE', 'FACTORY'],
-            9: ['ABANDONED', 'ADVENTURE', 'ALGORITHM', 'AMBULANCE', 'BENCHMARK', 'BIOGRAPHY', 'BREAKFAST', 'CALCULATE', 'CATALOGUE', 'CHARACTER', 'CHEMISTRY', 'COMMUNITY', 'DEMOCRACY', 'DIRECTORY', 'EDUCATION', 'ELEVATION', 'EMERGENCY', 'EQUIPMENT', 'EVERYBODY', 'EXISTENCE', 'FRAMEWORK', 'GUARANTEE', 'HAPPENING', 'HISTOGRAM', 'KNOWLEDGE', 'LANDSCAPE', 'MACHINERY', 'NIGHTMARE', 'OPERATION', 'PROFESSOR']
+            5: ['ABOUT', 'ABOVE', 'AGENT', 'ALARM', 'ALONE', 'ANGER', 'ARMOR', 'BLADE', 'BRAVE', 'BREAK'],
+            7: ['ABILITY', 'ANCIENT', 'ARCHIVE', 'BALANCE', 'BATTERY', 'BENEFIT', 'BICYCLE', 'CAPTAIN', 'CHAMBER', 'CIRCUIT']
         };
         this.currentWords = [];
         this.correctWord = '';
         this.attemptsLeft = 4;
-        this.hexData = [];
         this.gameActive = false;
         this.isMultiplayer = false;
         this.playerTurn = true;
         this.opponentAttempts = 4;
-        this.hintsUsed = 0;
-        this.timeStarted = 0;
     }
 
-    startGame(mode = 'solo', difficulty = 'normal') {
-        console.log(`Starting terminal hacking: ${mode} mode, ${difficulty} difficulty`);
-        
-        this.difficulty = difficulty;
+    startGame(mode = 'solo') {
         this.isMultiplayer = mode === 'multiplayer';
         this.attemptsLeft = 4;
         this.opponentAttempts = 4;
         this.playerTurn = true;
         this.gameActive = true;
-        this.hintsUsed = 0;
-        this.timeStarted = Date.now();
 
         this.generateWords();
         this.generateHexDump();
-        this.renderTerminal();
         this.updateGameUI();
 
         if (this.isMultiplayer) {
@@ -865,131 +507,62 @@ class TerminalHackingGame {
     }
 
     generateWords() {
-        const wordLength = this.wordLengths[this.difficulty];
-        const wordPool = [...this.wordLists[wordLength]];
+        const wordPool = [...this.wordLists[7]];
         this.currentWords = [];
 
-        const wordCount = this.difficulty === 'easy' ? 15 : this.difficulty === 'normal' ? 17 : 20;
-        
-        for (let i = 0; i < wordCount && wordPool.length > 0; i++) {
+        for (let i = 0; i < 12 && wordPool.length > 0; i++) {
             const randomIndex = Math.floor(Math.random() * wordPool.length);
             this.currentWords.push(wordPool.splice(randomIndex, 1)[0]);
         }
 
         this.correctWord = this.currentWords[Math.floor(Math.random() * this.currentWords.length)];
-        console.log(`Correct password: ${this.correctWord}`);
+        console.log('Correct password:', this.correctWord);
     }
 
     generateHexDump() {
-        this.hexData = [];
+        const hexDump = document.getElementById('hex-dump');
+        if (!hexDump) return;
+
         const chars = '0123456789ABCDEF';
-        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?/\\~`';
-        
-        let wordsToPlace = [...this.currentWords];
-        const lineCount = this.difficulty === 'easy' ? 20 : this.difficulty === 'normal' ? 25 : 30;
-        
-        for (let line = 0; line < lineCount; line++) {
-            let hexLine = '';
-            let dataLine = '';
-            
-            const address = (0xF000 + line * 16).toString(16).toUpperCase().padStart(4, '0');
-            hexLine += `0x${address} `;
+        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        let html = '';
+
+        for (let line = 0; line < 20; line++) {
+            const address = (0xF000 + line * 16).toString(16).toUpperCase();
+            let hexLine = `0x${address} `;
             
             for (let i = 0; i < 16; i++) {
                 hexLine += chars[Math.floor(Math.random() * chars.length)];
                 if (i % 2 === 1) hexLine += ' ';
             }
             
-            let charCount = 0;
-            const lineLength = 12;
-            
-            while (charCount < lineLength) {
-                const remainingSpace = lineLength - charCount;
-                
-                if (wordsToPlace.length > 0 && Math.random() < 0.4) {
-                    const availableWords = wordsToPlace.filter(word => word.length <= remainingSpace);
-                    if (availableWords.length > 0) {
-                        const wordIndex = wordsToPlace.findIndex(word => 
-                            availableWords.includes(word)
-                        );
-                        const word = wordsToPlace.splice(wordIndex, 1)[0];
-                        dataLine += word;
-                        charCount += word.length;
-                        continue;
+            let dataLine = '';
+            for (let i = 0; i < 12; i++) {
+                if (Math.random() < 0.3 && this.currentWords.length > 0) {
+                    const word = this.currentWords.shift();
+                    dataLine += `<span class="password-word" data-word="${word}">${word}</span>`;
+                    i += word.length - 1;
+                } else {
+                    if (Math.random() < 0.1) {
+                        dataLine += '<span class="bracket-hint">[]</span>';
+                        i++;
+                    } else {
+                        dataLine += symbols[Math.floor(Math.random() * symbols.length)];
                     }
                 }
-                
-                const hintChance = this.difficulty === 'easy' ? 0.15 : this.difficulty === 'normal' ? 0.12 : 0.08;
-                if (Math.random() < hintChance && remainingSpace >= 2) {
-                    const brackets = ['()', '[]', '{}', '<>'];
-                    const bracket = brackets[Math.floor(Math.random() * brackets.length)];
-                    dataLine += bracket;
-                    charCount += 2;
-                } else {
-                    dataLine += symbols[Math.floor(Math.random() * symbols.length)];
-                    charCount++;
-                }
             }
             
-            this.hexData.push({
-                address: `0x${address}`,
-                hex: hexLine,
-                data: dataLine
-            });
-        }
-
-        while (wordsToPlace.length > 0) {
-            const word = wordsToPlace.shift();
-            const randomLine = Math.floor(Math.random() * this.hexData.length);
-            const line = this.hexData[randomLine];
-            
-            const availableSpaces = [];
-            for (let i = 0; i <= line.data.length - word.length; i++) {
-                const canFit = line.data.substr(i, word.length).split('').every(char => 
-                    symbols.includes(char) || char === ' '
-                );
-                if (canFit) {
-                    availableSpaces.push(i);
-                }
-            }
-            
-            if (availableSpaces.length > 0) {
-                const insertPos = availableSpaces[Math.floor(Math.random() * availableSpaces.length)];
-                line.data = line.data.substring(0, insertPos) + word + 
-                           line.data.substring(insertPos + word.length);
-            }
-        }
-    }
-
-    renderTerminal() {
-        const hexDump = document.getElementById('hex-dump');
-        if (!hexDump) return;
-
-        hexDump.innerHTML = this.hexData.map((line, index) => {
-            let processedData = line.data;
-            
-            this.currentWords.forEach(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'g');
-                processedData = processedData.replace(regex, 
-                    `<span class="password-word" data-word="${word}">${word}</span>`
-                );
-            });
-
-            processedData = processedData.replace(/[\(\)\[\]\{\}<>]{2}/g, match => {
-                return `<span class="bracket-hint" data-hint="remove-dud">${match}</span>`;
-            });
-
-            return `<div class="hex-line" data-line="${index}">
-                <span class="hex-address">${line.address}</span> 
-                <span class="hex-bytes">${line.hex}</span> 
-                <span class="hex-ascii">${processedData}</span>
+            html += `<div class="hex-line">
+                <span class="hex-address">${hexLine}</span> 
+                <span class="hex-ascii">${dataLine}</span>
             </div>`;
-        }).join('');
+        }
 
-        this.attachTerminalHandlers();
+        hexDump.innerHTML = html;
+        this.attachHandlers();
     }
 
-    attachTerminalHandlers() {
+    attachHandlers() {
         document.querySelectorAll('.password-word').forEach(word => {
             word.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1039,11 +612,10 @@ class TerminalHackingGame {
         }
         
         this.addLogEntry('> Exact match!', 'success');
-        this.addLogEntry('> Please wait while system', 'success');
-        this.addLogEntry('> grants access...', 'success');
+        this.addLogEntry('> Access granted!', 'success');
         
         if (audioManager) {
-            audioManager.playSound('correct');
+            audioManager.playGameSound('correct');
         }
         
         setTimeout(() => {
@@ -1065,7 +637,7 @@ class TerminalHackingGame {
         this.updateAttemptsDisplay();
         
         if (audioManager) {
-            audioManager.playSound('incorrect');
+            audioManager.playGameSound('incorrect');
         }
 
         if (this.attemptsLeft <= 0) {
@@ -1073,7 +645,6 @@ class TerminalHackingGame {
             this.endGame(false);
         } else if (this.isMultiplayer) {
             this.playerTurn = false;
-            this.updateTurnIndicator();
             this.simulateOpponentTurn();
         }
     }
@@ -1094,22 +665,11 @@ class TerminalHackingGame {
         bracketElement.classList.add('used');
         bracketElement.style.color = '#666666';
         
-        this.hintsUsed++;
-        
-        const hintTypes = ['dud_removed', 'reset_attempts'];
-        const hint = hintTypes[Math.floor(Math.random() * hintTypes.length)];
-
-        if (hint === 'dud_removed') {
-            this.removeDudPassword();
-            this.addLogEntry('> Dud removed', 'system');
-        } else if (hint === 'reset_attempts' && this.attemptsLeft < 4) {
-            this.attemptsLeft = 4;
-            this.updateAttemptsDisplay();
-            this.addLogEntry('> Attempts reset', 'system');
-        }
+        this.removeDudPassword();
+        this.addLogEntry('> Dud removed', 'system');
 
         if (audioManager) {
-            audioManager.playSound('powerup');
+            audioManager.playGameSound('correct');
         }
     }
 
@@ -1134,7 +694,7 @@ class TerminalHackingGame {
         setTimeout(() => {
             const availableWords = this.currentWords.filter(word => 
                 word !== this.correctWord &&
-                !document.querySelector(`[data-word="${word}"]`).classList.contains('incorrect')
+                !document.querySelector(`[data-word="${word}"]`)?.classList.contains('incorrect')
             );
             
             if (availableWords.length === 0) return;
@@ -1158,7 +718,6 @@ class TerminalHackingGame {
                         this.endGame(true);
                     } else {
                         this.playerTurn = true;
-                        this.updateTurnIndicator();
                     }
                 }
             }, 1200);
@@ -1176,7 +735,7 @@ class TerminalHackingGame {
         log.appendChild(entry);
         log.scrollTop = log.scrollHeight;
 
-        if (log.children.length > 20) {
+        if (log.children.length > 15) {
             log.removeChild(log.children[0]);
         }
     }
@@ -1208,20 +767,6 @@ class TerminalHackingGame {
         }
     }
 
-    updateTurnIndicator() {
-        const turnText = document.querySelector('.turn-text');
-        
-        if (turnText) {
-            if (this.playerTurn) {
-                turnText.textContent = 'YOUR TURN';
-                turnText.style.color = 'var(--pipboy-yellow)';
-            } else {
-                turnText.textContent = 'OPPONENT TURN';
-                turnText.style.color = 'var(--combat-active)';
-            }
-        }
-    }
-
     updateGameUI() {
         const modeBadge = document.getElementById('mode-badge');
         const opponentSide = document.getElementById('opponent-side');
@@ -1245,18 +790,16 @@ class TerminalHackingGame {
         this.updateAttemptsDisplay();
         if (this.isMultiplayer) {
             this.updateOpponentDisplay();
-            this.updateTurnIndicator();
         }
     }
 
     startMultiplayerMode() {
-        this.addLogEntry('> Establishing secure connection...', 'system');
+        this.addLogEntry('> Connecting to opponent...', 'system');
         
         setTimeout(() => {
-            this.addLogEntry('> Opponent connected: VAULT_DWELLER_' + Math.floor(Math.random() * 1000), 'system');
-            this.addLogEntry('> Match commenced!', 'system');
-            this.updateTurnIndicator();
-        }, 2500);
+            this.addLogEntry('> Opponent connected', 'system');
+            this.addLogEntry('> Match started!', 'system');
+        }, 2000);
     }
 
     endGame(won) {
@@ -1270,16 +813,12 @@ class TerminalHackingGame {
         userData.bottleCaps += totalReward;
         
         if (this.isMultiplayer && won && currentStake) {
-            const winnings = currentStake.amount * 1.85;
+            const winnings = currentStake.amount * 1.8;
             if (currentStake.currency === 'TON') {
                 userData.tonBalance += winnings;
             } else if (currentStake.currency === 'TSAR') {
                 userData.tsarBalance += winnings;
             }
-        }
-
-        if (achievementSystem && won) {
-            achievementSystem.checkAchievement('hacker_novice');
         }
 
         updateUserInfo();
@@ -1290,7 +829,7 @@ class TerminalHackingGame {
                 `[ACCESS DENIED!]\nTerminal locked!\n+${totalReward} Bottle Caps`;
             
             if (this.isMultiplayer && won && currentStake) {
-                const winnings = currentStake.amount * 1.85;
+                const winnings = currentStake.amount * 1.8;
                 resultMessage += `\n+${winnings} ${currentStake.currency}`;
             }
             
@@ -1318,45 +857,28 @@ class TerminalHackingGame {
     }
 }
 
-// Космические стрелялки
-class ShmupGame {
+// Простая игра Shmup
+class SimpleShmupGame {
     constructor() {
         this.canvas = null;
         this.ctx = null;
         this.gameActive = false;
-        this.player = { 
-            x: 150, y: 350, width: 24, height: 24, 
-            lives: 3, speed: 6, fireRate: 200, lastShot: 0,
-            powerLevel: 1, shield: 0
-        };
+        this.player = { x: 150, y: 350, width: 20, height: 20, lives: 3 };
         this.enemies = [];
         this.bullets = [];
-        this.powerups = [];
-        this.particles = [];
         this.score = 0;
-        this.level = 1;
         this.gameLoop = null;
         this.enemySpawner = null;
-        this.powerupSpawner = null;
         this.isMultiplayer = false;
         this.opponentScore = 0;
-        this.waveNumber = 1;
-        this.enemiesKilled = 0;
-        this.bossActive = false;
     }
 
     init() {
         this.canvas = document.getElementById('shmup-canvas');
-        if (!this.canvas) {
-            console.log("Shmup canvas not found");
-            return false;
-        }
+        if (!this.canvas) return false;
         
         this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = 300;
-        this.canvas.height = 400;
-        
-        console.log("Shmup game initialized");
+        console.log("Shmup initialized");
         return true;
     }
 
@@ -1369,26 +891,14 @@ class ShmupGame {
         this.isMultiplayer = mode === 'multiplayer';
         this.gameActive = true;
         this.score = 0;
-        this.level = 1;
-        this.waveNumber = 1;
-        this.enemiesKilled = 0;
-        
-        this.player = { 
-            x: 138, y: 350, width: 24, height: 24, 
-            lives: 3, speed: 6, fireRate: 200, lastShot: 0,
-            powerLevel: 1, shield: 0
-        };
-        
+        this.player = { x: 150, y: 350, width: 20, height: 20, lives: 3 };
         this.enemies = [];
         this.bullets = [];
-        this.powerups = [];
-        this.particles = [];
 
         this.updateShmupUI();
         
         this.gameLoop = setInterval(() => this.update(), 1000/60);
-        this.enemySpawner = setInterval(() => this.spawnEnemy(), 1500);
-        this.powerupSpawner = setInterval(() => this.spawnPowerup(), 8000);
+        this.enemySpawner = setInterval(() => this.spawnEnemy(), 1000);
 
         if (this.isMultiplayer) {
             this.startMultiplayerShmup();
@@ -1399,104 +909,45 @@ class ShmupGame {
         if (!this.gameActive || !this.ctx) return;
 
         this.clearCanvas();
-        this.drawBackground();
         this.updateBullets();
         this.updateEnemies();
-        this.updatePowerups();
-        this.updateParticles();
         this.checkCollisions();
         this.drawPlayer();
         this.drawBullets();
         this.drawEnemies();
-        this.drawPowerups();
-        this.drawParticles();
         this.drawUI();
     }
 
     clearCanvas() {
         this.ctx.fillStyle = '#000011';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    drawBackground() {
+        
+        // Простые звезды
         this.ctx.fillStyle = '#ffffff';
-        for (let i = 0; i < 100; i++) {
-            const speed = (i % 3) + 1;
+        for (let i = 0; i < 30; i++) {
             const x = (i * 7) % this.canvas.width;
-            const y = (i * 11 + Date.now() * speed * 0.02) % this.canvas.height;
-            const size = speed > 2 ? 2 : 1;
-            this.ctx.fillRect(x, y, size, size);
+            const y = (i * 11 + Date.now() * 0.05) % this.canvas.height;
+            this.ctx.fillRect(x, y, 1, 1);
         }
     }
 
     drawPlayer() {
-        const p = this.player;
-        
         this.ctx.fillStyle = '#00b000';
-        this.ctx.fillRect(p.x + 4, p.y, p.width - 8, p.height);
-        
-        this.ctx.fillStyle = '#ffcc00';
-        this.ctx.fillRect(p.x + 8, p.y + 4, p.width - 16, p.height - 8);
-        
-        this.ctx.fillStyle = '#008800';
-        this.ctx.fillRect(p.x, p.y + 8, 6, 12);
-        this.ctx.fillRect(p.x + p.width - 6, p.y + 8, 6, 12);
-        
-        if (p.shield > 0) {
-            this.ctx.strokeStyle = '#00aaff';
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x + p.width/2, p.y + p.height/2, p.width/2 + 8, 0, Math.PI * 2);
-            this.ctx.stroke();
-        }
+        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
     }
 
     drawBullets() {
+        this.ctx.fillStyle = '#ffcc00';
         this.bullets.forEach(bullet => {
-            if (bullet.type === 'player') {
-                this.ctx.fillStyle = '#ffcc00';
-                this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-            } else {
-                this.ctx.fillStyle = '#cc3333';
-                this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-            }
+            this.ctx.fillRect(bullet.x, bullet.y, 3, 8);
         });
     }
 
     drawEnemies() {
         this.enemies.forEach(enemy => {
-            if (enemy.type === 'boss') {
-                this.ctx.fillStyle = '#cc3333';
-                this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-                this.ctx.fillStyle = '#ff6666';
-                this.ctx.fillRect(enemy.x + 4, enemy.y + 4, enemy.width - 8, enemy.height - 8);
-            } else {
-                this.ctx.fillStyle = enemy.type === 'fast' ? '#cc7700' : '#cc5500';
-                this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-            }
+            this.ctx.fillStyle = '#cc5500';
+            this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
         });
-    }
-
-    drawPowerups() {
-        this.powerups.forEach(powerup => {
-            this.ctx.fillStyle = powerup.color;
-            this.ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
-            
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.font = '12px monospace';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(powerup.icon, powerup.x + powerup.width/2, powerup.y + powerup.height/2 + 4);
-            this.ctx.textAlign = 'left';
-        });
-    }
-
-    drawParticles() {
-        this.particles.forEach(particle => {
-            this.ctx.fillStyle = particle.color;
-            this.ctx.globalAlpha = particle.life;
-            this.ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
-        });
-        this.ctx.globalAlpha = 1;
     }
 
     drawUI() {
@@ -1504,8 +955,7 @@ class ShmupGame {
         this.ctx.font = '12px monospace';
         this.ctx.fillText(`SCORE: ${this.score}`, 10, 20);
         this.ctx.fillText(`LIVES: ${this.player.lives}`, 10, 35);
-        this.ctx.fillText(`LEVEL: ${this.level}`, 10, 50);
-        
+
         if (this.isMultiplayer) {
             this.ctx.fillText(`OPPONENT: ${this.opponentScore}`, 180, 20);
         }
@@ -1513,36 +963,15 @@ class ShmupGame {
 
     updateBullets() {
         this.bullets = this.bullets.filter(bullet => {
-            if (bullet.type === 'player') {
-                bullet.y -= 10;
-                return bullet.y > -bullet.height;
-            } else {
-                bullet.y += 5;
-                return bullet.y < this.canvas.height;
-            }
+            bullet.y -= 8;
+            return bullet.y > 0;
         });
     }
 
     updateEnemies() {
         this.enemies = this.enemies.filter(enemy => {
             enemy.y += enemy.speed;
-            return enemy.y < this.canvas.height + 50;
-        });
-    }
-
-    updatePowerups() {
-        this.powerups = this.powerups.filter(powerup => {
-            powerup.y += 3;
-            return powerup.y < this.canvas.height;
-        });
-    }
-
-    updateParticles() {
-        this.particles = this.particles.filter(particle => {
-            particle.x += particle.vx;
-            particle.y += particle.vy;
-            particle.life -= 0.02;
-            return particle.life > 0;
+            return enemy.y < this.canvas.height;
         });
     }
 
@@ -1550,71 +979,38 @@ class ShmupGame {
         if (!this.gameActive) return;
 
         const enemy = {
-            x: Math.random() * (this.canvas.width - 24),
-            y: -24,
+            x: Math.random() * (this.canvas.width - 20),
+            y: 0,
             width: 20,
             height: 20,
-            speed: 2 + Math.random() * 1.5,
-            health: 1,
-            type: 'normal',
-            points: 10
+            speed: 2 + Math.random(),
+            health: 1
         };
 
         this.enemies.push(enemy);
     }
 
-    spawnPowerup() {
-        if (!this.gameActive || Math.random() < 0.7) return;
-
-        const powerupTypes = [
-            { type: 'health', color: '#00ff00', icon: '+' },
-            { type: 'weapon', color: '#ffcc00', icon: 'W' },
-            { type: 'shield', color: '#00aaff', icon: 'S' }
-        ];
-
-        const powerupType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
-
-        const powerup = {
-            x: Math.random() * (this.canvas.width - 20),
-            y: -20,
-            width: 20,
-            height: 20,
-            type: powerupType.type,
-            color: powerupType.color,
-            icon: powerupType.icon
-        };
-
-        this.powerups.push(powerup);
-    }
-
     shoot() {
         if (!this.gameActive) return;
-        
-        const now = Date.now();
-        if (now - this.player.lastShot < this.player.fireRate) return;
-        
-        this.player.lastShot = now;
 
         const bullet = {
-            x: this.player.x + this.player.width / 2 - 1.5,
+            x: this.player.x + this.player.width / 2,
             y: this.player.y,
             width: 3,
-            height: 8,
-            type: 'player'
+            height: 8
         };
 
         this.bullets.push(bullet);
         
         if (audioManager) {
-            audioManager.playSound('shoot');
+            audioManager.playGameSound('shoot');
         }
     }
 
     movePlayer(direction) {
         if (!this.gameActive) return;
 
-        const speed = this.player.speed;
-        
+        const speed = 5;
         switch(direction) {
             case 'left':
                 this.player.x = Math.max(0, this.player.x - speed);
@@ -1626,34 +1022,21 @@ class ShmupGame {
                 this.player.y = Math.max(0, this.player.y - speed);
                 break;
             case 'down':
-                this.player.y = Math.min(this.canvas.height - this.player.height - 20, this.player.y + speed);
+                this.player.y = Math.min(this.canvas.height - this.player.height, this.player.y + speed);
                 break;
         }
     }
 
     checkCollisions() {
         this.bullets.forEach((bullet, bulletIndex) => {
-            if (bullet.type !== 'player') return;
-            
             this.enemies.forEach((enemy, enemyIndex) => {
                 if (this.isColliding(bullet, enemy)) {
                     this.bullets.splice(bulletIndex, 1);
+                    this.enemies.splice(enemyIndex, 1);
+                    this.score += 10;
                     
-                    enemy.health--;
-                    if (enemy.health <= 0) {
-                        this.enemies.splice(enemyIndex, 1);
-                        this.score += enemy.points;
-                        this.enemiesKilled++;
-                        
-                        this.createExplosionParticles(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
-                        
-                        if (audioManager) {
-                            audioManager.playSound('hit');
-                        }
-                        
-                        if (Math.random() < 0.15) {
-                            this.spawnPowerup();
-                        }
+                    if (audioManager) {
+                        audioManager.playGameSound('hit');
                     }
                 }
             });
@@ -1662,67 +1045,19 @@ class ShmupGame {
         this.enemies.forEach((enemy, enemyIndex) => {
             if (this.isColliding(this.player, enemy)) {
                 this.enemies.splice(enemyIndex, 1);
-                this.damagePlayer();
-            }
-        });
-
-        this.powerups.forEach((powerup, powerupIndex) => {
-            if (this.isColliding(this.player, powerup)) {
-                this.powerups.splice(powerupIndex, 1);
-                this.applyPowerup(powerup);
+                this.player.lives--;
                 
                 if (audioManager) {
-                    audioManager.playSound('powerup');
+                    audioManager.playGameSound('hit');
+                }
+
+                if (this.player.lives <= 0) {
+                    this.endShmupGame();
                 }
             }
         });
 
         this.updateShmupUI();
-    }
-
-    damagePlayer() {
-        if (this.player.shield > 0) {
-            this.player.shield--;
-        } else {
-            this.player.lives--;
-        }
-        
-        if (audioManager) {
-            audioManager.playSound('hit');
-        }
-
-        if (this.player.lives <= 0) {
-            this.endShmupGame();
-        }
-    }
-
-    applyPowerup(powerup) {
-        switch(powerup.type) {
-            case 'health':
-                this.player.lives = Math.min(3, this.player.lives + 1);
-                break;
-            case 'weapon':
-                this.player.powerLevel = Math.min(3, this.player.powerLevel + 1);
-                this.player.fireRate = Math.max(100, this.player.fireRate - 50);
-                break;
-            case 'shield':
-                this.player.shield += 3;
-                break;
-        }
-    }
-
-    createExplosionParticles(x, y) {
-        for (let i = 0; i < 8; i++) {
-            this.particles.push({
-                x: x,
-                y: y,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8,
-                size: 2 + Math.random() * 3,
-                color: ['#ff6600', '#ffcc00', '#ff3333'][Math.floor(Math.random() * 3)],
-                life: 1
-            });
-        }
     }
 
     isColliding(rect1, rect2) {
@@ -1743,7 +1078,7 @@ class ShmupGame {
     startMultiplayerShmup() {
         const opponentSimulator = setInterval(() => {
             if (this.gameActive && this.isMultiplayer) {
-                this.opponentScore += Math.floor(Math.random() * 30) + 10;
+                this.opponentScore += Math.floor(Math.random() * 20);
             } else {
                 clearInterval(opponentSimulator);
             }
@@ -1755,21 +1090,20 @@ class ShmupGame {
         
         if (this.gameLoop) clearInterval(this.gameLoop);
         if (this.enemySpawner) clearInterval(this.enemySpawner);
-        if (this.powerupSpawner) clearInterval(this.powerupSpawner);
 
         if (!userData) return;
 
         const reward = Math.floor(this.score / 10);
         userData.bottleCaps += reward;
 
-        let resultMessage = `[MISSION COMPLETE!]\nScore: ${this.score}\n+${reward} Bottle Caps`;
+        let resultMessage = `[GAME OVER!]\nScore: ${this.score}\n+${reward} Bottle Caps`;
 
         if (this.isMultiplayer) {
             const won = this.score > this.opponentScore;
             resultMessage += `\nOpponent: ${this.opponentScore}\n${won ? 'VICTORY!' : 'DEFEAT'}`;
             
             if (won && currentStake) {
-                const winnings = currentStake.amount * 1.85;
+                const winnings = currentStake.amount * 1.8;
                 if (currentStake.currency === 'TON') {
                     userData.tonBalance += winnings;
                 } else if (currentStake.currency === 'TSAR') {
@@ -1777,10 +1111,6 @@ class ShmupGame {
                 }
                 resultMessage += `\n+${winnings} ${currentStake.currency}`;
             }
-        }
-
-        if (achievementSystem && this.score >= 1000) {
-            achievementSystem.checkAchievement('space_ace');
         }
 
         updateUserInfo();
@@ -1795,16 +1125,12 @@ class ShmupGame {
         this.gameActive = false;
         this.score = 0;
         this.opponentScore = 0;
-        this.level = 1;
         this.player.lives = 3;
         this.enemies = [];
         this.bullets = [];
-        this.powerups = [];
-        this.particles = [];
         
         if (this.gameLoop) clearInterval(this.gameLoop);
         if (this.enemySpawner) clearInterval(this.enemySpawner);
-        if (this.powerupSpawner) clearInterval(this.powerupSpawner);
         
         this.updateShmupUI();
         
@@ -1814,24 +1140,23 @@ class ShmupGame {
     }
 }
 
-// Инициализация
+// Инициализация (ПРОСТАЯ)
 let initStarted = false;
 
 function initApp() {
     if (initStarted) return;
     initStarted = true;
     
-    console.log("🚀 Initializing RUNNER terminal...");
+    console.log("🚀 Initializing simple RUNNER terminal...");
     
-    audioManager = new RetroAudioManager();
-    wastelandRadio = new WastelandRadio();
-    runnerSystem = new RunnerMissionSystem();
-    referralSystem = new ReferralSystem();
-    blockchainManager = new BlockchainManager();
-    marketplace = new MarketplaceSystem();
-    terminalGame = new TerminalHackingGame();
-    shmupGameManager = new ShmupGame();
-    achievementSystem = new AchievementSystem();
+    audioManager = new SimpleAudioManager();
+    wastelandRadio = new SimpleRadio();
+    runnerSystem = new SimpleRunnerSystem();
+    referralSystem = new SimpleReferralSystem();
+    blockchainManager = new SimpleBlockchainManager();
+    marketplace = new SimpleMarketplace();
+    terminalGame = new SimpleTerminalGame();
+    shmupGameManager = new SimpleShmupGame();
     
     loadUserData();
     generateReferralCode();
@@ -1840,15 +1165,9 @@ function initApp() {
     loadMarketListings();
     loadRunnerMissions();
     
-    blockchainManager.initTonConnect();
-    
-    updateDateTime();
-    setInterval(updateDateTime, 60000);
-    
-    addAchievementStyles();
     showWelcomeScreen();
     
-    console.log("✅ RUNNER terminal ready");
+    console.log("✅ Simple RUNNER terminal ready");
 }
 
 function loadUserData() {
@@ -1857,9 +1176,7 @@ function loadUserData() {
         if (saved) {
             userData = JSON.parse(saved);
         }
-    } catch (e) {
-        console.log("Failed to load user data:", e);
-    }
+    } catch (e) {}
     
     if (!userData) {
         userData = {
@@ -1872,7 +1189,6 @@ function loadUserData() {
             wins: 23,
             losses: 7,
             clan: null,
-            gamesPlayed: 30,
             missionsCompleted: 0,
             totalEarned: 0,
             referralEarnings: 0,
@@ -1889,9 +1205,7 @@ function saveUserData() {
     
     try {
         localStorage.setItem('runner_user_data', JSON.stringify(userData));
-    } catch (e) {
-        console.log("Failed to save user data:", e);
-    }
+    } catch (e) {}
 }
 
 function generateReferralCode() {
@@ -1907,12 +1221,6 @@ function generateReferralCode() {
 function updateUserInfo() {
     if (!userData) return;
 
-    const balanceDisplay = document.getElementById('balance-display');
-    const capsDisplay = document.getElementById('caps-display');
-    
-    if (balanceDisplay) balanceDisplay.textContent = `TON: ${userData.tonBalance.toFixed(3)}`;
-    if (capsDisplay) capsDisplay.textContent = `CAPS: ${userData.bottleCaps}`;
-    
     const elements = {
         'player-level': userData.level,
         'caps-value': userData.bottleCaps,
@@ -1940,25 +1248,9 @@ function updateUserInfo() {
         if (referralEarningsElement) referralEarningsElement.textContent = userData.referralEarnings.toFixed(3) + ' TON';
     }
 
-    const balanceItems = document.querySelectorAll('.crypto-amount');
-    if (balanceItems.length >= 3) {
-        balanceItems[0].textContent = userData.tonBalance.toFixed(3);
-        balanceItems[1].textContent = userData.tsarBalance.toLocaleString();
-        balanceItems[2].textContent = userData.starsBalance.toString();
-    }
-    
     updateCraftingAccess();
     updateAdvertiserAccess();
     saveUserData();
-}
-
-function updateDateTime() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const timeDisplay = document.getElementById('time-display');
-    if (timeDisplay) {
-        timeDisplay.textContent = `[TIME] ${timeStr}`;
-    }
 }
 
 function showWelcomeScreen() {
@@ -1985,11 +1277,10 @@ function showWelcomeScreen() {
     
     setTimeout(() => { canSkip = true; }, 2000);
     
+    // Инициализация аудио БЕЗ мелодии
     const initAudio = () => {
         if (audioManager) {
-            audioManager.init().then(() => {
-                setTimeout(() => audioManager.playWelcomeMelody(), 1000);
-            });
+            audioManager.init();
         }
     };
     
@@ -2086,7 +1377,7 @@ function showContinuePrompt() {
             if (document.getElementById('welcome-screen').classList.contains('active')) {
                 proceedToMainScreen();
             }
-        }, 10000);
+        }, 8000);
     }
 }
 
@@ -2126,7 +1417,10 @@ function setupSimpleNavigation() {
     const closeBtn = document.getElementById('simple-close');
     const nav = document.getElementById('simple-nav');
     
-    if (!menuBtn || !closeBtn || !nav) return;
+    if (!menuBtn || !closeBtn || !nav) {
+        console.error("❌ Menu elements not found!");
+        return;
+    }
     
     function openMenu() {
         nav.style.display = 'block';
@@ -2182,6 +1476,7 @@ function showSection(section) {
     }
 }
 
+// Остальные функции (упрощенные версии)
 function setupGameHandlers() {
     const terminalBtn = document.getElementById('terminal-hack-btn');
     if (terminalBtn) {
@@ -2200,18 +1495,6 @@ function setupGameHandlers() {
             showShmupScreen();
         });
     }
-
-    const otherGames = ['chess-btn', 'battle-arena-btn'];
-    otherGames.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (audioManager) audioManager.beep();
-                alert(`[GAME]\nComing in future updates!`);
-            });
-        }
-    });
 
     const backBtn = document.getElementById('back-to-arcade');
     const backShmupBtn = document.getElementById('back-from-shmup');
@@ -2258,23 +1541,23 @@ function setupModeHandlers() {
         });
     }
 
-    const buttons = [
-        { id: 'create-game', handler: createMultiplayerGame },
-        { id: 'find-game', handler: findMultiplayerGame },
-        { id: 'back-to-modes', handler: showModeSelector },
-        { id: 'cancel-waiting', handler: () => showMultiplayerSetup() }
-    ];
-    
-    buttons.forEach(({ id, handler }) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (audioManager) audioManager.beep();
-                handler();
-            });
-        }
-    });
+    const createGameBtn = document.getElementById('create-game');
+    if (createGameBtn) {
+        createGameBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioManager) audioManager.beep();
+            createMultiplayerGame();
+        });
+    }
+
+    const backToModesBtn = document.getElementById('back-to-modes');
+    if (backToModesBtn) {
+        backToModesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioManager) audioManager.beep();
+            showModeSelector();
+        });
+    }
 
     document.querySelectorAll('.crypto-option').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2300,20 +1583,6 @@ function setupShmupHandlers() {
             e.preventDefault();
             if (shmupGameManager) shmupGameManager.shoot();
         });
-
-        let shootInterval;
-        shootBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (shmupGameManager) shmupGameManager.shoot();
-            shootInterval = setInterval(() => {
-                if (shmupGameManager) shmupGameManager.shoot();
-            }, 200);
-        });
-
-        shootBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (shootInterval) clearInterval(shootInterval);
-        });
     }
 
     const moveButtons = [
@@ -2329,19 +1598,6 @@ function setupShmupHandlers() {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (shmupGameManager) shmupGameManager.movePlayer(direction);
-            });
-
-            let moveInterval;
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                moveInterval = setInterval(() => {
-                    if (shmupGameManager) shmupGameManager.movePlayer(direction);
-                }, 50);
-            });
-
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                if (moveInterval) clearInterval(moveInterval);
             });
         }
     });
@@ -2420,7 +1676,7 @@ function setupWalletHandlers() {
                 blockchainManager.connected = false;
                 blockchainManager.userWallet = null;
                 blockchainManager.updateWalletUI();
-                alert('[WALLET] Disconnected successfully');
+                alert('[WALLET] Disconnected');
             } else {
                 if (blockchainManager) blockchainManager.connectWallet();
             }
@@ -2500,22 +1756,9 @@ function setupSettingsHandlers() {
         });
     }
 
-    const animationToggle = document.getElementById('animation-toggle');
-    if (animationToggle) {
-        animationToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (audioManager) audioManager.beep();
-            
-            const enabled = e.target.classList.contains('active');
-            e.target.classList.toggle('active', !enabled);
-            e.target.textContent = enabled ? 'OFF' : 'ON';
-        });
-    }
-
     const langSelect = document.getElementById('language-select');
     if (langSelect) {
         langSelect.addEventListener('change', (e) => {
-            currentLanguage = e.target.value;
             if (audioManager) audioManager.beep();
             alert(`[LANGUAGE] Changed to ${e.target.value.toUpperCase()}`);
         });
@@ -2526,7 +1769,6 @@ function setupSettingsHandlers() {
         themeSelect.addEventListener('change', (e) => {
             if (userData && userData.tsarBalance >= 10000) {
                 if (audioManager) audioManager.beep();
-                applyTheme(e.target.value);
                 alert(`[THEME] Applied ${e.target.value.toUpperCase()} theme`);
             } else {
                 e.target.value = 'classic';
@@ -2545,27 +1787,36 @@ function setupMarketHandlers() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            const tab = btn.getAttribute('data-tab');
-            loadMarketListings(tab);
+            loadMarketListings();
         });
     });
 
-    const buttons = [
-        { id: 'create-listing-btn', action: createGeneralListing },
-        { id: 'sell-nft-btn', action: createNFTListing },
-        { id: 'sell-gift-btn', action: createGiftListing }
-    ];
-    
-    buttons.forEach(({ id, action }) => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (audioManager) audioManager.beep();
-                action();
-            });
-        }
-    });
+    const createListingBtn = document.getElementById('create-listing-btn');
+    if (createListingBtn) {
+        createListingBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioManager) audioManager.beep();
+            createGeneralListing();
+        });
+    }
+
+    const sellNftBtn = document.getElementById('sell-nft-btn');
+    if (sellNftBtn) {
+        sellNftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioManager) audioManager.beep();
+            alert('[NFT MARKETPLACE]\nComing soon!');
+        });
+    }
+
+    const sellGiftBtn = document.getElementById('sell-gift-btn');
+    if (sellGiftBtn) {
+        sellGiftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioManager) audioManager.beep();
+            alert('[GIFT MARKETPLACE]\nComing soon!');
+        });
+    }
 
     document.querySelectorAll('.inv-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2575,8 +1826,7 @@ function setupMarketHandlers() {
             document.querySelectorAll('.inv-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            const tab = btn.getAttribute('data-tab');
-            loadInventory(tab);
+            loadInventory();
         });
     });
 }
@@ -2659,7 +1909,7 @@ function startTerminalHacking(mode) {
     document.getElementById('gaming-area').style.display = 'block';
     
     if (terminalGame) {
-        terminalGame.startGame(mode, 'normal');
+        terminalGame.startGame(mode);
     }
 }
 
@@ -2686,10 +1936,6 @@ function createMultiplayerGame() {
     setTimeout(() => {
         startTerminalHacking('multiplayer');
     }, 3000);
-}
-
-function findMultiplayerGame() {
-    alert('[FIND GAME]\nLooking for available games...\nFeature in development!');
 }
 
 function showWaitingLobby() {
@@ -2768,10 +2014,6 @@ function startMission(missionId) {
                     if (referralSystem) {
                         referralSystem.processEarning(reward.amount, reward.currency);
                     }
-
-                    if (achievementSystem) {
-                        achievementSystem.checkAchievement('first_mission');
-                    }
                     
                     updateUserInfo();
                     loadRunnerMissions();
@@ -2779,7 +2021,7 @@ function startMission(missionId) {
             } else {
                 alert('[MISSION FAILED]\nTask verification failed.');
             }
-        }, 5000 + Math.random() * 10000);
+        }, 5000);
     } else {
         alert(`[ERROR] ${result.error}`);
     }
@@ -2791,52 +2033,7 @@ function openMissionCreator() {
         return;
     }
 
-    const title = prompt('Mission title:');
-    if (!title) return;
-
-    const description = prompt('Description:');
-    if (!description) return;
-
-    const rewardAmount = prompt('Reward amount:');
-    const reward = parseFloat(rewardAmount);
-    if (!reward || reward <= 0) {
-        alert('[ERROR] Invalid reward');
-        return;
-    }
-
-    const currency = prompt('Currency (TON/TSAR/STARS):').toUpperCase();
-    if (!['TON', 'TSAR', 'STARS'].includes(currency)) {
-        alert('[ERROR] Invalid currency');
-        return;
-    }
-
-    const type = prompt('Type (telegram/social/trading/gaming):').toLowerCase();
-    if (!['telegram', 'social', 'trading', 'gaming'].includes(type)) {
-        alert('[ERROR] Invalid type');
-        return;
-    }
-
-    const budget = parseFloat(prompt('Budget (TSAR):'));
-    if (!budget || budget < 1000) {
-        alert('[ERROR] Minimum budget: 1000 TSAR');
-        return;
-    }
-
-    const missionData = {
-        title, description,
-        reward: { amount: reward, currency },
-        type, totalBudget: budget
-    };
-
-    const result = runnerSystem.createMission(missionData);
-    
-    if (result.success) {
-        alert(`[MISSION CREATED!]\n${title}\nReward: ${reward} ${currency}`);
-        updateUserInfo();
-        loadRunnerMissions();
-    } else {
-        alert(`[ERROR] ${result.error}`);
-    }
+    alert('[MISSION CREATOR]\nComing in next update!\nCreate custom missions for users');
 }
 
 function updateAdvertiserAccess() {
@@ -2857,23 +2054,17 @@ function updateAdvertiserAccess() {
     }
 }
 
-// Функции кошелька
+// Остальные простые функции
 function handleDeposit() {
     if (!blockchainManager || !blockchainManager.connected) {
         alert('[ERROR] Connect wallet first');
         return;
     }
     
-    const address = blockchainManager.userWallet.account.address;
-    alert(`[DEPOSIT]\nSend TON to:\n${address.substr(0, 20)}...\n\nMinimum: 0.01 TON`);
+    alert('[DEPOSIT]\nSend TON to your wallet address\nFunds will be credited automatically');
 }
 
 function handleWithdraw() {
-    if (!blockchainManager || !blockchainManager.connected) {
-        alert('[ERROR] Connect wallet first');
-        return;
-    }
-
     const amount = prompt('Withdraw amount (TON):');
     const withdrawAmount = parseFloat(amount);
     
@@ -2986,12 +2177,11 @@ function openTokenListing() {
     }
 }
 
-// Функции рынка
-function loadMarketListings(type = 'listings') {
+function loadMarketListings() {
     const listingsContainer = document.getElementById('listings-container');
     if (!listingsContainer || !marketplace) return;
     
-    const listings = marketplace.getAllListings(type);
+    const listings = marketplace.getAllListings();
     
     listingsContainer.innerHTML = listings.map(listing => `
         <div class="market-listing" data-listing-id="${listing.id}">
@@ -3039,14 +2229,6 @@ function createGeneralListing() {
     }
 }
 
-function createNFTListing() {
-    alert('[NFT MARKETPLACE]\nComing soon!\nTrade NFTs for STARS');
-}
-
-function createGiftListing() {
-    alert('[GIFT MARKETPLACE]\nComing soon!\nSell Telegram gifts');
-}
-
 function purchaseListing(listing) {
     const confirm = window.confirm(`Buy "${listing.title}"?\nPrice: ${listing.price} ${listing.currency}`);
 
@@ -3077,7 +2259,6 @@ function getUserBalance(currency) {
     }
 }
 
-// Функции радио
 function sendRadioMessage() {
     const messageInput = document.getElementById('radio-message');
     if (!messageInput || !wastelandRadio) return;
@@ -3120,7 +2301,7 @@ function sendRadioMessage() {
         loadRadioMessages();
         
     } catch (error) {
-        alert('[ERROR] ' + error.message);
+        alert('[ERROR] Failed to send message');
     }
 }
 
@@ -3143,7 +2324,6 @@ function loadRadioMessages() {
     feedContent.scrollTop = 0;
 }
 
-// Функции торговли
 function placeBuyOrder() {
     if (!blockchainManager || !blockchainManager.connected) {
         alert('[ERROR] Connect wallet first');
@@ -3196,7 +2376,6 @@ function placeSellOrder() {
     alert(`[SELL ORDER]\n${amount} TSAR @ ${price} TON\nExpected: ${(amount * price).toFixed(3)} TON`);
 }
 
-// Вспомогательные функции
 function createClan() {
     const clanName = prompt('Clan name (3-20 chars):');
     if (!clanName || clanName.length < 3 || clanName.length > 20) {
@@ -3211,11 +2390,6 @@ function createClan() {
 
     userData.tsarBalance -= 1000;
     userData.clan = clanName.toUpperCase();
-    
-    if (achievementSystem) {
-        achievementSystem.checkAchievement('clan_leader');
-    }
-    
     updateUserInfo();
     alert(`[CLAN CREATED]\n${userData.clan}\nCost: 1000 TSAR`);
 }
@@ -3243,62 +2417,41 @@ function copyReferralLink() {
     
     if (navigator.clipboard) {
         navigator.clipboard.writeText(referralLink).then(() => {
-            alert('[COPIED]\nReferral link copied!\nEarn 10% from referrals');
+            alert('[COPIED]\nReferral link copied!');
         });
     } else {
         alert(`[COPY MANUALLY]\n${referralLink}`);
     }
 }
 
-function loadInventory(type = 'items') {
+function loadInventory() {
     const inventoryGrid = document.getElementById('inventory-grid');
     if (!inventoryGrid) return;
 
-    const items = {
-        items: [
-            { name: 'Terminal Skin', type: 'cosmetic', rarity: 'rare' },
-            { name: 'XP Boost', type: 'consumable', rarity: 'common' }
-        ],
-        nfts: [
-            { name: 'Vault Boy NFT', type: 'nft', rarity: 'legendary' }
-        ],
-        gifts: [
-            { name: 'Premium Star', type: 'gift', rarity: 'epic' }
-        ]
-    };
+    const items = [
+        { name: 'Terminal Skin', type: 'cosmetic', rarity: 'rare' },
+        { name: 'XP Boost', type: 'consumable', rarity: 'common' }
+    ];
 
-    const currentItems = items[type] || [];
     inventoryGrid.innerHTML = '';
     
     for (let i = 0; i < 9; i++) {
         const slot = document.createElement('div');
         slot.className = 'inventory-slot';
         
-        if (i < currentItems.length) {
-            const item = currentItems[i];
+        if (i < items.length) {
+            const item = items[i];
             slot.classList.remove('empty');
             slot.innerHTML = `
                 <div class="item-icon">[${item.type.substr(0, 3).toUpperCase()}]</div>
                 <div class="item-name">${item.name}</div>
             `;
-            slot.style.borderColor = getItemRarityColor(item.rarity);
-            slot.style.borderStyle = 'solid';
         } else {
             slot.classList.add('empty');
             slot.textContent = '[EMPTY]';
         }
         
         inventoryGrid.appendChild(slot);
-    }
-}
-
-function getItemRarityColor(rarity) {
-    switch(rarity) {
-        case 'common': return '#888888';
-        case 'rare': return '#0088cc';
-        case 'epic': return '#cc5500';
-        case 'legendary': return '#ffcc00';
-        default: return 'var(--pipboy-border)';
     }
 }
 
@@ -3312,78 +2465,6 @@ function updateCraftingAccess() {
         craftStatus.textContent = hasAccess ? 'UNLOCKED' : 'LOCKED';
         craftStatus.style.color = hasAccess ? 'var(--pipboy-green)' : 'var(--combat-active)';
     }
-}
-
-function applyTheme(theme) {
-    const root = document.documentElement;
-    
-    switch(theme) {
-        case 'amber':
-            root.style.setProperty('--pipboy-green', '#ffaa00');
-            root.style.setProperty('--pipboy-yellow', '#ff7700');
-            break;
-        case 'blue':
-            root.style.setProperty('--pipboy-green', '#0099ff');
-            root.style.setProperty('--pipboy-yellow', '#66ccff');
-            break;
-        case 'red':
-            root.style.setProperty('--pipboy-green', '#ff4444');
-            root.style.setProperty('--pipboy-yellow', '#ff8888');
-            break;
-        default:
-            root.style.setProperty('--pipboy-green', '#00b000');
-            root.style.setProperty('--pipboy-yellow', '#ffcc00');
-    }
-}
-
-function addAchievementStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes achievementSlide {
-            0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-            10% { transform: translateX(-50%) translateY(0); opacity: 1; }
-            90% { transform: translateX(-50%) translateY(0); opacity: 1; }
-            100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-        }
-        
-        .achievement-notification {
-            position: fixed !important;
-            top: 20px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            background: rgba(0, 176, 0, 0.9) !important;
-            border: 2px solid var(--pipboy-yellow) !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            z-index: 2000 !important;
-            color: var(--pipboy-yellow) !important;
-            font-family: 'Monofonto', 'Courier New', monospace !important;
-            animation: achievementSlide 4s ease-out forwards !important;
-            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5) !important;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-function showAchievementNotification(achievement) {
-    const notification = document.createElement('div');
-    notification.className = 'achievement-notification';
-    notification.innerHTML = `
-        <div style="text-align: center;">
-            <div style="font-size: 1.2rem; margin-bottom: 5px;">${achievement.icon} ACHIEVEMENT UNLOCKED</div>
-            <div style="font-weight: bold; margin-bottom: 3px;">${achievement.name}</div>
-            <div style="font-size: 0.8rem; margin-bottom: 5px;">${achievement.description}</div>
-            <div style="color: var(--pipboy-green);">+${achievement.reward.amount} ${achievement.reward.currency}</div>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 4000);
 }
 
 // Инициализация
@@ -3406,9 +2487,5 @@ document.addEventListener('touchend', function(e) {
     }
     lastTouchEnd = now;
 }, false);
-
-window.addEventListener('orientationchange', function() {
-    setTimeout(() => window.scrollTo(0, 0), 100);
-});
 
 console.log("🎮 RUNNER Terminal script loaded");
