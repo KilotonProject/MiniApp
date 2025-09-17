@@ -1,4 +1,4 @@
-// RUNNER TERMINAL - Fixed Production Version v2.1
+// RUNNER TERMINAL - Complete Production Version v2.2
 let userData = null;
 let menuOpen = false;
 let gameActive = false;
@@ -20,7 +20,7 @@ let walletConnected = false;
 let userWallet = null;
 let referralCode = '';
 
-// Глобальные менеджеры (объявляем только один раз)
+// Глобальные менеджеры
 let audioManager;
 let wastelandRadio;
 let runnerSystem;
@@ -28,15 +28,18 @@ let referralSystem;
 let blockchainManager;
 let marketplace;
 let terminalGame;
-let shmupGameManager; // Изменил название чтобы избежать конфликта
+let shmupGameManager;
+let achievementSystem;
+let clanSystem;
 
 // Звуковая система
 class RetroAudioManager {
     constructor() {
         this.context = null;
         this.enabled = true;
-        this.masterVolume = 0.05;
+        this.masterVolume = 0.08;
         this.initialized = false;
+        this.soundBank = {};
     }
 
     async init() {
@@ -48,15 +51,31 @@ class RetroAudioManager {
                 await this.context.resume();
             }
             this.initialized = true;
-            console.log("Audio initialized successfully");
+            this.createSoundBank();
+            console.log("Enhanced audio system initialized");
         } catch (error) {
             console.log("Audio initialization failed:", error);
             this.enabled = false;
         }
     }
 
-    beep() {
+    createSoundBank() {
+        this.soundBank = {
+            beep: { freq: 800, duration: 0.08, type: 'sine' },
+            correct: { freq: 600, duration: 0.2, type: 'triangle' },
+            incorrect: { freq: 200, duration: 0.3, type: 'sawtooth' },
+            shoot: { freq: 1000, duration: 0.05, type: 'square' },
+            hit: { freq: 150, duration: 0.15, type: 'sawtooth' },
+            powerup: { freq: 800, duration: 0.4, type: 'sine' },
+            levelup: { freq: 523, duration: 0.6, type: 'triangle' },
+            coin: { freq: 880, duration: 0.2, type: 'sine' }
+        };
+    }
+
+    playSound(soundName) {
         if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
+        
+        const sound = this.soundBank[soundName] || this.soundBank.beep;
         
         try {
             const osc = this.context.createOscillator();
@@ -65,28 +84,42 @@ class RetroAudioManager {
             osc.connect(gain);
             gain.connect(this.context.destination);
             
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, this.context.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(400, this.context.currentTime + 0.08);
+            osc.type = sound.type;
+            osc.frequency.setValueAtTime(sound.freq, this.context.currentTime);
+            
+            if (soundName === 'powerup' || soundName === 'levelup') {
+                osc.frequency.exponentialRampToValueAtTime(sound.freq * 1.5, this.context.currentTime + sound.duration);
+            }
             
             gain.gain.setValueAtTime(this.masterVolume, this.context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + sound.duration);
             
             osc.start();
-            osc.stop(this.context.currentTime + 0.08);
+            osc.stop(this.context.currentTime + sound.duration);
         } catch (e) {
-            console.log("Beep error:", e);
+            console.log("Sound error:", e);
         }
     }
+
+    beep() { this.playSound('beep'); }
+    playGameSound(type) { this.playSound(type); }
     
     playWelcomeMelody() {
         if (!this.enabled || !this.initialized || !this.context) return;
         
         try {
-            const melody = [220, 246, 261, 293, 261, 220];
+            const melody = [
+                { note: 220, duration: 0.5 },
+                { note: 246, duration: 0.5 },
+                { note: 261, duration: 0.7 },
+                { note: 293, duration: 0.5 },
+                { note: 329, duration: 0.5 },
+                { note: 261, duration: 1.0 }
+            ];
+            
             let time = this.context.currentTime + 0.5;
             
-            melody.forEach((note) => {
+            melody.forEach(({ note, duration }) => {
                 const osc = this.context.createOscillator();
                 const gain = this.context.createGain();
                 
@@ -96,53 +129,16 @@ class RetroAudioManager {
                 osc.type = 'triangle';
                 osc.frequency.value = note;
                 
-                gain.gain.setValueAtTime(this.masterVolume * 0.3, time);
-                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+                gain.gain.setValueAtTime(this.masterVolume * 0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
                 
                 osc.start(time);
-                osc.stop(time + 0.4);
+                osc.stop(time + duration);
                 
-                time += 0.5;
+                time += duration + 0.1;
             });
         } catch (e) {
             console.log("Melody error:", e);
-        }
-    }
-
-    playGameSound(type) {
-        if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
-        
-        try {
-            const osc = this.context.createOscillator();
-            const gain = this.context.createGain();
-            
-            osc.connect(gain);
-            gain.connect(this.context.destination);
-            
-            switch(type) {
-                case 'correct':
-                    osc.frequency.value = 600;
-                    break;
-                case 'incorrect':
-                    osc.frequency.value = 200;
-                    break;
-                case 'shoot':
-                    osc.frequency.value = 1000;
-                    break;
-                case 'hit':
-                    osc.frequency.value = 150;
-                    break;
-                default:
-                    osc.frequency.value = 400;
-            }
-            
-            gain.gain.setValueAtTime(this.masterVolume, this.context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(this.context.currentTime + 0.1);
-        } catch (e) {
-            console.log("Game sound error:", e);
         }
     }
 }
@@ -365,7 +361,6 @@ class RunnerMissionSystem {
         userMission.status = 'completed';
         userMission.completedAt = Date.now();
 
-        // Начисляем награду
         const reward = userMission.reward;
         if (userData) {
             if (reward.currency === 'TON') {
@@ -402,7 +397,6 @@ class RunnerMissionSystem {
             createdAt: Date.now()
         };
 
-        // Берем комиссию 10%
         const commission = missionData.totalBudget * 0.1;
         userData.tsarBalance -= commission;
 
@@ -457,21 +451,8 @@ class ReferralSystem {
         return `REF_${userData.name}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     }
 
-    addReferral(referredUserId, level = 1) {
-        const referral = {
-            id: referredUserId,
-            level: level,
-            addedAt: Date.now(),
-            earnings: 0
-        };
-
-        this.referrals.push(referral);
-        this.saveReferrals();
-        return referral;
-    }
-
     processEarning(amount, currency) {
-        const rates = [0.1, 0.05, 0.02]; // 10% / 5% / 2%
+        const rates = [0.1, 0.05, 0.02];
         
         this.referrals.forEach(ref => {
             if (ref.level <= 3) {
@@ -505,7 +486,6 @@ class BlockchainManager {
 
     async initTonConnect() {
         try {
-            // В реальной версии здесь будет настоящий TonConnect
             console.log("TonConnect initialized (simulation mode)");
         } catch (error) {
             console.log("TonConnect initialization failed:", error);
@@ -514,7 +494,6 @@ class BlockchainManager {
 
     async connectWallet() {
         try {
-            // Симуляция подключения кошелька
             this.connected = true;
             this.userWallet = {
                 account: {
@@ -552,7 +531,6 @@ class BlockchainManager {
             }
         }
 
-        // Показываем/скрываем торговую панель
         const tradingPanel = document.getElementById('trading-panel');
         const connectPanel = document.getElementById('wallet-connect-panel');
         
@@ -570,7 +548,7 @@ class BlockchainManager {
     async processTokenListing(tokenData) {
         const requiredUsd = 50;
         const tsarPriceUsd = 0.001;
-        const requiredTsar = requiredUsd / tsarPriceUsd; // 50,000 TSAR
+        const requiredTsar = requiredUsd / tsarPriceUsd;
 
         if (!userData || userData.tsarBalance < requiredTsar) {
             return { 
@@ -580,7 +558,6 @@ class BlockchainManager {
         }
 
         try {
-            // Симуляция транзакции
             userData.tsarBalance -= requiredTsar;
             
             const listedToken = {
@@ -642,7 +619,7 @@ class MarketplaceSystem {
             {
                 id: 1,
                 title: 'Rare Terminal Skin',
-                description: 'Unique blue-glow terminal theme',
+                description: 'Unique blue-glow terminal theme with special effects',
                 price: 100,
                 currency: 'TSAR',
                 seller: 'TECH_TRADER_99',
@@ -651,7 +628,7 @@ class MarketplaceSystem {
             {
                 id: 2,
                 title: 'Gaming Guide',
-                description: 'Advanced hacking techniques',
+                description: 'Advanced hacking techniques and strategies',
                 price: 50,
                 currency: 'TSAR',
                 seller: 'HACKER_ELITE',
@@ -660,7 +637,7 @@ class MarketplaceSystem {
             {
                 id: 3,
                 title: 'Premium Access Pass',
-                description: 'Access to exclusive tournaments',
+                description: 'Access to exclusive gaming tournaments',
                 price: 0.1,
                 currency: 'TON',
                 seller: 'TOURNAMENT_HOST',
@@ -710,15 +687,148 @@ class MarketplaceSystem {
     }
 }
 
+// Система достижений
+class AchievementSystem {
+    constructor() {
+        this.achievements = [
+            {
+                id: 'first_mission',
+                name: 'First Steps',
+                description: 'Complete your first mission',
+                icon: '[1ST]',
+                reward: { amount: 10, currency: 'TSAR' },
+                unlocked: false
+            },
+            {
+                id: 'hacker_novice',
+                name: 'Novice Hacker',
+                description: 'Win 5 terminal hacking games',
+                icon: '[HCK]',
+                reward: { amount: 50, currency: 'TSAR' },
+                unlocked: false,
+                progress: 0,
+                target: 5
+            },
+            {
+                id: 'space_ace',
+                name: 'Space Ace',
+                description: 'Score 1000+ in Wasteland Wings',
+                icon: '[ACE]',
+                reward: { amount: 0.01, currency: 'TON' },
+                unlocked: false
+            },
+            {
+                id: 'clan_leader',
+                name: 'Clan Leader',
+                description: 'Create a clan',
+                icon: '[LDR]',
+                reward: { amount: 100, currency: 'TSAR' },
+                unlocked: false
+            },
+            {
+                id: 'crypto_trader',
+                name: 'Crypto Trader',
+                description: 'Complete 10 trading orders',
+                icon: '[TRD]',
+                reward: { amount: 0.05, currency: 'TON' },
+                unlocked: false,
+                progress: 0,
+                target: 10
+            },
+            {
+                id: 'referral_master',
+                name: 'Referral Master',
+                description: 'Invite 10 active referrals',
+                icon: '[REF]',
+                reward: { amount: 0.1, currency: 'TON' },
+                unlocked: false,
+                progress: 0,
+                target: 10
+            }
+        ];
+        this.loadProgress();
+    }
+
+    loadProgress() {
+        try {
+            const saved = localStorage.getItem('achievements_progress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                this.achievements.forEach(achievement => {
+                    if (progress[achievement.id]) {
+                        Object.assign(achievement, progress[achievement.id]);
+                    }
+                });
+            }
+        } catch (e) {
+            console.log("Failed to load achievements:", e);
+        }
+    }
+
+    saveProgress() {
+        try {
+            const progress = {};
+            this.achievements.forEach(achievement => {
+                progress[achievement.id] = {
+                    unlocked: achievement.unlocked,
+                    progress: achievement.progress || 0
+                };
+            });
+            localStorage.setItem('achievements_progress', JSON.stringify(progress));
+        } catch (e) {
+            console.log("Failed to save achievements:", e);
+        }
+    }
+
+    checkAchievement(id, increment = 1) {
+        const achievement = this.achievements.find(a => a.id === id);
+        if (!achievement || achievement.unlocked) return;
+
+        if (achievement.target) {
+            achievement.progress = (achievement.progress || 0) + increment;
+            if (achievement.progress >= achievement.target) {
+                this.unlockAchievement(achievement);
+            }
+        } else {
+            this.unlockAchievement(achievement);
+        }
+
+        this.saveProgress();
+    }
+
+    unlockAchievement(achievement) {
+        achievement.unlocked = true;
+        
+        if (userData && achievement.reward) {
+            const reward = achievement.reward;
+            if (reward.currency === 'TON') {
+                userData.tonBalance += reward.amount;
+            } else if (reward.currency === 'TSAR') {
+                userData.tsarBalance += reward.amount;
+            } else if (reward.currency === 'STARS') {
+                userData.starsBalance += reward.amount;
+            }
+        }
+
+        showAchievementNotification(achievement);
+        
+        if (audioManager) {
+            audioManager.playSound('levelup');
+        }
+
+        updateUserInfo();
+    }
+}
+
 // Fallout-style игра взлома
 class TerminalHackingGame {
     constructor() {
         this.difficulty = 'normal';
         this.wordLengths = { easy: 5, normal: 7, hard: 9 };
         this.wordLists = {
-            5: ['APPLE', 'BRAVE', 'CHARM', 'DANCE', 'EAGLE', 'FIGHT', 'GRACE', 'HAPPY', 'IMAGE', 'JUDGE'],
-            7: ['ABILITY', 'BALANCE', 'CAPITAL', 'DESTINY', 'ELEGANT', 'FACTORY', 'GALLERY', 'HIGHWAY', 'IMAGINE', 'JUSTICE'],
-            9: ['ADVENTURE', 'BEAUTIFUL', 'CHARACTER', 'DEMOCRACY', 'EDUCATION', 'FANTASTIC', 'GUARANTEE', 'KNOWLEDGE', 'LANDSCAPE', 'MACHINERY']
+            5: ['ABOUT', 'ABOVE', 'AGENT', 'ALARM', 'ALONE', 'ANGER', 'ARMOR', 'BLADE', 'BRAVE', 'BREAK', 'BRING', 'BUILD', 'CHAOS', 'CHARM', 'CLEAN', 'CLEAR', 'CLIMB', 'CLOSE', 'COINS', 'CROWN', 'DANCE', 'DEATH', 'DREAM', 'DRIVE', 'EARTH', 'EMPTY', 'ENEMY', 'ENTRY', 'ERROR', 'FAITH'],
+            7: ['ABILITY', 'ANCIENT', 'ARCHIVE', 'BALANCE', 'BATTERY', 'BENEFIT', 'BICYCLE', 'CAPTAIN', 'CHAMBER', 'CIRCUIT', 'CLASSES', 'COMMAND', 'COMPLEX', 'CONCEPT', 'CONFORM', 'CONTENT', 'CONTROL', 'COUNTRY', 'CURRENT', 'CUSTOMS', 'DIAGRAM', 'DIGITAL', 'DYNAMIC', 'ECONOMY', 'ELEMENT', 'EMPEROR', 'ENHANCE', 'EVENING', 'EXAMPLE', 'FACTORY'],
+            9: ['ABANDONED', 'ADVENTURE', 'ALGORITHM', 'AMBULANCE', 'BENCHMARK', 'BIOGRAPHY', 'BREAKFAST', 'CALCULATE', 'CATALOGUE', 'CHARACTER', 'CHEMISTRY', 'COMMUNITY', 'DEMOCRACY', 'DIRECTORY', 'EDUCATION', 'ELEVATION', 'EMERGENCY', 'EQUIPMENT', 'EVERYBODY', 'EXISTENCE', 'FRAMEWORK', 'GUARANTEE', 'HAPPENING', 'HISTOGRAM', 'KNOWLEDGE', 'LANDSCAPE', 'MACHINERY', 'NIGHTMARE', 'OPERATION', 'PROFESSOR']
         };
         this.currentWords = [];
         this.correctWord = '';
@@ -728,10 +838,12 @@ class TerminalHackingGame {
         this.isMultiplayer = false;
         this.playerTurn = true;
         this.opponentAttempts = 4;
+        this.hintsUsed = 0;
+        this.timeStarted = 0;
     }
 
     startGame(mode = 'solo', difficulty = 'normal') {
-        console.log(`Starting terminal hacking game: ${mode} mode`);
+        console.log(`Starting terminal hacking: ${mode} mode, ${difficulty} difficulty`);
         
         this.difficulty = difficulty;
         this.isMultiplayer = mode === 'multiplayer';
@@ -739,6 +851,8 @@ class TerminalHackingGame {
         this.opponentAttempts = 4;
         this.playerTurn = true;
         this.gameActive = true;
+        this.hintsUsed = 0;
+        this.timeStarted = Date.now();
 
         this.generateWords();
         this.generateHexDump();
@@ -755,61 +869,65 @@ class TerminalHackingGame {
         const wordPool = [...this.wordLists[wordLength]];
         this.currentWords = [];
 
-        // Выбираем 12-15 слов
-        const wordCount = 12 + Math.floor(Math.random() * 4);
+        const wordCount = this.difficulty === 'easy' ? 15 : this.difficulty === 'normal' ? 17 : 20;
         
         for (let i = 0; i < wordCount && wordPool.length > 0; i++) {
             const randomIndex = Math.floor(Math.random() * wordPool.length);
             this.currentWords.push(wordPool.splice(randomIndex, 1)[0]);
         }
 
-        // Выбираем правильный пароль
         this.correctWord = this.currentWords[Math.floor(Math.random() * this.currentWords.length)];
-        console.log('Correct password:', this.correctWord);
+        console.log(`Correct password: ${this.correctWord}`);
     }
 
     generateHexDump() {
         this.hexData = [];
         const chars = '0123456789ABCDEF';
-        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?/\\~`';
         
-        // Создаем копию слов для размещения
         let wordsToPlace = [...this.currentWords];
+        const lineCount = this.difficulty === 'easy' ? 20 : this.difficulty === 'normal' ? 25 : 30;
         
-        for (let line = 0; line < 25; line++) {
+        for (let line = 0; line < lineCount; line++) {
             let hexLine = '';
             let dataLine = '';
             
-            // Hex адрес
-            const address = (0xF000 + line * 16).toString(16).toUpperCase();
+            const address = (0xF000 + line * 16).toString(16).toUpperCase().padStart(4, '0');
             hexLine += `0x${address} `;
             
-            // Hex данные
             for (let i = 0; i < 16; i++) {
                 hexLine += chars[Math.floor(Math.random() * chars.length)];
                 if (i % 2 === 1) hexLine += ' ';
             }
             
-            // ASCII представление
             let charCount = 0;
-            while (charCount < 12) {
-                if (Math.random() < 0.4 && wordsToPlace.length > 0) {
-                    // Вставляем слово
-                    const wordIndex = Math.floor(Math.random() * wordsToPlace.length);
-                    const word = wordsToPlace.splice(wordIndex, 1)[0];
-                    dataLine += word;
-                    charCount += word.length;
-                } else {
-                    // Вставляем символы или скобки
-                    if (Math.random() < 0.15) {
-                        const brackets = ['()', '[]', '{}'];
-                        const bracket = brackets[Math.floor(Math.random() * brackets.length)];
-                        dataLine += bracket;
-                        charCount += 2;
-                    } else {
-                        dataLine += symbols[Math.floor(Math.random() * symbols.length)];
-                        charCount++;
+            const lineLength = 12;
+            
+            while (charCount < lineLength) {
+                const remainingSpace = lineLength - charCount;
+                
+                if (wordsToPlace.length > 0 && Math.random() < 0.4) {
+                    const availableWords = wordsToPlace.filter(word => word.length <= remainingSpace);
+                    if (availableWords.length > 0) {
+                        const wordIndex = wordsToPlace.findIndex(word => 
+                            availableWords.includes(word)
+                        );
+                        const word = wordsToPlace.splice(wordIndex, 1)[0];
+                        dataLine += word;
+                        charCount += word.length;
+                        continue;
                     }
+                }
+                
+                const hintChance = this.difficulty === 'easy' ? 0.15 : this.difficulty === 'normal' ? 0.12 : 0.08;
+                if (Math.random() < hintChance && remainingSpace >= 2) {
+                    const brackets = ['()', '[]', '{}', '<>'];
+                    const bracket = brackets[Math.floor(Math.random() * brackets.length)];
+                    dataLine += bracket;
+                    charCount += 2;
+                } else {
+                    dataLine += symbols[Math.floor(Math.random() * symbols.length)];
+                    charCount++;
                 }
             }
             
@@ -818,6 +936,28 @@ class TerminalHackingGame {
                 hex: hexLine,
                 data: dataLine
             });
+        }
+
+        while (wordsToPlace.length > 0) {
+            const word = wordsToPlace.shift();
+            const randomLine = Math.floor(Math.random() * this.hexData.length);
+            const line = this.hexData[randomLine];
+            
+            const availableSpaces = [];
+            for (let i = 0; i <= line.data.length - word.length; i++) {
+                const canFit = line.data.substr(i, word.length).split('').every(char => 
+                    symbols.includes(char) || char === ' '
+                );
+                if (canFit) {
+                    availableSpaces.push(i);
+                }
+            }
+            
+            if (availableSpaces.length > 0) {
+                const insertPos = availableSpaces[Math.floor(Math.random() * availableSpaces.length)];
+                line.data = line.data.substring(0, insertPos) + word + 
+                           line.data.substring(insertPos + word.length);
+            }
         }
     }
 
@@ -828,14 +968,14 @@ class TerminalHackingGame {
         hexDump.innerHTML = this.hexData.map((line, index) => {
             let processedData = line.data;
             
-            // Подсвечиваем все слова из списка
             this.currentWords.forEach(word => {
                 const regex = new RegExp(`\\b${word}\\b`, 'g');
-                processedData = processedData.replace(regex, `<span class="password-word" data-word="${word}">${word}</span>`);
+                processedData = processedData.replace(regex, 
+                    `<span class="password-word" data-word="${word}">${word}</span>`
+                );
             });
 
-            // Подсвечиваем скобки для подсказок
-            processedData = processedData.replace(/[\(\)\[\]\{\}]{2}/g, match => {
+            processedData = processedData.replace(/[\(\)\[\]\{\}<>]{2}/g, match => {
                 return `<span class="bracket-hint" data-hint="remove-dud">${match}</span>`;
             });
 
@@ -846,12 +986,10 @@ class TerminalHackingGame {
             </div>`;
         }).join('');
 
-        // Добавляем обработчики
         this.attachTerminalHandlers();
     }
 
     attachTerminalHandlers() {
-        // Обработчики для слов
         document.querySelectorAll('.password-word').forEach(word => {
             word.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -862,7 +1000,6 @@ class TerminalHackingGame {
             });
         });
 
-        // Обработчики для скобок
         document.querySelectorAll('.bracket-hint').forEach(bracket => {
             bracket.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -874,9 +1011,6 @@ class TerminalHackingGame {
     }
 
     selectPassword(word) {
-        console.log(`Password selected: ${word}`);
-        
-        // Подсвечиваем выбранное слово
         document.querySelectorAll('.password-word').forEach(w => {
             w.classList.remove('selected');
         });
@@ -895,7 +1029,7 @@ class TerminalHackingGame {
             } else {
                 this.handleIncorrectPassword(word);
             }
-        }, 1000);
+        }, 800);
     }
 
     handleCorrectPassword(word) {
@@ -909,7 +1043,7 @@ class TerminalHackingGame {
         this.addLogEntry('> grants access...', 'success');
         
         if (audioManager) {
-            audioManager.playGameSound('correct');
+            audioManager.playSound('correct');
         }
         
         setTimeout(() => {
@@ -931,34 +1065,26 @@ class TerminalHackingGame {
         this.updateAttemptsDisplay();
         
         if (audioManager) {
-            audioManager.playGameSound('incorrect');
+            audioManager.playSound('incorrect');
         }
 
         if (this.attemptsLeft <= 0) {
             this.addLogEntry('> Terminal locked', 'error');
-            this.addLogEntry('> Please contact administrator', 'error');
-            setTimeout(() => {
-                this.endGame(false);
-            }, 2000);
-        } else {
-            if (this.isMultiplayer) {
-                this.playerTurn = false;
-                this.updateTurnIndicator();
-                this.simulateOpponentTurn();
-            }
+            this.endGame(false);
+        } else if (this.isMultiplayer) {
+            this.playerTurn = false;
+            this.updateTurnIndicator();
+            this.simulateOpponentTurn();
         }
     }
 
     calculateLikeness(word1, word2) {
         let matches = 0;
-        const minLength = Math.min(word1.length, word2.length);
-        
-        for (let i = 0; i < minLength; i++) {
+        for (let i = 0; i < Math.min(word1.length, word2.length); i++) {
             if (word1[i] === word2[i]) {
                 matches++;
             }
         }
-        
         return matches;
     }
 
@@ -967,6 +1093,8 @@ class TerminalHackingGame {
 
         bracketElement.classList.add('used');
         bracketElement.style.color = '#666666';
+        
+        this.hintsUsed++;
         
         const hintTypes = ['dud_removed', 'reset_attempts'];
         const hint = hintTypes[Math.floor(Math.random() * hintTypes.length)];
@@ -981,7 +1109,7 @@ class TerminalHackingGame {
         }
 
         if (audioManager) {
-            audioManager.playGameSound('correct');
+            audioManager.playSound('powerup');
         }
     }
 
@@ -1004,7 +1132,11 @@ class TerminalHackingGame {
         if (!this.isMultiplayer || this.playerTurn) return;
 
         setTimeout(() => {
-            const availableWords = this.currentWords.filter(word => word !== this.correctWord);
+            const availableWords = this.currentWords.filter(word => 
+                word !== this.correctWord &&
+                !document.querySelector(`[data-word="${word}"]`).classList.contains('incorrect')
+            );
+            
             if (availableWords.length === 0) return;
 
             const opponentChoice = availableWords[Math.floor(Math.random() * availableWords.length)];
@@ -1012,11 +1144,11 @@ class TerminalHackingGame {
 
             setTimeout(() => {
                 if (opponentChoice === this.correctWord) {
-                    this.addLogEntry('> Opponent found password!', 'error');
+                    this.addLogEntry('> Opponent access granted!', 'error');
                     this.endGame(false);
                 } else {
                     const likeness = this.calculateLikeness(opponentChoice, this.correctWord);
-                    this.addLogEntry(`> Opponent failed - Likeness=${likeness}`, 'opponent');
+                    this.addLogEntry(`> Opponent denied - Likeness=${likeness}`, 'opponent');
                     
                     this.opponentAttempts--;
                     this.updateOpponentDisplay();
@@ -1029,8 +1161,8 @@ class TerminalHackingGame {
                         this.updateTurnIndicator();
                     }
                 }
-            }, 1500);
-        }, 2000 + Math.random() * 3000);
+            }, 1200);
+        }, 3000);
     }
 
     addLogEntry(text, type = 'normal') {
@@ -1044,7 +1176,7 @@ class TerminalHackingGame {
         log.appendChild(entry);
         log.scrollTop = log.scrollHeight;
 
-        if (log.children.length > 15) {
+        if (log.children.length > 20) {
             log.removeChild(log.children[0]);
         }
     }
@@ -1078,14 +1210,15 @@ class TerminalHackingGame {
 
     updateTurnIndicator() {
         const turnText = document.querySelector('.turn-text');
-        if (!turnText) return;
-
-        if (this.playerTurn) {
-            turnText.textContent = 'YOUR TURN';
-            turnText.style.color = 'var(--pipboy-yellow)';
-        } else {
-            turnText.textContent = 'OPPONENT TURN';
-            turnText.style.color = 'var(--combat-active)';
+        
+        if (turnText) {
+            if (this.playerTurn) {
+                turnText.textContent = 'YOUR TURN';
+                turnText.style.color = 'var(--pipboy-yellow)';
+            } else {
+                turnText.textContent = 'OPPONENT TURN';
+                turnText.style.color = 'var(--combat-active)';
+            }
         }
     }
 
@@ -1117,13 +1250,13 @@ class TerminalHackingGame {
     }
 
     startMultiplayerMode() {
-        this.addLogEntry('> Connecting to opponent...', 'system');
+        this.addLogEntry('> Establishing secure connection...', 'system');
         
         setTimeout(() => {
             this.addLogEntry('> Opponent connected: VAULT_DWELLER_' + Math.floor(Math.random() * 1000), 'system');
-            this.addLogEntry('> Match started!', 'system');
+            this.addLogEntry('> Match commenced!', 'system');
             this.updateTurnIndicator();
-        }, 2000);
+        }, 2500);
     }
 
     endGame(won) {
@@ -1131,34 +1264,40 @@ class TerminalHackingGame {
         
         if (!userData) return;
         
-        const baseReward = this.isMultiplayer ? 100 : 25;
-        const reward = won ? baseReward : Math.floor(baseReward * 0.2);
+        const baseReward = this.isMultiplayer ? 100 : 50;
+        const totalReward = won ? baseReward : Math.floor(baseReward * 0.3);
         
-        userData.bottleCaps += reward;
+        userData.bottleCaps += totalReward;
         
         if (this.isMultiplayer && won && currentStake) {
+            const winnings = currentStake.amount * 1.85;
             if (currentStake.currency === 'TON') {
-                userData.tonBalance += currentStake.amount * 1.8;
+                userData.tonBalance += winnings;
             } else if (currentStake.currency === 'TSAR') {
-                userData.tsarBalance += currentStake.amount * 1.8;
+                userData.tsarBalance += winnings;
             }
+        }
+
+        if (achievementSystem && won) {
+            achievementSystem.checkAchievement('hacker_novice');
         }
 
         updateUserInfo();
 
         setTimeout(() => {
-            const resultMessage = won ? 
-                `[ACCESS GRANTED!]\nPassword accepted!\n+${reward} Bottle Caps` : 
-                `[ACCESS DENIED!]\nTerminal locked!\n+${reward} Bottle Caps`;
+            let resultMessage = won ? 
+                `[ACCESS GRANTED!]\nTerminal unlocked!\n+${totalReward} Bottle Caps` : 
+                `[ACCESS DENIED!]\nTerminal locked!\n+${totalReward} Bottle Caps`;
             
             if (this.isMultiplayer && won && currentStake) {
-                resultMessage += `\n+${currentStake.amount * 1.8} ${currentStake.currency}`;
+                const winnings = currentStake.amount * 1.85;
+                resultMessage += `\n+${winnings} ${currentStake.currency}`;
             }
             
             alert(resultMessage);
             this.resetGame();
             showModeSelector();
-        }, 1000);
+        }, 1500);
     }
 
     resetGame() {
@@ -1185,32 +1324,43 @@ class ShmupGame {
         this.canvas = null;
         this.ctx = null;
         this.gameActive = false;
-        this.player = { x: 150, y: 350, width: 20, height: 20, lives: 3 };
+        this.player = { 
+            x: 150, y: 350, width: 24, height: 24, 
+            lives: 3, speed: 6, fireRate: 200, lastShot: 0,
+            powerLevel: 1, shield: 0
+        };
         this.enemies = [];
         this.bullets = [];
+        this.powerups = [];
+        this.particles = [];
         this.score = 0;
         this.level = 1;
         this.gameLoop = null;
         this.enemySpawner = null;
+        this.powerupSpawner = null;
         this.isMultiplayer = false;
         this.opponentScore = 0;
+        this.waveNumber = 1;
+        this.enemiesKilled = 0;
+        this.bossActive = false;
     }
 
     init() {
         this.canvas = document.getElementById('shmup-canvas');
         if (!this.canvas) {
-            console.log("Canvas not found");
+            console.log("Shmup canvas not found");
             return false;
         }
         
         this.ctx = this.canvas.getContext('2d');
+        this.canvas.width = 300;
+        this.canvas.height = 400;
+        
         console.log("Shmup game initialized");
         return true;
     }
 
     startGame(mode = 'solo') {
-        console.log(`Starting shmup game: ${mode} mode`);
-        
         if (!this.init()) {
             alert('[ERROR] Failed to initialize game');
             return;
@@ -1220,13 +1370,25 @@ class ShmupGame {
         this.gameActive = true;
         this.score = 0;
         this.level = 1;
-        this.player = { x: 150, y: 350, width: 20, height: 20, lives: 3 };
+        this.waveNumber = 1;
+        this.enemiesKilled = 0;
+        
+        this.player = { 
+            x: 138, y: 350, width: 24, height: 24, 
+            lives: 3, speed: 6, fireRate: 200, lastShot: 0,
+            powerLevel: 1, shield: 0
+        };
+        
         this.enemies = [];
         this.bullets = [];
+        this.powerups = [];
+        this.particles = [];
 
         this.updateShmupUI();
+        
         this.gameLoop = setInterval(() => this.update(), 1000/60);
-        this.enemySpawner = setInterval(() => this.spawnEnemy(), 1000);
+        this.enemySpawner = setInterval(() => this.spawnEnemy(), 1500);
+        this.powerupSpawner = setInterval(() => this.spawnPowerup(), 8000);
 
         if (this.isMultiplayer) {
             this.startMultiplayerShmup();
@@ -1237,57 +1399,104 @@ class ShmupGame {
         if (!this.gameActive || !this.ctx) return;
 
         this.clearCanvas();
+        this.drawBackground();
         this.updateBullets();
         this.updateEnemies();
+        this.updatePowerups();
+        this.updateParticles();
         this.checkCollisions();
         this.drawPlayer();
         this.drawBullets();
         this.drawEnemies();
+        this.drawPowerups();
+        this.drawParticles();
         this.drawUI();
     }
 
     clearCanvas() {
-        // Космический фон
         this.ctx.fillStyle = '#000011';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Звезды
+    }
+
+    drawBackground() {
         this.ctx.fillStyle = '#ffffff';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 7 + Date.now() * 0.01) % this.canvas.width;
-            const y = (i * 11 + Date.now() * 0.02) % this.canvas.height;
-            this.ctx.fillRect(x, y, 1, 1);
+        for (let i = 0; i < 100; i++) {
+            const speed = (i % 3) + 1;
+            const x = (i * 7) % this.canvas.width;
+            const y = (i * 11 + Date.now() * speed * 0.02) % this.canvas.height;
+            const size = speed > 2 ? 2 : 1;
+            this.ctx.fillRect(x, y, size, size);
         }
     }
 
     drawPlayer() {
-        this.ctx.fillStyle = '#00b000';
-        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+        const p = this.player;
         
-        // Крылья корабля
+        this.ctx.fillStyle = '#00b000';
+        this.ctx.fillRect(p.x + 4, p.y, p.width - 8, p.height);
+        
         this.ctx.fillStyle = '#ffcc00';
-        this.ctx.fillRect(this.player.x - 5, this.player.y + 5, 5, 10);
-        this.ctx.fillRect(this.player.x + this.player.width, this.player.y + 5, 5, 10);
+        this.ctx.fillRect(p.x + 8, p.y + 4, p.width - 16, p.height - 8);
+        
+        this.ctx.fillStyle = '#008800';
+        this.ctx.fillRect(p.x, p.y + 8, 6, 12);
+        this.ctx.fillRect(p.x + p.width - 6, p.y + 8, 6, 12);
+        
+        if (p.shield > 0) {
+            this.ctx.strokeStyle = '#00aaff';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x + p.width/2, p.y + p.height/2, p.width/2 + 8, 0, Math.PI * 2);
+            this.ctx.stroke();
+        }
     }
 
     drawBullets() {
-        this.ctx.fillStyle = '#ffcc00';
         this.bullets.forEach(bullet => {
-            this.ctx.fillRect(bullet.x, bullet.y, 3, 8);
+            if (bullet.type === 'player') {
+                this.ctx.fillStyle = '#ffcc00';
+                this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            } else {
+                this.ctx.fillStyle = '#cc3333';
+                this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            }
         });
     }
 
     drawEnemies() {
         this.enemies.forEach(enemy => {
-            this.ctx.fillStyle = enemy.type === 'boss' ? '#cc3333' : '#cc5500';
-            this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-            
             if (enemy.type === 'boss') {
-                // Дополнительные детали для босса
-                this.ctx.fillStyle = '#ff6600';
-                this.ctx.fillRect(enemy.x + 2, enemy.y + 2, enemy.width - 4, enemy.height - 4);
+                this.ctx.fillStyle = '#cc3333';
+                this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                this.ctx.fillStyle = '#ff6666';
+                this.ctx.fillRect(enemy.x + 4, enemy.y + 4, enemy.width - 8, enemy.height - 8);
+            } else {
+                this.ctx.fillStyle = enemy.type === 'fast' ? '#cc7700' : '#cc5500';
+                this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
             }
         });
+    }
+
+    drawPowerups() {
+        this.powerups.forEach(powerup => {
+            this.ctx.fillStyle = powerup.color;
+            this.ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
+            
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(powerup.icon, powerup.x + powerup.width/2, powerup.y + powerup.height/2 + 4);
+            this.ctx.textAlign = 'left';
+        });
+    }
+
+    drawParticles() {
+        this.particles.forEach(particle => {
+            this.ctx.fillStyle = particle.color;
+            this.ctx.globalAlpha = particle.life;
+            this.ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+        });
+        this.ctx.globalAlpha = 1;
     }
 
     drawUI() {
@@ -1296,7 +1505,7 @@ class ShmupGame {
         this.ctx.fillText(`SCORE: ${this.score}`, 10, 20);
         this.ctx.fillText(`LIVES: ${this.player.lives}`, 10, 35);
         this.ctx.fillText(`LEVEL: ${this.level}`, 10, 50);
-
+        
         if (this.isMultiplayer) {
             this.ctx.fillText(`OPPONENT: ${this.opponentScore}`, 180, 20);
         }
@@ -1304,15 +1513,36 @@ class ShmupGame {
 
     updateBullets() {
         this.bullets = this.bullets.filter(bullet => {
-            bullet.y -= 8;
-            return bullet.y > 0;
+            if (bullet.type === 'player') {
+                bullet.y -= 10;
+                return bullet.y > -bullet.height;
+            } else {
+                bullet.y += 5;
+                return bullet.y < this.canvas.height;
+            }
         });
     }
 
     updateEnemies() {
         this.enemies = this.enemies.filter(enemy => {
             enemy.y += enemy.speed;
-            return enemy.y < this.canvas.height;
+            return enemy.y < this.canvas.height + 50;
+        });
+    }
+
+    updatePowerups() {
+        this.powerups = this.powerups.filter(powerup => {
+            powerup.y += 3;
+            return powerup.y < this.canvas.height;
+        });
+    }
+
+    updateParticles() {
+        this.particles = this.particles.filter(particle => {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.life -= 0.02;
+            return particle.life > 0;
         });
     }
 
@@ -1320,60 +1550,91 @@ class ShmupGame {
         if (!this.gameActive) return;
 
         const enemy = {
-            x: Math.random() * (this.canvas.width - 30),
-            y: 0,
-            width: 15 + Math.random() * 15,
-            height: 15 + Math.random() * 15,
-            speed: 1 + Math.random() * 2,
-            type: Math.random() < 0.1 ? 'boss' : 'normal',
-            health: Math.random() < 0.1 ? 3 : 1
+            x: Math.random() * (this.canvas.width - 24),
+            y: -24,
+            width: 20,
+            height: 20,
+            speed: 2 + Math.random() * 1.5,
+            health: 1,
+            type: 'normal',
+            points: 10
         };
 
         this.enemies.push(enemy);
     }
 
+    spawnPowerup() {
+        if (!this.gameActive || Math.random() < 0.7) return;
+
+        const powerupTypes = [
+            { type: 'health', color: '#00ff00', icon: '+' },
+            { type: 'weapon', color: '#ffcc00', icon: 'W' },
+            { type: 'shield', color: '#00aaff', icon: 'S' }
+        ];
+
+        const powerupType = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+
+        const powerup = {
+            x: Math.random() * (this.canvas.width - 20),
+            y: -20,
+            width: 20,
+            height: 20,
+            type: powerupType.type,
+            color: powerupType.color,
+            icon: powerupType.icon
+        };
+
+        this.powerups.push(powerup);
+    }
+
     shoot() {
         if (!this.gameActive) return;
+        
+        const now = Date.now();
+        if (now - this.player.lastShot < this.player.fireRate) return;
+        
+        this.player.lastShot = now;
 
         const bullet = {
             x: this.player.x + this.player.width / 2 - 1.5,
             y: this.player.y,
             width: 3,
-            height: 8
+            height: 8,
+            type: 'player'
         };
 
         this.bullets.push(bullet);
         
         if (audioManager) {
-            audioManager.playGameSound('shoot');
+            audioManager.playSound('shoot');
         }
     }
 
     movePlayer(direction) {
         if (!this.gameActive) return;
 
-        const speed = 5;
-        const canvas = this.canvas;
+        const speed = this.player.speed;
         
         switch(direction) {
             case 'left':
                 this.player.x = Math.max(0, this.player.x - speed);
                 break;
             case 'right':
-                this.player.x = Math.min(canvas.width - this.player.width, this.player.x + speed);
+                this.player.x = Math.min(this.canvas.width - this.player.width, this.player.x + speed);
                 break;
             case 'up':
                 this.player.y = Math.max(0, this.player.y - speed);
                 break;
             case 'down':
-                this.player.y = Math.min(canvas.height - this.player.height, this.player.y + speed);
+                this.player.y = Math.min(this.canvas.height - this.player.height - 20, this.player.y + speed);
                 break;
         }
     }
 
     checkCollisions() {
-        // Пули против врагов
         this.bullets.forEach((bullet, bulletIndex) => {
+            if (bullet.type !== 'player') return;
+            
             this.enemies.forEach((enemy, enemyIndex) => {
                 if (this.isColliding(bullet, enemy)) {
                     this.bullets.splice(bulletIndex, 1);
@@ -1381,38 +1642,87 @@ class ShmupGame {
                     enemy.health--;
                     if (enemy.health <= 0) {
                         this.enemies.splice(enemyIndex, 1);
-                        this.score += enemy.type === 'boss' ? 100 : 10;
+                        this.score += enemy.points;
+                        this.enemiesKilled++;
+                        
+                        this.createExplosionParticles(enemy.x + enemy.width/2, enemy.y + enemy.height/2);
                         
                         if (audioManager) {
-                            audioManager.playGameSound('hit');
+                            audioManager.playSound('hit');
                         }
                         
-                        // Повышаем уровень каждые 500 очков
-                        if (this.score % 500 === 0) {
-                            this.level++;
+                        if (Math.random() < 0.15) {
+                            this.spawnPowerup();
                         }
                     }
                 }
             });
         });
 
-        // Враги против игрока
         this.enemies.forEach((enemy, enemyIndex) => {
             if (this.isColliding(this.player, enemy)) {
                 this.enemies.splice(enemyIndex, 1);
-                this.player.lives--;
+                this.damagePlayer();
+            }
+        });
+
+        this.powerups.forEach((powerup, powerupIndex) => {
+            if (this.isColliding(this.player, powerup)) {
+                this.powerups.splice(powerupIndex, 1);
+                this.applyPowerup(powerup);
                 
                 if (audioManager) {
-                    audioManager.playGameSound('hit');
-                }
-
-                if (this.player.lives <= 0) {
-                    this.endShmupGame();
+                    audioManager.playSound('powerup');
                 }
             }
         });
 
         this.updateShmupUI();
+    }
+
+    damagePlayer() {
+        if (this.player.shield > 0) {
+            this.player.shield--;
+        } else {
+            this.player.lives--;
+        }
+        
+        if (audioManager) {
+            audioManager.playSound('hit');
+        }
+
+        if (this.player.lives <= 0) {
+            this.endShmupGame();
+        }
+    }
+
+    applyPowerup(powerup) {
+        switch(powerup.type) {
+            case 'health':
+                this.player.lives = Math.min(3, this.player.lives + 1);
+                break;
+            case 'weapon':
+                this.player.powerLevel = Math.min(3, this.player.powerLevel + 1);
+                this.player.fireRate = Math.max(100, this.player.fireRate - 50);
+                break;
+            case 'shield':
+                this.player.shield += 3;
+                break;
+        }
+    }
+
+    createExplosionParticles(x, y) {
+        for (let i = 0; i < 8; i++) {
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                size: 2 + Math.random() * 3,
+                color: ['#ff6600', '#ffcc00', '#ff3333'][Math.floor(Math.random() * 3)],
+                life: 1
+            });
+        }
     }
 
     isColliding(rect1, rect2) {
@@ -1431,15 +1741,9 @@ class ShmupGame {
     }
 
     startMultiplayerShmup() {
-        // Симуляция соперника
         const opponentSimulator = setInterval(() => {
             if (this.gameActive && this.isMultiplayer) {
-                this.opponentScore += Math.floor(Math.random() * 30);
-                
-                if (this.opponentScore >= this.score + 500) {
-                    clearInterval(opponentSimulator);
-                    this.endShmupGame();
-                }
+                this.opponentScore += Math.floor(Math.random() * 30) + 10;
             } else {
                 clearInterval(opponentSimulator);
             }
@@ -1451,21 +1755,21 @@ class ShmupGame {
         
         if (this.gameLoop) clearInterval(this.gameLoop);
         if (this.enemySpawner) clearInterval(this.enemySpawner);
+        if (this.powerupSpawner) clearInterval(this.powerupSpawner);
 
         if (!userData) return;
 
         const reward = Math.floor(this.score / 10);
         userData.bottleCaps += reward;
 
-        let resultMessage = `[GAME OVER!]\nFinal Score: ${this.score}\n+${reward} Bottle Caps`;
+        let resultMessage = `[MISSION COMPLETE!]\nScore: ${this.score}\n+${reward} Bottle Caps`;
 
         if (this.isMultiplayer) {
             const won = this.score > this.opponentScore;
-            resultMessage += `\nOpponent Score: ${this.opponentScore}`;
-            resultMessage += `\nResult: ${won ? 'VICTORY!' : 'DEFEAT'}`;
+            resultMessage += `\nOpponent: ${this.opponentScore}\n${won ? 'VICTORY!' : 'DEFEAT'}`;
             
             if (won && currentStake) {
-                const winnings = currentStake.amount * 1.8;
+                const winnings = currentStake.amount * 1.85;
                 if (currentStake.currency === 'TON') {
                     userData.tonBalance += winnings;
                 } else if (currentStake.currency === 'TSAR') {
@@ -1473,6 +1777,10 @@ class ShmupGame {
                 }
                 resultMessage += `\n+${winnings} ${currentStake.currency}`;
             }
+        }
+
+        if (achievementSystem && this.score >= 1000) {
+            achievementSystem.checkAchievement('space_ace');
         }
 
         updateUserInfo();
@@ -1487,41 +1795,34 @@ class ShmupGame {
         this.gameActive = false;
         this.score = 0;
         this.opponentScore = 0;
-        this.player = { x: 150, y: 350, width: 20, height: 20, lives: 3 };
+        this.level = 1;
+        this.player.lives = 3;
         this.enemies = [];
         this.bullets = [];
+        this.powerups = [];
+        this.particles = [];
         
-        if (this.gameLoop) {
-            clearInterval(this.gameLoop);
-            this.gameLoop = null;
-        }
-        
-        if (this.enemySpawner) {
-            clearInterval(this.enemySpawner);
-            this.enemySpawner = null;
-        }
+        if (this.gameLoop) clearInterval(this.gameLoop);
+        if (this.enemySpawner) clearInterval(this.enemySpawner);
+        if (this.powerupSpawner) clearInterval(this.powerupSpawner);
         
         this.updateShmupUI();
         
-        // Возвращаемся к выбору игр
         hideAllScreens();
         document.getElementById('main-screen').classList.add('active');
         showSection('gameboy');
     }
 }
 
+// Инициализация
 let initStarted = false;
 
 function initApp() {
-    if (initStarted) {
-        console.log("Init already started, skipping...");
-        return;
-    }
-    
+    if (initStarted) return;
     initStarted = true;
+    
     console.log("🚀 Initializing RUNNER terminal...");
     
-    // Инициализируем все системы БЕЗ дубликатов
     audioManager = new RetroAudioManager();
     wastelandRadio = new WastelandRadio();
     runnerSystem = new RunnerMissionSystem();
@@ -1529,7 +1830,8 @@ function initApp() {
     blockchainManager = new BlockchainManager();
     marketplace = new MarketplaceSystem();
     terminalGame = new TerminalHackingGame();
-    shmupGameManager = new ShmupGame(); // Используем другое имя
+    shmupGameManager = new ShmupGame();
+    achievementSystem = new AchievementSystem();
     
     loadUserData();
     generateReferralCode();
@@ -1543,6 +1845,7 @@ function initApp() {
     updateDateTime();
     setInterval(updateDateTime, 60000);
     
+    addAchievementStyles();
     showWelcomeScreen();
     
     console.log("✅ RUNNER terminal ready");
@@ -1604,14 +1907,12 @@ function generateReferralCode() {
 function updateUserInfo() {
     if (!userData) return;
 
-    // Обновляем заголовок
     const balanceDisplay = document.getElementById('balance-display');
     const capsDisplay = document.getElementById('caps-display');
     
     if (balanceDisplay) balanceDisplay.textContent = `TON: ${userData.tonBalance.toFixed(3)}`;
     if (capsDisplay) capsDisplay.textContent = `CAPS: ${userData.bottleCaps}`;
     
-    // Обновляем статистику
     const elements = {
         'player-level': userData.level,
         'caps-value': userData.bottleCaps,
@@ -1629,7 +1930,6 @@ function updateUserInfo() {
         if (element) element.textContent = value;
     });
 
-    // Обновляем Runner статистику
     if (runnerSystem) {
         const completedElement = document.getElementById('completed-missions');
         const totalEarnedElement = document.getElementById('total-earned');
@@ -1640,7 +1940,6 @@ function updateUserInfo() {
         if (referralEarningsElement) referralEarningsElement.textContent = userData.referralEarnings.toFixed(3) + ' TON';
     }
 
-    // Обновляем балансы в кошельке
     const balanceItems = document.querySelectorAll('.crypto-amount');
     if (balanceItems.length >= 3) {
         balanceItems[0].textContent = userData.tonBalance.toFixed(3);
@@ -1666,7 +1965,6 @@ function showWelcomeScreen() {
     hideAllScreens();
     document.getElementById('welcome-screen').classList.add('active');
     
-    // Добавляем возможность пропуска
     const welcomeTerminal = document.getElementById('welcome-terminal');
     let canSkip = false;
     let skipped = false;
@@ -1674,9 +1972,7 @@ function showWelcomeScreen() {
     const skipHandler = (e) => {
         if (canSkip && !skipped) {
             e.preventDefault();
-            e.stopPropagation();
             skipped = true;
-            console.log("Welcome screen skipped by user");
             if (audioManager) audioManager.beep();
             proceedToMainScreen();
         }
@@ -1687,19 +1983,12 @@ function showWelcomeScreen() {
         welcomeTerminal.addEventListener('touchstart', skipHandler);
     }
     
-    // Разрешаем пропуск через 2 секунды
-    setTimeout(() => {
-        canSkip = true;
-        console.log("Skip enabled");
-    }, 2000);
+    setTimeout(() => { canSkip = true; }, 2000);
     
-    // Инициализируем аудио
     const initAudio = () => {
         if (audioManager) {
             audioManager.init().then(() => {
-                setTimeout(() => {
-                    audioManager.playWelcomeMelody();
-                }, 1000);
+                setTimeout(() => audioManager.playWelcomeMelody(), 1000);
             });
         }
     };
@@ -1707,7 +1996,6 @@ function showWelcomeScreen() {
     document.addEventListener('click', initAudio, { once: true });
     document.addEventListener('touchstart', initAudio, { once: true });
     
-    // Автоматическая загрузка
     const bootMessages = [
         'INITIALIZING RUNNER TERMINAL...',
         'LOADING BLOCKCHAIN PROTOCOLS...',
@@ -1776,9 +2064,7 @@ function showSystemCheck() {
         systemCheck.style.display = 'block';
     }
     
-    setTimeout(() => {
-        showContinuePrompt();
-    }, 1500);
+    setTimeout(showContinuePrompt, 1500);
 }
 
 function showContinuePrompt() {
@@ -1792,15 +2078,10 @@ function showContinuePrompt() {
             proceedToMainScreen();
         };
         
-        const keyHandler = (e) => {
-            proceedToMainScreen();
-        };
-        
         continueSection.addEventListener('click', continueHandler);
         continueSection.addEventListener('touchstart', continueHandler);
-        document.addEventListener('keydown', keyHandler);
+        document.addEventListener('keydown', continueHandler);
         
-        // Автоматический переход через 10 секунд
         setTimeout(() => {
             if (document.getElementById('welcome-screen').classList.contains('active')) {
                 proceedToMainScreen();
@@ -1819,20 +2100,6 @@ function proceedToMainScreen() {
     hideAllScreens();
     document.getElementById('main-screen').classList.add('active');
     showSection('stat');
-    
-    // Очищаем обработчики
-    const continueSection = document.getElementById('continue-section');
-    const welcomeTerminal = document.getElementById('welcome-terminal');
-    
-    if (continueSection) {
-        const newContinueSection = continueSection.cloneNode(true);
-        continueSection.parentNode.replaceChild(newContinueSection, continueSection);
-    }
-    
-    if (welcomeTerminal) {
-        const newWelcomeTerminal = welcomeTerminal.cloneNode(true);
-        welcomeTerminal.parentNode.replaceChild(newWelcomeTerminal, welcomeTerminal);
-    }
 }
 
 function hideAllScreens() {
@@ -1842,8 +2109,6 @@ function hideAllScreens() {
 }
 
 function setupAllEventHandlers() {
-    console.log("🔧 Setting up all event handlers...");
-    
     setupSimpleNavigation();
     setupGameHandlers();
     setupRadioHandlers();
@@ -1854,8 +2119,6 @@ function setupAllEventHandlers() {
     setupNuclearHandlers();
     setupRunnerHandlers();
     setupShmupHandlers();
-    
-    console.log("✅ All handlers setup complete");
 }
 
 function setupSimpleNavigation() {
@@ -1863,32 +2126,22 @@ function setupSimpleNavigation() {
     const closeBtn = document.getElementById('simple-close');
     const nav = document.getElementById('simple-nav');
     
-    if (!menuBtn || !closeBtn || !nav) {
-        console.error("❌ Menu elements not found!");
-        return;
-    }
+    if (!menuBtn || !closeBtn || !nav) return;
     
     function openMenu() {
         nav.style.display = 'block';
         menuOpen = true;
-        console.log("✅ Menu opened");
     }
     
     function closeMenu() {
         nav.style.display = 'none';
         menuOpen = false;
-        console.log("✅ Menu closed");
     }
     
     menuBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (audioManager) audioManager.beep();
-        
-        if (menuOpen) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
+        menuOpen ? closeMenu() : openMenu();
     });
     
     closeBtn.addEventListener('click', (e) => {
@@ -1897,24 +2150,18 @@ function setupSimpleNavigation() {
         closeMenu();
     });
     
-    // Навигационные кнопки
     document.querySelectorAll('.simple-nav-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             e.preventDefault();
-            
             const section = button.getAttribute('data-section');
             if (audioManager) audioManager.beep();
             showSection(section);
             closeMenu();
         });
     });
-    
-    console.log("✅ Navigation setup complete");
 }
 
 function showSection(section) {
-    console.log(`📄 Showing section: ${section}`);
-    
     document.querySelectorAll('.section-content').forEach(sec => {
         sec.classList.remove('active');
     });
@@ -1928,27 +2175,14 @@ function showSection(section) {
     if (targetSection) {
         targetSection.classList.add('active');
         
-        // Специальные действия при открытии разделов
-        if (section === 'runner') {
-            loadRunnerMissions();
-        } else if (section === 'radio') {
-            loadRadioMessages();
-        } else if (section === 'shop') {
-            loadMarketListings();
-        } else if (section === 'inventory') {
-            loadInventory();
-        }
-        
-        console.log(`✅ Section activated: ${section}`);
-    } else {
-        console.error(`❌ Section not found: ${section}`);
+        if (section === 'runner') loadRunnerMissions();
+        else if (section === 'radio') loadRadioMessages();
+        else if (section === 'shop') loadMarketListings();
+        else if (section === 'inventory') loadInventory();
     }
 }
 
 function setupGameHandlers() {
-    console.log("Setting up game handlers...");
-    
-    // Terminal Hacking
     const terminalBtn = document.getElementById('terminal-hack-btn');
     if (terminalBtn) {
         terminalBtn.addEventListener('click', (e) => {
@@ -1958,7 +2192,6 @@ function setupGameHandlers() {
         });
     }
 
-    // Shmup
     const shmupBtn = document.getElementById('shmup-btn');
     if (shmupBtn) {
         shmupBtn.addEventListener('click', (e) => {
@@ -1968,24 +2201,18 @@ function setupGameHandlers() {
         });
     }
 
-    // Другие игры
-    const otherGames = [
-        { id: 'chess-btn', name: 'WASTELAND CHESS' },
-        { id: 'battle-arena-btn', name: 'BATTLE ARENA' }
-    ];
-    
-    otherGames.forEach(({ id, name }) => {
+    const otherGames = ['chess-btn', 'battle-arena-btn'];
+    otherGames.forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (audioManager) audioManager.beep();
-                alert(`[${name}]\nComing in future updates!\nStay tuned for more blockchain games!`);
+                alert(`[GAME]\nComing in future updates!`);
             });
         }
     });
 
-    // Возврат из игр
     const backBtn = document.getElementById('back-to-arcade');
     const backShmupBtn = document.getElementById('back-from-shmup');
     
@@ -2009,7 +2236,6 @@ function setupGameHandlers() {
     }
 
     setupModeHandlers();
-    console.log("✅ Game handlers setup complete");
 }
 
 function setupModeHandlers() {
@@ -2032,7 +2258,6 @@ function setupModeHandlers() {
         });
     }
 
-    // Мультиплеер кнопки
     const buttons = [
         { id: 'create-game', handler: createMultiplayerGame },
         { id: 'find-game', handler: findMultiplayerGame },
@@ -2051,7 +2276,6 @@ function setupModeHandlers() {
         }
     });
 
-    // Валютные опции
     document.querySelectorAll('.crypto-option').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2070,9 +2294,6 @@ function setupModeHandlers() {
 }
 
 function setupShmupHandlers() {
-    console.log("Setting up shmup handlers...");
-    
-    // Управление стрельбой
     const shootBtn = document.getElementById('shoot-btn');
     if (shootBtn) {
         shootBtn.addEventListener('click', (e) => {
@@ -2080,9 +2301,7 @@ function setupShmupHandlers() {
             if (shmupGameManager) shmupGameManager.shoot();
         });
 
-        // Автоматическая стрельба при удержании
         let shootInterval;
-        
         shootBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (shmupGameManager) shmupGameManager.shoot();
@@ -2093,14 +2312,10 @@ function setupShmupHandlers() {
 
         shootBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
-            if (shootInterval) {
-                clearInterval(shootInterval);
-                shootInterval = null;
-            }
+            if (shootInterval) clearInterval(shootInterval);
         });
     }
 
-    // Кнопки движения
     const moveButtons = [
         { id: 'move-left', direction: 'left' },
         { id: 'move-right', direction: 'right' },
@@ -2116,9 +2331,7 @@ function setupShmupHandlers() {
                 if (shmupGameManager) shmupGameManager.movePlayer(direction);
             });
 
-            // Непрерывное движение при удержании
             let moveInterval;
-            
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 moveInterval = setInterval(() => {
@@ -2128,58 +2341,13 @@ function setupShmupHandlers() {
 
             btn.addEventListener('touchend', (e) => {
                 e.preventDefault();
-                if (moveInterval) {
-                    clearInterval(moveInterval);
-                    moveInterval = null;
-                }
+                if (moveInterval) clearInterval(moveInterval);
             });
         }
     });
-
-    // Клавиатурное управление
-    document.addEventListener('keydown', (e) => {
-        if (!shmupGameManager || !shmupGameManager.gameActive) return;
-        
-        switch(e.key) {
-            case 'ArrowLeft':
-            case 'a':
-            case 'A':
-                e.preventDefault();
-                shmupGameManager.movePlayer('left');
-                break;
-            case 'ArrowRight':
-            case 'd':
-            case 'D':
-                e.preventDefault();
-                shmupGameManager.movePlayer('right');
-                break;
-            case 'ArrowUp':
-            case 'w':
-            case 'W':
-                e.preventDefault();
-                shmupGameManager.movePlayer('up');
-                break;
-            case 'ArrowDown':
-            case 's':
-            case 'S':
-                e.preventDefault();
-                shmupGameManager.movePlayer('down');
-                break;
-            case ' ':
-            case 'Enter':
-                e.preventDefault();
-                shmupGameManager.shoot();
-                break;
-        }
-    });
-    
-    console.log("✅ Shmup handlers setup complete");
 }
 
 function setupRunnerHandlers() {
-    console.log("Setting up runner handlers...");
-    
-    // Фильтр миссий
     const missionFilter = document.getElementById('mission-filter');
     if (missionFilter) {
         missionFilter.addEventListener('change', (e) => {
@@ -2188,7 +2356,6 @@ function setupRunnerHandlers() {
         });
     }
 
-    // Создание миссии
     const createMissionBtn = document.getElementById('create-mission-btn');
     if (createMissionBtn) {
         createMissionBtn.addEventListener('click', (e) => {
@@ -2197,14 +2364,9 @@ function setupRunnerHandlers() {
             openMissionCreator();
         });
     }
-    
-    console.log("✅ Runner handlers setup complete");
 }
 
 function setupRadioHandlers() {
-    console.log("Setting up radio handlers...");
-    
-    // Выбор типа сообщения
     document.querySelectorAll('.message-type-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2245,14 +2407,9 @@ function setupRadioHandlers() {
             }
         });
     }
-    
-    console.log("✅ Radio handlers setup complete");
 }
 
 function setupWalletHandlers() {
-    console.log("Setting up wallet handlers...");
-    
-    // Подключение кошелька
     const connectBtn = document.getElementById('connect-wallet');
     if (connectBtn) {
         connectBtn.addEventListener('click', (e) => {
@@ -2260,19 +2417,16 @@ function setupWalletHandlers() {
             if (audioManager) audioManager.beep();
             
             if (blockchainManager && blockchainManager.connected) {
-                // Отключение
                 blockchainManager.connected = false;
                 blockchainManager.userWallet = null;
                 blockchainManager.updateWalletUI();
                 alert('[WALLET] Disconnected successfully');
             } else {
-                // Подключение
                 if (blockchainManager) blockchainManager.connectWallet();
             }
         });
     }
 
-    // Остальные кнопки кошелька
     const walletButtons = [
         { id: 'deposit-btn', action: handleDeposit },
         { id: 'withdraw-btn', action: handleWithdraw },
@@ -2291,7 +2445,6 @@ function setupWalletHandlers() {
         }
     });
 
-    // Листинг токена
     const listTokenBtn = document.getElementById('list-token-btn');
     if (listTokenBtn) {
         listTokenBtn.addEventListener('click', (e) => {
@@ -2300,13 +2453,9 @@ function setupWalletHandlers() {
             openTokenListing();
         });
     }
-    
-    console.log("✅ Wallet handlers setup complete");
 }
 
 function setupClanHandlers() {
-    console.log("Setting up clan handlers...");
-    
     const createBtn = document.getElementById('create-clan-btn');
     if (createBtn) {
         createBtn.addEventListener('click', (e) => {
@@ -2325,7 +2474,6 @@ function setupClanHandlers() {
         });
     }
 
-    // Копирование реферальной ссылки
     const copyBtn = document.getElementById('copy-referral');
     if (copyBtn) {
         copyBtn.addEventListener('click', (e) => {
@@ -2334,13 +2482,9 @@ function setupClanHandlers() {
             copyReferralLink();
         });
     }
-    
-    console.log("✅ Clan handlers setup complete");
 }
 
 function setupSettingsHandlers() {
-    console.log("Setting up settings handlers...");
-    
     const soundToggle = document.getElementById('sound-toggle');
     if (soundToggle) {
         soundToggle.addEventListener('click', (e) => {
@@ -2365,8 +2509,6 @@ function setupSettingsHandlers() {
             const enabled = e.target.classList.contains('active');
             e.target.classList.toggle('active', !enabled);
             e.target.textContent = enabled ? 'OFF' : 'ON';
-            
-            document.body.style.animationPlayState = enabled ? 'paused' : 'running';
         });
     }
 
@@ -2375,7 +2517,7 @@ function setupSettingsHandlers() {
         langSelect.addEventListener('change', (e) => {
             currentLanguage = e.target.value;
             if (audioManager) audioManager.beep();
-            alert(`[LANGUAGE] Changed to ${e.target.value.toUpperCase()}\nFull localization coming soon!`);
+            alert(`[LANGUAGE] Changed to ${e.target.value.toUpperCase()}`);
         });
     }
 
@@ -2385,21 +2527,16 @@ function setupSettingsHandlers() {
             if (userData && userData.tsarBalance >= 10000) {
                 if (audioManager) audioManager.beep();
                 applyTheme(e.target.value);
-                alert(`[THEME] Applied ${e.target.value.toUpperCase()} theme successfully!`);
+                alert(`[THEME] Applied ${e.target.value.toUpperCase()} theme`);
             } else {
                 e.target.value = 'classic';
                 alert('[ERROR] Premium feature\nRequires 10,000+ TSAR tokens');
             }
         });
     }
-    
-    console.log("✅ Settings handlers setup complete");
 }
 
 function setupMarketHandlers() {
-    console.log("Setting up market handlers...");
-    
-    // Табы рынка
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2413,7 +2550,6 @@ function setupMarketHandlers() {
         });
     });
 
-    // Создание листингов
     const buttons = [
         { id: 'create-listing-btn', action: createGeneralListing },
         { id: 'sell-nft-btn', action: createNFTListing },
@@ -2431,7 +2567,6 @@ function setupMarketHandlers() {
         }
     });
 
-    // Табы инвентаря
     document.querySelectorAll('.inv-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2444,13 +2579,9 @@ function setupMarketHandlers() {
             loadInventory(tab);
         });
     });
-    
-    console.log("✅ Market handlers setup complete");
 }
 
 function setupNuclearHandlers() {
-    console.log("Setting up nuclear handlers...");
-    
     const connectTradingBtn = document.getElementById('connect-trading-wallet');
     if (connectTradingBtn) {
         connectTradingBtn.addEventListener('click', (e) => {
@@ -2478,18 +2609,13 @@ function setupNuclearHandlers() {
             placeSellOrder();
         });
     }
-    
-    console.log("✅ Nuclear handlers setup complete");
 }
 
-// ===== ИГРОВЫЕ ФУНКЦИИ =====
-
+// Игровые функции
 function showTerminalHackingScreen() {
     hideAllScreens();
     document.getElementById('game-screen').classList.add('active');
     showModeSelector();
-    gameScore = 0;
-    updateScoreDisplay();
 }
 
 function showShmupScreen() {
@@ -2497,17 +2623,17 @@ function showShmupScreen() {
     document.getElementById('shmup-screen').classList.add('active');
     
     setTimeout(() => {
-        const mode = confirm('Choose game mode:\nOK = Solo Practice (earn bottle caps)\nCancel = Multiplayer (crypto stakes)') ? 'solo' : 'multiplayer';
+        const mode = confirm('Choose mode:\nOK = Solo\nCancel = Multiplayer') ? 'solo' : 'multiplayer';
         
         if (mode === 'multiplayer') {
-            const stake = prompt('Enter stake amount (TON):');
+            const stake = prompt('Stake amount (TON):');
             const stakeAmount = parseFloat(stake);
             
             if (stake && stakeAmount > 0 && stakeAmount <= userData.tonBalance) {
                 currentStake = { amount: stakeAmount, currency: 'TON' };
                 if (shmupGameManager) shmupGameManager.startGame(mode);
             } else {
-                alert('[ERROR] Invalid stake amount or insufficient balance');
+                alert('[ERROR] Invalid stake amount');
                 return;
             }
         } else {
@@ -2542,7 +2668,7 @@ function createMultiplayerGame() {
     const amount = amountInput ? parseFloat(amountInput.value) : 0.1;
     
     if (amount <= 0) {
-        alert('[ERROR] Please enter a valid stake amount');
+        alert('[ERROR] Invalid stake amount');
         return;
     }
 
@@ -2563,27 +2689,7 @@ function createMultiplayerGame() {
 }
 
 function findMultiplayerGame() {
-    const availableGames = [
-        { id: 'GAME01', host: 'WASTELAND_TRADER', stake: '0.1 TON' },
-        { id: 'GAME02', host: 'VAULT_HUNTER', stake: '500 TSAR' }
-    ];
-    
-    if (availableGames.length > 0) {
-        const game = availableGames[0];
-        const join = confirm(`Join game ${game.id}?\nHost: ${game.host}\nStake: ${game.stake}`);
-        
-        if (join) {
-            const [amount, currency] = game.stake.split(' ');
-            currentStake = { amount: parseFloat(amount), currency };
-            
-            showWaitingLobby();
-            setTimeout(() => {
-                startTerminalHacking('multiplayer');
-            }, 2000);
-        }
-    } else {
-        alert('[NO GAMES FOUND]\nNo active games available.\nTry creating your own game!');
-    }
+    alert('[FIND GAME]\nLooking for available games...\nFeature in development!');
 }
 
 function showWaitingLobby() {
@@ -2600,15 +2706,7 @@ function showWaitingLobby() {
     }
 }
 
-function updateScoreDisplay() {
-    const scoreDisplay = document.getElementById('score-display');
-    if (scoreDisplay) {
-        scoreDisplay.textContent = `SCORE: ${gameScore}`;
-    }
-}
-
-// ===== RUNNER ФУНКЦИИ =====
-
+// RUNNER функции
 function loadRunnerMissions(filter = 'all') {
     const missionsList = document.getElementById('missions-list');
     if (!missionsList || !runnerSystem) return;
@@ -2634,7 +2732,6 @@ function loadRunnerMissions(filter = 'all') {
         </div>
     `).join('');
 
-    // Добавляем обработчики для миссий
     document.querySelectorAll('.mission-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2652,37 +2749,91 @@ function startMission(missionId) {
     const result = runnerSystem.startMission(missionId);
     
     if (result.success) {
-        alert('[MISSION STARTED]\nMission accepted!\nComplete the task to earn reward.\nYou have 24 hours to complete it.');
-        
-        // Симуляция выполнения через 5-15 секунд
-        const completionTime = 5000 + Math.random() * 10000;
+        alert('[MISSION STARTED]\nMission accepted!\nComplete the task to earn reward.');
         
         setTimeout(() => {
-            const success = Math.random() > 0.2; // 80% шанс успеха
+            const success = Math.random() > 0.2;
             
             if (success) {
                 const completeResult = runnerSystem.completeMission(missionId);
                 if (completeResult.success) {
                     const reward = completeResult.reward;
-                    alert(`[MISSION COMPLETED!]\nReward: +${reward.amount} ${reward.currency}\nGreat job, Runner!`);
+                    alert(`[MISSION COMPLETED!]\nReward: +${reward.amount} ${reward.currency}`);
                     
                     if (userData) {
                         userData.missionsCompleted++;
                         userData.totalEarned += reward.currency === 'TON' ? reward.amount : 0;
                     }
                     
-                    // Обрабатываем реферальные
                     if (referralSystem) {
                         referralSystem.processEarning(reward.amount, reward.currency);
+                    }
+
+                    if (achievementSystem) {
+                        achievementSystem.checkAchievement('first_mission');
                     }
                     
                     updateUserInfo();
                     loadRunnerMissions();
                 }
             } else {
-                alert('[MISSION FAILED]\nTask verification failed.\nPlease try again or contact support.');
+                alert('[MISSION FAILED]\nTask verification failed.');
             }
-        }, completionTime);
+        }, 5000 + Math.random() * 10000);
+    } else {
+        alert(`[ERROR] ${result.error}`);
+    }
+}
+
+function openMissionCreator() {
+    if (!userData || userData.tsarBalance < 350000) {
+        alert('[ACCESS DENIED]\nRequired: 350,000 TSAR');
+        return;
+    }
+
+    const title = prompt('Mission title:');
+    if (!title) return;
+
+    const description = prompt('Description:');
+    if (!description) return;
+
+    const rewardAmount = prompt('Reward amount:');
+    const reward = parseFloat(rewardAmount);
+    if (!reward || reward <= 0) {
+        alert('[ERROR] Invalid reward');
+        return;
+    }
+
+    const currency = prompt('Currency (TON/TSAR/STARS):').toUpperCase();
+    if (!['TON', 'TSAR', 'STARS'].includes(currency)) {
+        alert('[ERROR] Invalid currency');
+        return;
+    }
+
+    const type = prompt('Type (telegram/social/trading/gaming):').toLowerCase();
+    if (!['telegram', 'social', 'trading', 'gaming'].includes(type)) {
+        alert('[ERROR] Invalid type');
+        return;
+    }
+
+    const budget = parseFloat(prompt('Budget (TSAR):'));
+    if (!budget || budget < 1000) {
+        alert('[ERROR] Minimum budget: 1000 TSAR');
+        return;
+    }
+
+    const missionData = {
+        title, description,
+        reward: { amount: reward, currency },
+        type, totalBudget: budget
+    };
+
+    const result = runnerSystem.createMission(missionData);
+    
+    if (result.success) {
+        alert(`[MISSION CREATED!]\n${title}\nReward: ${reward} ${currency}`);
+        updateUserInfo();
+        loadRunnerMissions();
     } else {
         alert(`[ERROR] ${result.error}`);
     }
@@ -2706,175 +2857,79 @@ function updateAdvertiserAccess() {
     }
 }
 
-function openMissionCreator() {
-    if (!userData || userData.tsarBalance < 350000) {
-        alert('[ACCESS DENIED]\nInsufficient TSAR tokens\nRequired: 350,000 TSAR for Mission Control Center');
-        return;
-    }
-
-    const title = prompt('Mission title (max 50 characters):');
-    if (!title || title.length > 50) {
-        alert('[ERROR] Invalid title');
-        return;
-    }
-
-    const description = prompt('Mission description (max 200 characters):');
-    if (!description || description.length > 200) {
-        alert('[ERROR] Invalid description');
-        return;
-    }
-
-    const rewardAmount = prompt('Reward amount per user (number):');
-    const reward = parseFloat(rewardAmount);
-    if (!reward || reward <= 0) {
-        alert('[ERROR] Invalid reward amount');
-        return;
-    }
-
-    const currency = prompt('Reward currency (TON/TSAR/STARS):');
-    if (!currency || !['TON', 'TSAR', 'STARS'].includes(currency.toUpperCase())) {
-        alert('[ERROR] Invalid currency. Use TON, TSAR, or STARS');
-        return;
-    }
-
-    const type = prompt('Mission type (telegram/social/trading/gaming):');
-    if (!type || !['telegram', 'social', 'trading', 'gaming'].includes(type.toLowerCase())) {
-        alert('[ERROR] Invalid mission type');
-        return;
-    }
-
-    const totalBudget = prompt('Total mission budget (in TSAR):');
-    const budget = parseFloat(totalBudget);
-    if (!budget || budget < 1000) {
-        alert('[ERROR] Minimum budget: 1000 TSAR');
-        return;
-    }
-
-    const missionData = {
-        title,
-        description,
-        reward: { amount: reward, currency: currency.toUpperCase() },
-        type: type.toLowerCase(),
-        totalBudget: budget,
-        requirements: { minTsar: 100 }
-    };
-
-    if (!runnerSystem) return;
-    
-    const result = runnerSystem.createMission(missionData);
-    
-    if (result.success) {
-        alert(`[MISSION CREATED!]\nTitle: ${title}\nReward: ${reward} ${currency.toUpperCase()}\nCommission: ${Math.floor(budget * 0.1)} TSAR (10%)`);
-        updateUserInfo();
-        loadRunnerMissions();
-    } else {
-        alert(`[ERROR] ${result.error}`);
-    }
-}
-
-// ===== ФУНКЦИИ КОШЕЛЬКА =====
-
+// Функции кошелька
 function handleDeposit() {
     if (!blockchainManager || !blockchainManager.connected) {
-        alert('[ERROR] Please connect your TON wallet first\nUse the CONNECT TON WALLET button');
+        alert('[ERROR] Connect wallet first');
         return;
     }
     
     const address = blockchainManager.userWallet.account.address;
-    alert(`[DEPOSIT INSTRUCTIONS]\nSend TON to your terminal address:\n\n${address.substr(0, 20)}...\n\nDeposits are credited automatically\nMinimum: 0.01 TON`);
+    alert(`[DEPOSIT]\nSend TON to:\n${address.substr(0, 20)}...\n\nMinimum: 0.01 TON`);
 }
 
 function handleWithdraw() {
     if (!blockchainManager || !blockchainManager.connected) {
-        alert('[ERROR] Please connect your TON wallet first');
+        alert('[ERROR] Connect wallet first');
         return;
     }
-
-    if (!userData) return;
 
     const amount = prompt('Withdraw amount (TON):');
     const withdrawAmount = parseFloat(amount);
     
-    if (!withdrawAmount || withdrawAmount <= 0) {
-        alert('[ERROR] Invalid amount');
-        return;
-    }
-
-    if (withdrawAmount < 0.1) {
-        alert('[ERROR] Minimum withdrawal: 0.1 TON');
+    if (!withdrawAmount || withdrawAmount < 0.1) {
+        alert('[ERROR] Minimum: 0.1 TON');
         return;
     }
 
     if (withdrawAmount > userData.tonBalance) {
-        alert('[ERROR] Insufficient TON balance');
+        alert('[ERROR] Insufficient balance');
         return;
     }
 
-    // Симуляция вывода
     userData.tonBalance -= withdrawAmount;
     updateUserInfo();
     
-    alert(`[WITHDRAWAL PROCESSED]\nAmount: ${withdrawAmount} TON\nDestination: ${blockchainManager.userWallet.account.address.substr(0, 15)}...\nTransaction will complete in 1-3 minutes`);
+    alert(`[WITHDRAWAL]\n${withdrawAmount} TON sent\nCompletes in 1-3 minutes`);
 }
 
 function handleStakeTsar() {
-    if (!userData) return;
-    
     const amount = prompt('Stake amount (TSAR):');
     const stakeAmount = parseFloat(amount);
     
-    if (!stakeAmount || stakeAmount <= 0) {
-        alert('[ERROR] Invalid amount');
-        return;
-    }
-
-    if (stakeAmount < 1000) {
-        alert('[ERROR] Minimum stake: 1000 TSAR');
+    if (!stakeAmount || stakeAmount < 1000) {
+        alert('[ERROR] Minimum: 1000 TSAR');
         return;
     }
 
     if (stakeAmount > userData.tsarBalance) {
-        alert('[ERROR] Insufficient TSAR balance');
+        alert('[ERROR] Insufficient balance');
         return;
     }
 
     userData.tsarBalance -= stakeAmount;
     updateUserInfo();
     
-    alert(`[STAKING ACTIVATED]\nStaked: ${stakeAmount.toLocaleString()} TSAR\nAPY: 12% annually\nRewards paid daily to your balance`);
+    alert(`[STAKING]\n${stakeAmount.toLocaleString()} TSAR staked\nAPY: 12%`);
 }
 
 function handleAddTokens() {
-    const choice = prompt(`Select option:\n1. Buy TSAR with TON (1 TON = 1000 TSAR)\n2. Buy TSAR with STARS (1 STAR = 10 TSAR)\n3. List new token ($50 worth of TSAR)\n\nEnter 1, 2, or 3:`);
+    const choice = prompt('1. TON→TSAR (1:1000)\n2. STARS→TSAR (1:10)\n3. List token ($50)\n\nChoose:');
     
     switch(choice) {
-        case '1':
-            buyTsarWithTon();
-            break;
-        case '2':
-            buyTsarWithStars();
-            break;
-        case '3':
-            openTokenListing();
-            break;
-        default:
-            alert('[ERROR] Invalid option selected');
+        case '1': buyTsarWithTon(); break;
+        case '2': buyTsarWithStars(); break;
+        case '3': openTokenListing(); break;
+        default: alert('[ERROR] Invalid choice');
     }
 }
 
 function buyTsarWithTon() {
-    if (!userData) return;
-    
-    const amount = prompt('TON amount to convert to TSAR:');
+    const amount = prompt('TON amount:');
     const tonAmount = parseFloat(amount);
     
-    if (!tonAmount || tonAmount <= 0) {
+    if (!tonAmount || tonAmount > userData.tonBalance) {
         alert('[ERROR] Invalid amount');
-        return;
-    }
-
-    if (tonAmount > userData.tonBalance) {
-        alert('[ERROR] Insufficient TON balance');
         return;
     }
 
@@ -2883,22 +2938,15 @@ function buyTsarWithTon() {
     userData.tsarBalance += tsarAmount;
     
     updateUserInfo();
-    alert(`[EXCHANGE COMPLETED]\nConverted: ${tonAmount} TON → ${tsarAmount.toLocaleString()} TSAR\nExchange rate: 1 TON = 1000 TSAR`);
+    alert(`[EXCHANGE]\n${tonAmount} TON → ${tsarAmount.toLocaleString()} TSAR`);
 }
 
 function buyTsarWithStars() {
-    if (!userData) return;
-    
-    const amount = prompt('STARS amount to convert to TSAR:');
+    const amount = prompt('STARS amount:');
     const starsAmount = parseFloat(amount);
     
-    if (!starsAmount || starsAmount <= 0) {
+    if (!starsAmount || starsAmount > userData.starsBalance) {
         alert('[ERROR] Invalid amount');
-        return;
-    }
-
-    if (starsAmount > userData.starsBalance) {
-        alert('[ERROR] Insufficient STARS balance');
         return;
     }
 
@@ -2907,60 +2955,38 @@ function buyTsarWithStars() {
     userData.tsarBalance += tsarAmount;
     
     updateUserInfo();
-    alert(`[EXCHANGE COMPLETED]\nConverted: ${starsAmount} STARS → ${tsarAmount} TSAR\nExchange rate: 1 STAR = 10 TSAR`);
+    alert(`[EXCHANGE]\n${starsAmount} STARS → ${tsarAmount} TSAR`);
 }
 
 function openTokenListing() {
-    const tokenSymbol = prompt('Token symbol (e.g., DOGE):');
-    if (!tokenSymbol || tokenSymbol.length > 10) {
-        alert('[ERROR] Invalid token symbol');
+    const symbol = prompt('Token symbol:');
+    const name = prompt('Token name:');
+    const address = prompt('Contract address:');
+    
+    if (!symbol || !name || !address) {
+        alert('[ERROR] All fields required');
         return;
     }
 
-    const tokenName = prompt('Token name (e.g., Dogecoin):');
-    if (!tokenName || tokenName.length > 30) {
-        alert('[ERROR] Invalid token name');
-        return;
-    }
+    const confirm = window.confirm(`List ${name} (${symbol})?\nCost: $50 (50,000 TSAR)`);
 
-    const contractAddress = prompt('TON contract address:');
-    if (!contractAddress || contractAddress.length < 10) {
-        alert('[ERROR] Invalid contract address');
-        return;
-    }
-
-    const confirmListing = confirm(
-        `List ${tokenName} (${tokenSymbol.toUpperCase()})?\n\n` +
-        `Cost: $50 worth of TSAR tokens (50,000 TSAR)\n` +
-        `These tokens will be sent to burn address\n` +
-        `Contract: ${contractAddress.substr(0, 20)}...\n\n` +
-        `Continue with listing?`
-    );
-
-    if (confirmListing) {
-        const tokenData = {
-            symbol: tokenSymbol.toUpperCase(),
-            name: tokenName,
-            contractAddress: contractAddress
-        };
+    if (confirm) {
+        const tokenData = { symbol: symbol.toUpperCase(), name, contractAddress: address };
 
         if (blockchainManager) {
             blockchainManager.processTokenListing(tokenData).then(result => {
                 if (result.success) {
-                    alert(`[TOKEN LISTED SUCCESSFULLY!]\n${tokenName} (${tokenSymbol.toUpperCase()}) is now listed!\n\nBurn transaction: ${result.token.burnTxHash.substr(0, 20)}...\nYour token is now available for trading!`);
+                    alert(`[TOKEN LISTED]\n${name} listed successfully!`);
                     updateUserInfo();
                 } else {
-                    alert(`[LISTING FAILED]\n${result.error}`);
+                    alert(`[ERROR] ${result.error}`);
                 }
-            }).catch(error => {
-                alert(`[LISTING ERROR]\n${error.message}`);
             });
         }
     }
 }
 
-// ===== ФУНКЦИИ РЫНКА =====
-
+// Функции рынка
 function loadMarketListings(type = 'listings') {
     const listingsContainer = document.getElementById('listings-container');
     if (!listingsContainer || !marketplace) return;
@@ -2968,19 +2994,16 @@ function loadMarketListings(type = 'listings') {
     const listings = marketplace.getAllListings(type);
     
     listingsContainer.innerHTML = listings.map(listing => `
-        <div class="market-listing" data-listing-id="${listing.id}" data-listing-type="${type}">
+        <div class="market-listing" data-listing-id="${listing.id}">
             <div class="listing-header">
                 <span class="listing-title">${listing.title}</span>
                 <span class="listing-price">${listing.price} ${listing.currency}</span>
             </div>
             <div class="listing-description">${listing.description}</div>
             <div class="listing-seller">Seller: ${listing.seller}</div>
-            ${type === 'nft' ? '<div class="listing-type">[NFT]</div>' : ''}
-            ${type === 'gifts' ? '<div class="listing-type">[GIFT]</div>' : ''}
         </div>
     `).join('');
 
-    // Добавляем обработчики для покупки
     document.querySelectorAll('.market-listing').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2997,87 +3020,48 @@ function loadMarketListings(type = 'listings') {
 }
 
 function createGeneralListing() {
-    const title = prompt('Item title (max 50 characters):');
-    if (!title || title.length > 50) {
-        alert('[ERROR] Invalid title');
-        return;
-    }
-
-    const description = prompt('Item description (max 200 characters):');
-    if (!description || description.length > 200) {
-        alert('[ERROR] Invalid description');
-        return;
-    }
-
-    const price = prompt('Price (number only):');
-    const priceAmount = parseFloat(price);
-    if (!priceAmount || priceAmount <= 0) {
-        alert('[ERROR] Invalid price');
-        return;
-    }
-
-    const currency = prompt('Currency (TON/TSAR/STARS):');
-    if (!currency || !['TON', 'TSAR', 'STARS'].includes(currency.toUpperCase())) {
-        alert('[ERROR] Invalid currency. Use TON, TSAR, or STARS');
-        return;
-    }
-
-    const listingData = {
-        title,
-        description,
-        price: priceAmount,
-        currency: currency.toUpperCase(),
-        type: 'general'
-    };
-
-    if (!marketplace) return;
+    const title = prompt('Item title:');
+    const description = prompt('Description:');
+    const price = parseFloat(prompt('Price:'));
+    const currency = prompt('Currency (TON/TSAR/STARS):').toUpperCase();
     
+    if (!title || !description || !price || !['TON', 'TSAR', 'STARS'].includes(currency)) {
+        alert('[ERROR] Invalid data');
+        return;
+    }
+
+    const listingData = { title, description, price, currency, type: 'general' };
     const result = marketplace.createListing(listingData);
     
     if (result.success) {
-        alert(`[LISTING CREATED]\n${title}\nPrice: ${priceAmount} ${currency.toUpperCase()}\nCommission: 2.5% on successful sale`);
+        alert(`[LISTING CREATED]\n${title}\n${price} ${currency}`);
         loadMarketListings();
-    } else {
-        alert(`[ERROR] Failed to create listing`);
     }
 }
 
 function createNFTListing() {
-    alert('[NFT MARKETPLACE]\nNFT trading feature coming soon!\n\nFeatures:\n- List your Telegram NFT gifts\n- Trade rare collectibles\n- Secure STARS transactions\n- Low 2.5% commission');
+    alert('[NFT MARKETPLACE]\nComing soon!\nTrade NFTs for STARS');
 }
 
 function createGiftListing() {
-    alert('[GIFT MARKETPLACE]\nTelegram gifts trading coming soon!\n\nFeatures:\n- Sell received gifts for STARS\n- Buy rare gifts from other users\n- Secure P2P transactions\n- Instant delivery system');
+    alert('[GIFT MARKETPLACE]\nComing soon!\nSell Telegram gifts');
 }
 
 function purchaseListing(listing) {
-    if (!userData) return;
-    
-    const confirmPurchase = confirm(
-        `Purchase "${listing.title}"?\n\n` +
-        `Price: ${listing.price} ${listing.currency}\n` +
-        `Seller: ${listing.seller}\n` +
-        `Type: ${listing.type.toUpperCase()}\n\n` +
-        `Continue with purchase?`
-    );
+    const confirm = window.confirm(`Buy "${listing.title}"?\nPrice: ${listing.price} ${listing.currency}`);
 
-    if (confirmPurchase) {
+    if (confirm && userData) {
         const userBalance = getUserBalance(listing.currency);
         
         if (userBalance >= listing.price) {
-            // Списываем средства
-            if (listing.currency === 'TON') {
-                userData.tonBalance -= listing.price;
-            } else if (listing.currency === 'TSAR') {
-                userData.tsarBalance -= listing.price;
-            } else if (listing.currency === 'STARS') {
-                userData.starsBalance -= listing.price;
-            }
+            if (listing.currency === 'TON') userData.tonBalance -= listing.price;
+            else if (listing.currency === 'TSAR') userData.tsarBalance -= listing.price;
+            else if (listing.currency === 'STARS') userData.starsBalance -= listing.price;
 
             updateUserInfo();
-            alert(`[PURCHASE COMPLETED]\nYou bought: ${listing.title}\nPaid: ${listing.price} ${listing.currency}\nItem added to your inventory`);
+            alert(`[PURCHASED]\n${listing.title}\nPaid: ${listing.price} ${listing.currency}`);
         } else {
-            alert(`[ERROR] Insufficient ${listing.currency} balance\nRequired: ${listing.price} ${listing.currency}`);
+            alert(`[ERROR] Insufficient ${listing.currency}`);
         }
     }
 }
@@ -3093,32 +3077,199 @@ function getUserBalance(currency) {
     }
 }
 
+// Функции радио
+function sendRadioMessage() {
+    const messageInput = document.getElementById('radio-message');
+    if (!messageInput || !wastelandRadio) return;
+    
+    const messageText = messageInput.value.trim();
+    
+    if (!messageText) {
+        alert('[ERROR] Empty message');
+        return;
+    }
+
+    if (!userData) return;
+
+    try {
+        if (messageType === 'anonymous' && userData.tsarBalance < 5000) {
+            alert('[ERROR] Need 5000 TSAR for anonymous');
+            return;
+        }
+
+        if (messageType === 'sponsored' && userData.tsarBalance < 10000) {
+            alert('[ERROR] Need 10000 TSAR for sponsored');
+            return;
+        }
+
+        if (messageType === 'anonymous') {
+            userData.tsarBalance -= 5000;
+            alert('[SUCCESS] Anonymous message posted');
+        } else if (messageType === 'sponsored') {
+            userData.tsarBalance -= 10000;
+            alert('[SUCCESS] Sponsored message posted');
+        }
+
+        wastelandRadio.addMessage(messageText, userData.name, messageType);
+        
+        messageInput.value = '';
+        const counter = document.getElementById('char-counter');
+        if (counter) counter.textContent = '0/200';
+        
+        updateUserInfo();
+        loadRadioMessages();
+        
+    } catch (error) {
+        alert('[ERROR] ' + error.message);
+    }
+}
+
+function loadRadioMessages() {
+    const feedContent = document.getElementById('feed-content');
+    if (!feedContent || !wastelandRadio) return;
+    
+    const messages = wastelandRadio.getMessages();
+    
+    feedContent.innerHTML = messages.map(msg => `
+        <div class="radio-message ${msg.type}">
+            <div class="message-header">
+                <span class="message-author ${msg.type}">${msg.author}</span>
+                <span class="message-time">${msg.time}</span>
+            </div>
+            <div class="message-text">${msg.text}</div>
+        </div>
+    `).join('');
+    
+    feedContent.scrollTop = 0;
+}
+
+// Функции торговли
+function placeBuyOrder() {
+    if (!blockchainManager || !blockchainManager.connected) {
+        alert('[ERROR] Connect wallet first');
+        return;
+    }
+
+    const amount = parseFloat(document.getElementById('trade-amount')?.value || 0);
+    const price = parseFloat(document.getElementById('trade-price')?.value || 0);
+    
+    if (!amount || !price) {
+        alert('[ERROR] Enter amount and price');
+        return;
+    }
+
+    const total = amount * price;
+    
+    if (total > userData.tonBalance) {
+        alert('[ERROR] Insufficient TON');
+        return;
+    }
+
+    userData.tonBalance -= total;
+    updateUserInfo();
+
+    alert(`[BUY ORDER]\n${amount} TSAR @ ${price} TON\nTotal: ${total.toFixed(3)} TON`);
+}
+
+function placeSellOrder() {
+    if (!blockchainManager || !blockchainManager.connected) {
+        alert('[ERROR] Connect wallet first');
+        return;
+    }
+
+    const amount = parseFloat(document.getElementById('trade-amount')?.value || 0);
+    const price = parseFloat(document.getElementById('trade-price')?.value || 0);
+    
+    if (!amount || !price) {
+        alert('[ERROR] Enter amount and price');
+        return;
+    }
+
+    if (amount > userData.tsarBalance) {
+        alert('[ERROR] Insufficient TSAR');
+        return;
+    }
+
+    userData.tsarBalance -= amount;
+    updateUserInfo();
+
+    alert(`[SELL ORDER]\n${amount} TSAR @ ${price} TON\nExpected: ${(amount * price).toFixed(3)} TON`);
+}
+
+// Вспомогательные функции
+function createClan() {
+    const clanName = prompt('Clan name (3-20 chars):');
+    if (!clanName || clanName.length < 3 || clanName.length > 20) {
+        alert('[ERROR] Invalid clan name');
+        return;
+    }
+
+    if (!userData || userData.tsarBalance < 1000) {
+        alert('[ERROR] Need 1000 TSAR');
+        return;
+    }
+
+    userData.tsarBalance -= 1000;
+    userData.clan = clanName.toUpperCase();
+    
+    if (achievementSystem) {
+        achievementSystem.checkAchievement('clan_leader');
+    }
+    
+    updateUserInfo();
+    alert(`[CLAN CREATED]\n${userData.clan}\nCost: 1000 TSAR`);
+}
+
+function joinClan() {
+    const clanName = prompt('Clan name:');
+    if (!clanName) return;
+
+    const found = Math.random() > 0.3;
+    
+    if (found && userData) {
+        userData.clan = clanName.toUpperCase();
+        updateUserInfo();
+        alert(`[JOINED]\nWelcome to ${userData.clan}!`);
+    } else {
+        alert(`[NOT FOUND]\nClan "${clanName}" not found`);
+    }
+}
+
+function copyReferralLink() {
+    const referralLinkElement = document.getElementById('referral-link');
+    if (!referralLinkElement) return;
+    
+    const referralLink = referralLinkElement.textContent;
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(referralLink).then(() => {
+            alert('[COPIED]\nReferral link copied!\nEarn 10% from referrals');
+        });
+    } else {
+        alert(`[COPY MANUALLY]\n${referralLink}`);
+    }
+}
+
 function loadInventory(type = 'items') {
     const inventoryGrid = document.getElementById('inventory-grid');
     if (!inventoryGrid) return;
 
-    // Симуляция предметов
     const items = {
         items: [
             { name: 'Terminal Skin', type: 'cosmetic', rarity: 'rare' },
-            { name: 'XP Boost', type: 'consumable', rarity: 'common' },
-            { name: 'Lucky Charm', type: 'buff', rarity: 'epic' }
+            { name: 'XP Boost', type: 'consumable', rarity: 'common' }
         ],
         nfts: [
-            { name: 'Vault Boy NFT', type: 'nft', rarity: 'legendary' },
-            { name: 'Wasteland Map', type: 'nft', rarity: 'rare' }
+            { name: 'Vault Boy NFT', type: 'nft', rarity: 'legendary' }
         ],
         gifts: [
-            { name: 'Premium Star', type: 'gift', rarity: 'epic' },
-            { name: 'Golden Rose', type: 'gift', rarity: 'rare' }
+            { name: 'Premium Star', type: 'gift', rarity: 'epic' }
         ]
     };
 
     const currentItems = items[type] || [];
-    
     inventoryGrid.innerHTML = '';
     
-    // Создаем 9 слотов
     for (let i = 0; i < 9; i++) {
         const slot = document.createElement('div');
         slot.className = 'inventory-slot';
@@ -3151,214 +3302,6 @@ function getItemRarityColor(rarity) {
     }
 }
 
-// ===== ФУНКЦИИ РАДИО =====
-
-function sendRadioMessage() {
-    const messageInput = document.getElementById('radio-message');
-    if (!messageInput || !wastelandRadio) return;
-    
-    const messageText = messageInput.value.trim();
-    
-    if (!messageText) {
-        alert('[ERROR] Message cannot be empty');
-        return;
-    }
-
-    if (!userData) return;
-
-    try {
-        if (messageType === 'anonymous' && userData.tsarBalance < 5000) {
-            alert('[ERROR] Insufficient TSAR tokens\nRequired: 5000 TSAR for anonymous messaging');
-            return;
-        }
-
-        if (messageType === 'sponsored' && userData.tsarBalance < 10000) {
-            alert('[ERROR] Insufficient TSAR tokens\nRequired: 10000 TSAR for sponsored posts');
-            return;
-        }
-
-        if (messageType === 'anonymous') {
-            userData.tsarBalance -= 5000;
-            alert('[SUCCESS] Anonymous message posted\n5000 TSAR sent to burn address\nYour identity is protected');
-        } else if (messageType === 'sponsored') {
-            userData.tsarBalance -= 10000;
-            alert('[SUCCESS] Sponsored message posted\n10000 TSAR sent to burn address\nYour message will be highlighted');
-        }
-
-        wastelandRadio.addMessage(messageText, userData.name, messageType);
-        
-        messageInput.value = '';
-        const counter = document.getElementById('char-counter');
-        if (counter) {
-            counter.textContent = '0/200';
-        }
-        
-        updateUserInfo();
-        loadRadioMessages();
-        
-    } catch (error) {
-        alert('[ERROR] ' + error.message);
-    }
-}
-
-function loadRadioMessages() {
-    const feedContent = document.getElementById('feed-content');
-    if (!feedContent || !wastelandRadio) return;
-    
-    const messages = wastelandRadio.getMessages();
-    
-    feedContent.innerHTML = messages.map(msg => `
-        <div class="radio-message ${msg.type}">
-            <div class="message-header">
-                <span class="message-author ${msg.type}">${msg.author}</span>
-                <span class="message-time">${msg.time}</span>
-            </div>
-            <div class="message-text">${msg.text}</div>
-        </div>
-    `).join('');
-    
-    feedContent.scrollTop = 0;
-}
-
-// ===== ФУНКЦИИ ТОРГОВЛИ =====
-
-function placeBuyOrder() {
-    if (!blockchainManager || !blockchainManager.connected) {
-        alert('[ERROR] Please connect your wallet first\nUse NUCLEAR CHARGE → CONNECT WALLET');
-        return;
-    }
-
-    const amountInput = document.getElementById('trade-amount');
-    const priceInput = document.getElementById('trade-price');
-    
-    const amount = amountInput ? parseFloat(amountInput.value) : 0;
-    const price = priceInput ? parseFloat(priceInput.value) : 0;
-    
-    if (!amount || !price || amount <= 0 || price <= 0) {
-        alert('[ERROR] Please enter valid amount and price');
-        return;
-    }
-
-    const total = amount * price;
-    
-    if (!userData || total > userData.tonBalance) {
-        alert('[ERROR] Insufficient TON balance for this order\nRequired: ' + total.toFixed(3) + ' TON');
-        return;
-    }
-
-    // Резервируем средства
-    userData.tonBalance -= total;
-    updateUserInfo();
-
-    alert(`[BUY ORDER PLACED]\nAmount: ${amount.toLocaleString()} TSAR\nPrice: ${price} TON each\nTotal: ${total.toFixed(3)} TON\n\nOrder submitted to orderbook\nFunds reserved until execution`);
-}
-
-function placeSellOrder() {
-    if (!blockchainManager || !blockchainManager.connected) {
-        alert('[ERROR] Please connect your wallet first');
-        return;
-    }
-
-    const amountInput = document.getElementById('trade-amount');
-    const priceInput = document.getElementById('trade-price');
-    
-    const amount = amountInput ? parseFloat(amountInput.value) : 0;
-    const price = priceInput ? parseFloat(priceInput.value) : 0;
-    
-    if (!amount || !price || amount <= 0 || price <= 0) {
-        alert('[ERROR] Please enter valid amount and price');
-        return;
-    }
-
-    if (!userData || amount > userData.tsarBalance) {
-        alert('[ERROR] Insufficient TSAR balance for this order\nRequired: ' + amount.toLocaleString() + ' TSAR');
-        return;
-    }
-
-    // Резервируем токены
-    userData.tsarBalance -= amount;
-    updateUserInfo();
-
-    const expectedTon = amount * price;
-    alert(`[SELL ORDER PLACED]\nAmount: ${amount.toLocaleString()} TSAR\nPrice: ${price} TON each\nExpected: ${expectedTon.toFixed(3)} TON\n\nOrder submitted to orderbook\nTokens reserved until execution`);
-}
-
-// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
-
-function createClan() {
-    const clanName = prompt('Enter clan name (3-20 characters):');
-    if (!clanName || clanName.length < 3 || clanName.length > 20) {
-        alert('[ERROR] Clan name must be 3-20 characters');
-        return;
-    }
-
-    if (!userData || userData.tsarBalance < 1000) {
-        alert('[ERROR] Insufficient TSAR tokens\nRequired: 1000 TSAR to create clan');
-        return;
-    }
-
-    userData.tsarBalance -= 1000;
-    userData.clan = clanName.toUpperCase();
-    updateUserInfo();
-    
-    alert(`[CLAN CREATED]\nClan: ${userData.clan}\nCost: 1000 TSAR\nYou are now the clan leader!\n\nClan features:\n- Exclusive missions\n- Group activities\n- Shared rewards`);
-}
-
-function joinClan() {
-    const clanName = prompt('Enter clan name to join:');
-    if (!clanName) return;
-
-    // Симуляция поиска клана
-    const found = Math.random() > 0.3; // 70% шанс найти клан
-    
-    if (found) {
-        if (userData) {
-            userData.clan = clanName.toUpperCase();
-            updateUserInfo();
-        }
-        alert(`[CLAN JOINED]\nWelcome to ${clanName.toUpperCase()}!\n\nYou can now:\n- Participate in clan missions\n- Access clan chat\n- Earn clan bonuses`);
-    } else {
-        alert(`[CLAN NOT FOUND]\nClan "${clanName}" not found\n\nTips:\n- Check spelling\n- Ask clan leader for exact name\n- Some clans may be private`);
-    }
-}
-
-function copyReferralLink() {
-    const referralLinkElement = document.getElementById('referral-link');
-    if (!referralLinkElement) return;
-    
-    const referralLink = referralLinkElement.textContent;
-    
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(referralLink).then(() => {
-            alert('[COPIED TO CLIPBOARD]\nReferral link copied successfully!\n\nShare it to earn:\n- 10% from direct referrals\n- 5% from 2nd level\n- 2% from 3rd level');
-        }).catch(() => {
-            fallbackCopy(referralLink);
-        });
-    } else {
-        fallbackCopy(referralLink);
-    }
-}
-
-function fallbackCopy(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        document.execCommand('copy');
-        alert('[COPIED]\nReferral link copied!\nShare it to earn crypto from referrals');
-    } catch (err) {
-        alert('[COPY FAILED]\nPlease copy manually:\n' + text);
-    }
-    
-    document.body.removeChild(textArea);
-}
-
 function updateCraftingAccess() {
     if (!userData) return;
     
@@ -3366,54 +3309,89 @@ function updateCraftingAccess() {
     const craftStatus = document.getElementById('craft-status');
     
     if (craftStatus) {
-        if (hasAccess) {
-            craftStatus.textContent = 'UNLOCKED';
-            craftStatus.style.color = 'var(--pipboy-green)';
-            craftStatus.style.textShadow = '0 0 5px var(--pipboy-green)';
-        } else {
-            craftStatus.textContent = 'LOCKED';
-            craftStatus.style.color = 'var(--combat-active)';
-            craftStatus.style.textShadow = '0 0 3px var(--combat-active)';
-        }
+        craftStatus.textContent = hasAccess ? 'UNLOCKED' : 'LOCKED';
+        craftStatus.style.color = hasAccess ? 'var(--pipboy-green)' : 'var(--combat-active)';
     }
 }
 
 function applyTheme(theme) {
-    document.body.className = theme === 'classic' ? '' : `theme-${theme}`;
-    
     const root = document.documentElement;
     
     switch(theme) {
         case 'amber':
             root.style.setProperty('--pipboy-green', '#ffaa00');
             root.style.setProperty('--pipboy-yellow', '#ff7700');
-            root.style.setProperty('--pipboy-border', '#ffaa00');
             break;
         case 'blue':
             root.style.setProperty('--pipboy-green', '#0099ff');
             root.style.setProperty('--pipboy-yellow', '#66ccff');
-            root.style.setProperty('--pipboy-border', '#0099ff');
             break;
         case 'red':
             root.style.setProperty('--pipboy-green', '#ff4444');
             root.style.setProperty('--pipboy-yellow', '#ff8888');
-            root.style.setProperty('--pipboy-border', '#ff4444');
             break;
         default:
             root.style.setProperty('--pipboy-green', '#00b000');
             root.style.setProperty('--pipboy-yellow', '#ffcc00');
-            root.style.setProperty('--pipboy-border', '#009900');
     }
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ =====
+function addAchievementStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes achievementSlide {
+            0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            10% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            90% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+        }
+        
+        .achievement-notification {
+            position: fixed !important;
+            top: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            background: rgba(0, 176, 0, 0.9) !important;
+            border: 2px solid var(--pipboy-yellow) !important;
+            border-radius: 8px !important;
+            padding: 15px !important;
+            z-index: 2000 !important;
+            color: var(--pipboy-yellow) !important;
+            font-family: 'Monofonto', 'Courier New', monospace !important;
+            animation: achievementSlide 4s ease-out forwards !important;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5) !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
 
+function showAchievementNotification(achievement) {
+    const notification = document.createElement('div');
+    notification.className = 'achievement-notification';
+    notification.innerHTML = `
+        <div style="text-align: center;">
+            <div style="font-size: 1.2rem; margin-bottom: 5px;">${achievement.icon} ACHIEVEMENT UNLOCKED</div>
+            <div style="font-weight: bold; margin-bottom: 3px;">${achievement.name}</div>
+            <div style="font-size: 0.8rem; margin-bottom: 5px;">${achievement.description}</div>
+            <div style="color: var(--pipboy-green);">+${achievement.reward.amount} ${achievement.reward.currency}</div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 4000);
+}
+
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     console.log("🚀 RUNNER DOM loaded");
     setTimeout(initApp, 100);
 });
 
-// Предотвращаем случайный zoom
 document.addEventListener('touchmove', function(e) {
     if (e.touches.length > 1) {
         e.preventDefault();
@@ -3429,11 +3407,8 @@ document.addEventListener('touchend', function(e) {
     lastTouchEnd = now;
 }, false);
 
-// Обработка поворота экрана
 window.addEventListener('orientationchange', function() {
-    setTimeout(() => {
-        window.scrollTo(0, 0);
-    }, 100);
+    setTimeout(() => window.scrollTo(0, 0), 100);
 });
 
-console.log("🎮 RUNNER Terminal script loaded successfully");
+console.log("🎮 RUNNER Terminal script loaded");
