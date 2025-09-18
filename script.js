@@ -1,2505 +1,2710 @@
 /* ================================================================
-   RUNNER Terminal v3.0 - Complete JavaScript
-   Post-apocalyptic blockchain gaming platform
+   RUNNER Terminal v3.0 - Real TSAR Token Integration
+   TSAR Contract: EQBKLYdv3bEce0nfo__qbmIK2UOCN-ShzobnlhKUOSytWg6o
    ================================================================ */
 
-// Global Configuration
+// ===== КОНФИГУРАЦИЯ =====
 const CONFIG = {
-    // API Configuration
-    API_BASE_URL: window.location.hostname === 'localhost' 
-        ? 'http://localhost:8080/api' 
-        : 'https://your-bot-domain.com/api',
+    // CAPS Economy (виртуальная валюта для игр)
+    CAPS_TOTAL_SUPPLY: 1000000000,    // 1 миллиард CAPS
+    CAPS_INITIAL_AMOUNT: 1000,        // Начальные CAPS
+    CAPS_EARNING_MULTIPLIER: 1.0,     // Множитель заработка CAPS
     
-    // Telegram WebApp
-    TELEGRAM_BOT_USERNAME: 'kiloton_runner_terminal_bot',
+    // TSAR Token (реальный TON токен)
+    TSAR_CONTRACT: 'EQBKLYdv3bEce0nfo__qbmIK2UOCN-ShzobnlhKUOSytWg6o',
+    TSAR_DECIMALS: 9,                 // Decimals TSAR токена
+    TSAR_NOT_EARNABLE: true,          // TSAR нельзя заработать в играх!
     
-    // TON Connect
-    TON_CONNECT_MANIFEST: 'https://kilotonproject.github.io/MiniApp/tonconnect-manifest.json',
-    TON_NETWORK: 'testnet', // 'mainnet' or 'testnet'
-    
-    // Game Configuration
-    GAMES: {
-        'terminal-hacking': {
-            name: 'Terminal Hacking',
-            difficulty: 'Medium',
-            duration: 180, // seconds
-            rewards: { min: 5, max: 50 },
-            currency: 'TSAR'
-        },
-        'wasteland-wings': {
-            name: 'Wasteland Wings',
-            difficulty: 'Hard',
-            duration: 300,
-            rewards: { min: 10, max: 100 },
-            currency: 'TSAR'
-        },
-        'nuclear-charge': {
-            name: 'Nuclear Charge',
-            difficulty: 'Expert',
-            duration: 600,
-            rewards: { min: 20, max: 500 },
-            currency: 'TSAR'
-        }
+    // TSAR Privilege Tiers
+    TSAR_TIERS: {
+        BASIC: 0,                     // Базовый уровень
+        SILVER: 10000,                // 10K TSAR - анонимные сообщения
+        GOLD: 20000,                  // 20K TSAR - спонсорские + фьючерсы
+        DIAMOND: 50000                // 50K TSAR - кастомные игры + листинги
     },
     
-    // Mission Configuration
-    MISSIONS: {
-        DAILY_RESET_HOUR: 0, // UTC
-        WEEKLY_RESET_DAY: 1,  // Monday
-        REFRESH_INTERVAL: 300000 // 5 minutes
+    // Radio Costs (только TSAR!)
+    RADIO_COSTS: {
+        public: 0,                    // Бесплатно
+        anonymous: 10000,             // 10K TSAR
+        sponsored: 20000              // 20K TSAR
     },
     
-    // UI Configuration
-    ANIMATIONS: {
-        FAST: 200,
-        NORMAL: 300,
-        SLOW: 500
+    // Games (награды только CAPS!)
+    GAME_REWARDS: {
+        'terminal-hacking': { min: 50, max: 200 },
+        'wasteland-wings': { min: 100, max: 500 },
+        'cyber-duel': { min: 200, max: 1000 }
     },
     
-    // Notification Settings
-    NOTIFICATIONS: {
-        AUTO_HIDE_DELAY: 5000,
-        MAX_NOTIFICATIONS: 5
-    },
+    // Trading (CAPS отдельно от TSAR)
+    CAPS_TRADING_FEE: 0.001,          // 0.1% комиссия
+    MIN_CAPS_TRADE: 10,               // Минимум 10 CAPS
     
-    // Local Storage Keys
-    STORAGE_KEYS: {
-        USER_DATA: 'runner_user_data',
-        SETTINGS: 'runner_settings',
-        GAME_STATE: 'runner_game_state',
-        ACHIEVEMENTS: 'runner_achievements'
-    }
+    // Referrals (только CAPS!)
+    REFERRAL_REWARD_CAPS: 2500,       // 2500 CAPS за реферала
+    
+    // Updates
+    PRICE_UPDATE_INTERVAL: 3000,
+    RADIO_UPDATE_INTERVAL: 15000,
+    
+    // Telegram
+    BOT_USERNAME: 'kiloton_runner_terminal_bot',
+    
+    // API
+    TON_API_URL: 'https://toncenter.com/api/v2',
+    DTON_API_URL: 'https://dton.io/graphql'
 };
 
-// Global State Management
-class StateManager {
-    constructor() {
-        this.state = {
-            user: null,
-            currentSection: 'dashboard',
-            gameState: null,
-            missions: [],
-            notifications: [],
-            isLoading: false,
-            isConnected: false,
-            wallet: null,
-            settings: this.loadSettings()
-        };
-        this.listeners = new Map();
-    }
-    
-    // State getters
-    getState() {
-        return { ...this.state };
-    }
-    
-    getUser() {
-        return this.state.user;
-    }
-    
-    getCurrentSection() {
-        return this.state.currentSection;
-    }
-    
-    getWallet() {
-        return this.state.wallet;
-    }
-    
-    // State setters
-    setState(newState) {
-        const oldState = { ...this.state };
-        this.state = { ...this.state, ...newState };
-        this.notifyListeners(oldState, this.state);
-        this.saveToStorage();
-    }
-    
-    setUser(user) {
-        this.setState({ user });
-    }
-    
-    setCurrentSection(section) {
-        this.setState({ currentSection: section });
-    }
-    
-    setWallet(wallet) {
-        this.setState({ wallet, isConnected: !!wallet });
-    }
-    
-    // Event listeners
-    subscribe(event, callback) {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, []);
-        }
-        this.listeners.get(event).push(callback);
-    }
-    
-    unsubscribe(event, callback) {
-        if (this.listeners.has(event)) {
-            const callbacks = this.listeners.get(event);
-            const index = callbacks.indexOf(callback);
-            if (index > -1) {
-                callbacks.splice(index, 1);
-            }
-        }
-    }
-    
-    notifyListeners(oldState, newState) {
-        // Check what changed and notify appropriate listeners
-        if (oldState.user !== newState.user) {
-            this.emit('userChanged', newState.user);
-        }
-        if (oldState.currentSection !== newState.currentSection) {
-            this.emit('sectionChanged', newState.currentSection);
-        }
-        if (oldState.wallet !== newState.wallet) {
-            this.emit('walletChanged', newState.wallet);
-        }
-        this.emit('stateChanged', newState);
-    }
-    
-    emit(event, data) {
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).forEach(callback => {
-                try {
-                    callback(data);
-                } catch (error) {
-                    console.error(`Error in listener for ${event}:`, error);
-                }
-            });
-        }
-    }
-    
-    // Persistence
-    saveToStorage() {
-        try {
-            localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(this.state.user));
-            localStorage.setItem(CONFIG.STORAGE_KEYS.SETTINGS, JSON.stringify(this.state.settings));
-        } catch (error) {
-            console.error('Failed to save to localStorage:', error);
-        }
-    }
-    
-    loadSettings() {
-        try {
-            const settings = localStorage.getItem(CONFIG.STORAGE_KEYS.SETTINGS);
-            return settings ? JSON.parse(settings) : {
-                soundEnabled: true,
-                animationsEnabled: true,
-                notificationsEnabled: true,
-                theme: 'dark',
-                language: 'en'
-            };
-        } catch (error) {
-            console.error('Failed to load settings:', error);
-            return {
-                soundEnabled: true,
-                animationsEnabled: true,
-                notificationsEnabled: true,
-                theme: 'dark',
-                language: 'en'
-            };
-        }
-    }
-}
+// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
+let userData = null;
+let gameActive = false;
+let messageType = 'public';
+let soundEnabled = true;
+let currentGame = null;
 
-// API Service
-class APIService {
-    constructor() {
-        this.baseUrl = CONFIG.API_BASE_URL;
-        this.retryAttempts = 3;
-        this.retryDelay = 1000; // ms
-    }
-    
-    async request(endpoint, options = {}) {
-        const url = `${this.baseUrl}${endpoint}`;
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        };
-        
-        const requestOptions = { ...defaultOptions, ...options };
-        
-        for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
-            try {
-                console.log(`API Request (attempt ${attempt}):`, url, requestOptions);
-                
-                const response = await fetch(url, requestOptions);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('API Response:', data);
-                
-                return data;
-            } catch (error) {
-                console.error(`API Request failed (attempt ${attempt}):`, error);
-                
-                if (attempt === this.retryAttempts) {
-                    throw error;
-                }
-                
-                // Wait before retry
-                await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
-            }
-        }
-    }
-    
-    // User API
-    async getUser(userId) {
-        return this.request(`/user/${userId}`);
-    }
-    
-    async updateGameStats(userId, gameData) {
-        return this.request('/update-game-stats', {
-            method: 'POST',
-            body: JSON.stringify({
-                user_id: userId,
-                ...gameData
-            })
-        });
-    }
-    
-    async completeMission(userId, missionId, verificationData = {}) {
-        return this.request('/complete-mission', {
-            method: 'POST',
-            body: JSON.stringify({
-                user_id: userId,
-                mission_id: missionId,
-                verification_data: verificationData
-            })
-        });
-    }
-    
-    // Stars API
-    async createStarsInvoice(userId, productId) {
-        return this.request('/create-stars-invoice', {
-            method: 'POST',
-            body: JSON.stringify({
-                user_id: userId,
-                product_id: productId
-            })
-        });
-    }
-    
-    async getShopProducts() {
-        return this.request('/shop/products');
-    }
-    
-    // Health check
-    async healthCheck() {
-        return this.request('/health');
-    }
-}
+// Системы
+let audioManager;
+let capsEconomy;
+let tsarManager;
+let wastelandRadio;
+let terminalGame;
+let wingsGame;
+let cyberDuel;
+let missionSystem;
+let chartEngine;
 
-// Notification System
-class NotificationManager {
+// ===== УПРАВЛЕНИЕ АУДИО =====
+class AudioManager {
     constructor() {
-        this.container = null;
-        this.notifications = [];
-        this.maxNotifications = CONFIG.NOTIFICATIONS.MAX_NOTIFICATIONS;
-        this.autoHideDelay = CONFIG.NOTIFICATIONS.AUTO_HIDE_DELAY;
+        this.context = null;
+        this.enabled = true;
+        this.masterVolume = 0.1;
+        this.initialized = false;
     }
-    
-    init() {
-        this.container = document.getElementById('notifications');
-        if (!this.container) {
-            console.error('Notifications container not found');
-        }
-    }
-    
-    show(message, type = 'info', options = {}) {
-        if (!this.container) return;
-        
-        const notification = this.createNotification(message, type, options);
-        this.notifications.push(notification);
-        
-        // Remove old notifications if too many
-        if (this.notifications.length > this.maxNotifications) {
-            const oldest = this.notifications.shift();
-            this.removeNotification(oldest);
-        }
-        
-        this.container.appendChild(notification.element);
-        
-        // Animate in
-        requestAnimationFrame(() => {
-            notification.element.classList.add('show');
-        });
-        
-        // Auto-hide
-        if (options.autoHide !== false) {
-            notification.timeout = setTimeout(() => {
-                this.hide(notification);
-            }, options.duration || this.autoHideDelay);
-        }
-        
-        return notification;
-    }
-    
-    createNotification(message, type, options) {
-        const id = Date.now().toString();
-        const element = document.createElement('div');
-        element.className = `notification ${type}`;
-        element.dataset.id = id;
-        
-        const iconMap = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-        
-        element.innerHTML = `
-            <div class="notification-header">
-                <span class="notification-icon">${iconMap[type] || iconMap.info}</span>
-                <span class="notification-title">${options.title || type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                <button class="notification-close" onclick="notificationManager.hide('${id}')">&times;</button>
-            </div>
-            <div class="notification-message">${message}</div>
-        `;
-        
-        return {
-            id,
-            element,
-            type,
-            message,
-            timeout: null
-        };
-    }
-    
-    hide(notificationOrId) {
-        let notification;
-        
-        if (typeof notificationOrId === 'string') {
-            notification = this.notifications.find(n => n.id === notificationOrId);
-        } else {
-            notification = notificationOrId;
-        }
-        
-        if (!notification) return;
-        
-        // Clear timeout
-        if (notification.timeout) {
-            clearTimeout(notification.timeout);
-        }
-        
-        // Animate out
-        notification.element.classList.add('hiding');
-        
-        setTimeout(() => {
-            this.removeNotification(notification);
-        }, CONFIG.ANIMATIONS.NORMAL);
-    }
-    
-    removeNotification(notification) {
-        if (notification.element && notification.element.parentNode) {
-            notification.element.parentNode.removeChild(notification.element);
-        }
-        
-        const index = this.notifications.indexOf(notification);
-        if (index > -1) {
-            this.notifications.splice(index, 1);
-        }
-    }
-    
-    clear() {
-        this.notifications.forEach(notification => {
-            this.removeNotification(notification);
-        });
-        this.notifications = [];
-    }
-    
-    // Convenience methods
-    success(message, options = {}) {
-        return this.show(message, 'success', options);
-    }
-    
-    error(message, options = {}) {
-        return this.show(message, 'error', options);
-    }
-    
-    warning(message, options = {}) {
-        return this.show(message, 'warning', options);
-    }
-    
-    info(message, options = {}) {
-        return this.show(message, 'info', options);
-    }
-}
 
-// TON Connect Integration
-class TONConnectManager {
-    constructor() {
-        this.tonConnect = null;
-        this.wallet = null;
-        this.isConnected = false;
-    }
-    
     async init() {
+        if (this.initialized) return;
+        
         try {
-            // Import TON Connect UI
-            if (typeof TonConnectUI !== 'undefined') {
-                this.tonConnect = new TonConnectUI({
-                    manifestUrl: CONFIG.TON_CONNECT_MANIFEST,
-                    buttonRootId: 'ton-connect-btn'
-                });
-                
-                // Subscribe to wallet events
-                this.tonConnect.onStatusChange(wallet => {
-                    this.handleWalletChange(wallet);
-                });
-                
-                console.log('TON Connect initialized');
-            } else {
-                console.warn('TON Connect UI not available');
+            this.context = new (window.AudioContext || window.webkitAudioContext)();
+            if (this.context.state === 'suspended') {
+                await this.context.resume();
             }
+            this.initialized = true;
+            console.log("🔊 Audio system online");
         } catch (error) {
-            console.error('Failed to initialize TON Connect:', error);
+            console.warn("⚠️ Audio unavailable:", error);
+            this.enabled = false;
         }
     }
-    
-    handleWalletChange(wallet) {
-        this.wallet = wallet;
-        this.isConnected = !!wallet;
+
+    playSound(frequency, duration = 0.1, type = 'sine') {
+        if (!this.enabled || !this.initialized || !this.context || !soundEnabled) return;
         
-        // Update global state
-        stateManager.setWallet(wallet);
-        
-        // Update UI
-        this.updateWalletUI();
-        
-        if (wallet) {
-            notificationManager.success('Wallet connected successfully!', {
-                title: 'TON Wallet'
-            });
+        try {
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
             
-            // Save wallet to user data
-            if (stateManager.getUser()) {
-                this.saveWalletAddress(wallet.account.address);
-            }
-        } else {
-            notificationManager.info('Wallet disconnected', {
-                title: 'TON Wallet'
-            });
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            osc.type = type;
+            osc.frequency.value = frequency;
+            
+            gain.gain.setValueAtTime(this.masterVolume, this.context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + duration);
+            
+            osc.start();
+            osc.stop(this.context.currentTime + duration);
+        } catch (e) {
+            console.warn("Audio playback failed:", e);
         }
     }
-    
-    updateWalletUI() {
-        const walletBtn = document.getElementById('ton-connect-btn');
-        const walletStatus = document.getElementById('wallet-status');
+
+    // Игровые звуки
+    beep() { this.playSound(800, 0.1); }
+    success() { this.playSound(600, 0.3); }
+    error() { this.playSound(200, 0.3); }
+    shoot() { this.playSound(1000, 0.1, 'sawtooth'); }
+    explosion() { this.playSound(150, 0.5, 'square'); }
+    powerup() { this.playSound(1200, 0.4); }
+    click() { this.playSound(400, 0.05); }
+}
+
+// ===== CAPS ЭКОНОМИКА (ВИРТУАЛЬНАЯ) =====
+class CapsEconomy {
+    constructor() {
+        this.totalSupply = CONFIG.CAPS_TOTAL_SUPPLY;
+        this.circulatingSupply = 0;
+        this.priceInTon = 0.00001; // Базовая цена CAPS в TON
+        this.volume24h = 0;
+        this.holders = 0;
         
-        if (walletStatus) {
-            if (this.isConnected && this.wallet) {
-                const address = this.wallet.account.address;
-                const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
-                walletStatus.textContent = shortAddress;
-                walletBtn.classList.add('connected');
+        this.initializeEconomy();
+        this.startEconomyUpdates();
+    }
+    
+    initializeEconomy() {
+        // Инициализируем экономику
+        this.circulatingSupply = Math.floor(this.totalSupply * 0.1); // 10% в обороте
+        this.holders = Math.floor(Math.random() * 10000) + 5000;
+        this.volume24h = Math.floor(Math.random() * 1000000) + 500000;
+    }
+    
+    startEconomyUpdates() {
+        setInterval(() => {
+            this.updateMarketData();
+            this.updateDisplays();
+        }, CONFIG.PRICE_UPDATE_INTERVAL);
+    }
+    
+    updateMarketData() {
+        // Симуляция рыночной активности
+        const volatility = 0.02; // 2% волатильность
+        const change = (Math.random() - 0.5) * volatility;
+        this.priceInTon = Math.max(this.priceInTon * (1 + change), 0.000001);
+        
+        // Обновляем объем торгов
+        this.volume24h += Math.floor(Math.random() * 10000);
+        
+        // Иногда добавляем новых держателей
+        if (Math.random() < 0.1) {
+            this.holders += Math.floor(Math.random() * 10) + 1;
+        }
+    }
+    
+    updateDisplays() {
+        // Обновляем все элементы с данными CAPS
+        const updates = {
+            'caps-price-main': `${this.priceInTon.toFixed(8)} TON`,
+            'dash-caps-price': this.priceInTon.toFixed(8),
+            'trading-volume-display': this.formatNumber(this.volume24h),
+            'caps-rank': `#${this.calculateUserRank()}`
+        };
+        
+        Object.entries(updates).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+        
+        // Обновляем изменение цены
+        this.updatePriceChange();
+    }
+    
+    updatePriceChange() {
+        // Симулируем изменение цены за 24 часа
+        const change = (Math.random() - 0.4) * 10; // Склонность к росту
+        const changeElements = ['dash-price-change', 'trading-change'];
+        const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+        const changeClass = change >= 0 ? 'positive' : 'negative';
+        
+        changeElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = changeText;
+                element.className = `price-change ${changeClass}`;
+            }
+        });
+    }
+    
+    calculateUserRank() {
+        if (!userData) return '∞';
+        
+        // Примерный расчет ранга на основе CAPS
+        const rank = Math.max(1, 50000 - Math.floor(userData.capsBalance / 20));
+        return rank;
+    }
+    
+    formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return Math.floor(num).toLocaleString();
+    }
+    
+    // Получение CAPS (только через игры и активности)
+    earnCaps(amount, reason = 'game') {
+        if (!userData) return false;
+        
+        const finalAmount = Math.floor(amount * CONFIG.CAPS_EARNING_MULTIPLIER);
+        userData.capsBalance += finalAmount;
+        userData.totalCapsEarned = (userData.totalCapsEarned || 0) + finalAmount;
+        
+        this.saveUserData();
+        this.updateUserDisplays();
+        
+        console.log(`💰 Earned ${finalAmount} CAPS from ${reason}`);
+        return finalAmount;
+    }
+    
+    spendCaps(amount, reason = 'purchase') {
+        if (!userData || userData.capsBalance < amount) return false;
+        
+        userData.capsBalance -= amount;
+        this.saveUserData();
+        this.updateUserDisplays();
+        
+        console.log(`💸 Spent ${amount} CAPS on ${reason}`);
+        return true;
+    }
+    
+    saveUserData() {
+        saveUserData();
+    }
+    
+    updateUserDisplays() {
+        updateUserDisplay();
+    }
+}
+
+// ===== TSAR МЕНЕДЖЕР (РЕАЛЬНЫЙ ТОКЕН) =====
+class TsarManager {
+    constructor() {
+        this.contractAddress = CONFIG.TSAR_CONTRACT;
+        this.decimals = CONFIG.TSAR_DECIMALS;
+        this.realTimePrice = 0;
+        this.connected = false;
+        this.userTsarBalance = 0;
+        
+        this.initializeTsarData();
+    }
+    
+    initializeTsarData() {
+        // Загружаем данные TSAR токена
+        this.loadTsarPrice();
+        this.checkUserTsarBalance();
+    }
+    
+    async loadTsarPrice() {
+        try {
+            // Здесь должен быть реальный API запрос к TON blockchain
+            // Пока используем заглушку
+            this.realTimePrice = 0.001 + Math.random() * 0.0005; // ~0.001 TON
+            console.log(`📈 TSAR price loaded: ${this.realTimePrice.toFixed(6)} TON`);
+        } catch (error) {
+            console.warn("⚠️ Failed to load TSAR price:", error);
+            this.realTimePrice = 0.001; // Fallback цена
+        }
+    }
+    
+    async checkUserTsarBalance() {
+        // Здесь должна быть проверка реального баланса через TON API
+        // Пока используем локальные данные
+        if (userData && userData.tsarBalance) {
+            this.userTsarBalance = userData.tsarBalance;
+        }
+        
+        this.updateTsarDisplays();
+        this.updatePrivileges();
+    }
+    
+    updateTsarDisplays() {
+        const elements = {
+            'header-tsar': this.formatTsarAmount(this.userTsarBalance),
+            'tsar-display': this.formatTsarAmount(this.userTsarBalance),
+            'tsar-main-balance': this.formatTsarAmount(this.userTsarBalance),
+            'dash-tsar': this.formatTsarAmount(this.userTsarBalance)
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+    }
+    
+    updatePrivileges() {
+        const tsarAmount = this.userTsarBalance;
+        
+        // Определяем уровень привилегий
+        let tier = 'BASIC';
+        if (tsarAmount >= CONFIG.TSAR_TIERS.DIAMOND) tier = 'DIAMOND';
+        else if (tsarAmount >= CONFIG.TSAR_TIERS.GOLD) tier = 'GOLD';
+        else if (tsarAmount >= CONFIG.TSAR_TIERS.SILVER) tier = 'SILVER';
+        
+        // Обновляем статус
+        const statusElement = document.getElementById('tsar-status');
+        if (statusElement) {
+            statusElement.textContent = `${tier} MEMBER`;
+        }
+        
+        // Обновляем доступные функции
+        this.updateFeatureAccess(tsarAmount);
+        
+        console.log(`⭐ TSAR tier updated: ${tier} (${tsarAmount} TSAR)`);
+    }
+    
+    updateFeatureAccess(tsarAmount) {
+        // Анонимные сообщения
+        const anonBtn = document.querySelector('[data-type="anonymous"]');
+        if (anonBtn) {
+            if (tsarAmount >= CONFIG.TSAR_TIERS.SILVER) {
+                anonBtn.disabled = false;
+                anonBtn.style.opacity = '1';
             } else {
-                walletStatus.textContent = 'Connect Wallet';
-                walletBtn.classList.remove('connected');
+                anonBtn.disabled = true;
+                anonBtn.style.opacity = '0.5';
+            }
+        }
+        
+        // Спонсорские сообщения
+        const sponsorBtn = document.querySelector('[data-type="sponsored"]');
+        if (sponsorBtn) {
+            if (tsarAmount >= CONFIG.TSAR_TIERS.GOLD) {
+                sponsorBtn.disabled = false;
+                sponsorBtn.style.opacity = '1';
+            } else {
+                sponsorBtn.disabled = true;
+                sponsorBtn.style.opacity = '0.5';
+            }
+        }
+        
+        // Фьючерсы (пока отключены, но готовы)
+        const futuresBtn = document.getElementById('open-futures');
+        if (futuresBtn) {
+            if (tsarAmount >= CONFIG.TSAR_TIERS.GOLD) {
+                futuresBtn.disabled = false;
+                futuresBtn.textContent = 'OPEN FUTURES';
+            } else {
+                futuresBtn.disabled = true;
+                futuresBtn.textContent = 'REQUIRES 20K TSAR';
             }
         }
     }
     
-    async connect() {
-        if (!this.tonConnect) {
-            notificationManager.error('TON Connect not initialized');
+    formatTsarAmount(amount) {
+        if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+        if (amount >= 1000) return (amount / 1000).toFixed(1) + 'K';
+        return Math.floor(amount).toLocaleString();
+    }
+    
+    // TSAR можно только купить, не заработать!
+    async buyTsarWithStars(starsAmount) {
+        // Здесь будет интеграция с Telegram Stars
+        showNotification('⭐ TSAR purchase with Telegram Stars coming soon!', 'info');
+        return false;
+    }
+    
+    async connectTonWallet() {
+        try {
+            // Здесь будет реальная интеграция с TON Connect
+            showNotification('🔗 TON Wallet integration coming soon!', 'info');
+            return false;
+        } catch (error) {
+            showNotification('❌ Failed to connect wallet', 'error');
+            return false;
+        }
+    }
+    
+    // Трата TSAR (только на премиум функции)
+    spendTsar(amount, reason = 'premium') {
+        if (!userData || userData.tsarBalance < amount) {
+            return { success: false, message: 'Insufficient TSAR balance' };
+        }
+        
+        userData.tsarBalance -= amount;
+        this.userTsarBalance = userData.tsarBalance;
+        
+        this.updateTsarDisplays();
+        this.updatePrivileges();
+        this.saveUserData();
+        
+        return { success: true, message: `Spent ${amount} TSAR on ${reason}` };
+    }
+    
+    saveUserData() {
+        saveUserData();
+    }
+}
+
+// ===== ИСПРАВЛЕННАЯ ИГРА TERMINAL HACKING =====
+class TerminalHackingGame {
+    constructor() {
+        this.wordLists = {
+            4: ['HACK', 'CODE', 'DATA', 'BYTE', 'CORE', 'FIRE', 'WAVE', 'ZERO', 'LOCK', 'BOOT'],
+            5: ['VIRUS', 'CYBER', 'LOGIN', 'ADMIN', 'GHOST', 'QUICK', 'BRAIN', 'STORM', 'POWER', 'MAGIC'],
+            6: ['MATRIX', 'SYSTEM', 'ACCESS', 'SECURE', 'BYPASS', 'NEURAL', 'BINARY', 'CRYPTO', 'SHADOW', 'VECTOR'],
+            7: ['NETWORK', 'PROGRAM', 'MACHINE', 'DIGITAL', 'PROCESS', 'HACKER', 'ANDROID', 'QUANTUM', 'PHOENIX', 'NEXUS'],
+            8: ['PASSWORD', 'TERMINAL', 'DATABASE', 'PROTOCOL', 'MAINFRAME', 'OVERRIDE', 'BACKDOOR', 'FIREWALL', 'ALGORITHM', 'CYBERDECK']
+        };
+        
+        this.currentWords = [];
+        this.correctWord = '';
+        this.attemptsLeft = 4;
+        this.gameActive = false;
+        this.startTime = 0;
+    }
+    
+    startGame() {
+        this.resetGame();
+        this.gameActive = true;
+        this.startTime = Date.now();
+        this.attemptsLeft = 4;
+        
+        this.generateWords();
+        this.generateHexDump();
+        this.updateUI();
+        this.addLogEntry('ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL');
+        this.addLogEntry('PASSWORD REQUIRED');
+        this.addLogEntry('SELECT PASSWORD FROM TERMINAL');
+        
+        console.log('🔑 Terminal game started. Correct password:', this.correctWord);
+        
+        if (audioManager) audioManager.beep();
+    }
+    
+    generateWords() {
+        // Выбираем сложность по уровню игрока
+        const playerLevel = userData?.level || 1;
+        const wordLength = Math.min(4 + Math.floor(playerLevel / 5), 8);
+        
+        const availableWords = [...this.wordLists[wordLength]];
+        this.currentWords = [];
+        
+        // Выбираем 10-12 слов
+        const wordCount = 10 + Math.floor(Math.random() * 3);
+        
+        for (let i = 0; i < wordCount && availableWords.length > 0; i++) {
+            const randomIndex = Math.floor(Math.random() * availableWords.length);
+            this.currentWords.push(availableWords.splice(randomIndex, 1)[0]);
+        }
+        
+        // Выбираем правильный пароль
+        this.correctWord = this.currentWords[Math.floor(Math.random() * this.currentWords.length)];
+        
+        console.log('📝 Generated words:', this.currentWords);
+        console.log('✅ Correct password:', this.correctWord);
+    }
+    
+    generateHexDump() {
+        const hexSection = document.getElementById('hex-section');
+        if (!hexSection) {
+            console.error('❌ Hex section not found!');
             return;
         }
         
-        try {
-            await this.tonConnect.connectWallet();
-        } catch (error) {
-            console.error('Failed to connect wallet:', error);
-            notificationManager.error('Failed to connect wallet');
-        }
-    }
-    
-    async disconnect() {
-        if (!this.tonConnect) return;
+        console.log('🔧 Generating hex dump...');
         
-        try {
-            await this.tonConnect.disconnect();
-        } catch (error) {
-            console.error('Failed to disconnect wallet:', error);
-        }
-    }
-    
-    async saveWalletAddress(address) {
-        try {
-            const user = stateManager.getUser();
-            if (user) {
-                const response = await apiService.request('/update-user', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        user_id: user.user_id,
-                        wallet_address: address
-                    })
-                });
-                
-                if (response.success) {
-                    // Update local user data
-                    user.wallet_address = address;
-                    stateManager.setUser(user);
+        const chars = '0123456789ABCDEF';
+        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?~`';
+        let html = '';
+        
+        // Перемешиваем слова для размещения
+        const wordsToPlace = [...this.currentWords];
+        this.shuffleArray(wordsToPlace);
+        
+        // Генерируем 20 строк hex дампа
+        for (let line = 0; line < 20; line++) {
+            const address = (0xF000 + line * 16).toString(16).toUpperCase().padStart(4, '0');
+            
+            // Генерируем hex часть
+            let hexPart = `0x${address} `;
+            for (let i = 0; i < 16; i++) {
+                hexPart += chars[Math.floor(Math.random() * chars.length)];
+                if (i % 2 === 1) hexPart += ' ';
+            }
+            
+            // Генерируем ASCII часть с паролями
+            let asciiPart = '';
+            let currentPos = 0;
+            const lineLength = 50;
+            
+            while (currentPos < lineLength) {
+                // 30% шанс разместить пароль, если есть
+                if (wordsToPlace.length > 0 && Math.random() < 0.3 && (currentPos + wordsToPlace[0].length) <= lineLength) {
+                    const word = wordsToPlace.shift();
+                    asciiPart += `<span class="password-word" data-word="${word}">${word}</span>`;
+                    currentPos += word.length;
+                    console.log(`🔤 Placed word: ${word} at line ${line}`);
+                }
+                // 10% шанс разместить подсказку
+                else if (Math.random() < 0.1 && currentPos < lineLength - 2) {
+                    const brackets = ['[]', '()', '{}'];
+                    const bracket = brackets[Math.floor(Math.random() * brackets.length)];
+                    asciiPart += `<span class="bracket-hint">${bracket}</span>`;
+                    currentPos += 2;
+                }
+                // Обычный символ
+                else {
+                    asciiPart += symbols[Math.floor(Math.random() * symbols.length)];
+                    currentPos++;
                 }
             }
-        } catch (error) {
-            console.error('Failed to save wallet address:', error);
-        }
-    }
-    
-    async sendTransaction(transaction) {
-        if (!this.tonConnect || !this.isConnected) {
-            throw new Error('Wallet not connected');
-        }
-        
-        try {
-            const result = await this.tonConnect.sendTransaction(transaction);
-            return result;
-        } catch (error) {
-            console.error('Transaction failed:', error);
-            throw error;
-        }
-    }
-}
-
-// Game Engine
-class GameEngine {
-    constructor() {
-        this.currentGame = null;
-        this.gameState = null;
-        this.gameContainer = null;
-        this.gameArea = null;
-        this.gameControls = null;
-        this.gameModal = null;
-        this.gameTimer = null;
-        this.gameData = {};
-    }
-    
-    init() {
-        this.gameModal = document.getElementById('game-modal');
-        this.gameContainer = this.gameModal?.querySelector('.game-container');
-        this.gameArea = document.getElementById('game-area');
-        this.gameControls = document.getElementById('game-controls');
-        
-        // Add event listeners
-        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        document.addEventListener('keyup', (e) => this.handleKeyUp(e));
-    }
-    
-    async startGame(gameId) {
-        try {
-            if (!CONFIG.GAMES[gameId]) {
-                throw new Error(`Unknown game: ${gameId}`);
-            }
             
-            this.currentGame = gameId;
-            const gameConfig = CONFIG.GAMES[gameId];
-            
-            // Initialize game data
-            this.gameData = {
-                gameId,
-                startTime: Date.now(),
-                score: 0,
-                level: 1,
-                isPlaying: true,
-                duration: gameConfig.duration
-            };
-            
-            // Show game modal
-            this.showGameModal(gameConfig.name);
-            
-            // Load game-specific logic
-            await this.loadGame(gameId);
-            
-            // Start game timer
-            this.startGameTimer();
-            
-            notificationManager.success(`${gameConfig.name} started!`, {
-                title: 'Game Started'
-            });
-            
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            notificationManager.error(`Failed to start game: ${error.message}`);
-        }
-    }
-    
-    async loadGame(gameId) {
-        switch (gameId) {
-            case 'terminal-hacking':
-                await this.loadTerminalHacking();
-                break;
-            case 'wasteland-wings':
-                await this.loadWastelandWings();
-                break;
-            case 'nuclear-charge':
-                await this.loadNuclearCharge();
-                break;
-            default:
-                throw new Error(`Game ${gameId} not implemented`);
-        }
-    }
-    
-    showGameModal(title) {
-        if (!this.gameModal) return;
-        
-        const titleElement = document.getElementById('game-title');
-        if (titleElement) {
-            titleElement.textContent = title;
-        }
-        
-        this.gameModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        
-        // Focus game area for keyboard input
-        if (this.gameArea) {
-            this.gameArea.focus();
-        }
-    }
-    
-    closeGame() {
-        if (this.gameTimer) {
-            clearInterval(this.gameTimer);
-            this.gameTimer = null;
-        }
-        
-        if (this.gameModal) {
-            this.gameModal.style.display = 'none';
-        }
-        
-        document.body.style.overflow = '';
-        
-        // Submit game results if game was played
-        if (this.gameData && this.gameData.isPlaying) {
-            this.endGame(false); // Game was abandoned
-        }
-        
-        this.currentGame = null;
-        this.gameData = {};
-    }
-    
-    async endGame(won = false) {
-        if (!this.currentGame || !this.gameData) return;
-        
-        this.gameData.isPlaying = false;
-        this.gameData.endTime = Date.now();
-        this.gameData.duration = this.gameData.endTime - this.gameData.startTime;
-        this.gameData.won = won;
-        
-        try {
-            // Submit game results to API
-            const user = stateManager.getUser();
-            if (user) {
-                const response = await apiService.updateGameStats(user.user_id, {
-                    game_type: this.currentGame,
-                    score: this.gameData.score,
-                    won: won,
-                    duration: Math.floor(this.gameData.duration / 1000)
-                });
-                
-                if (response.success) {
-                    // Show rewards
-                    this.showGameResults(response.rewards, response.stats);
-                    
-                    // Update user data
-                    await this.refreshUserData();
-                } else {
-                    notificationManager.error('Failed to save game results');
-                }
-            }
-        } catch (error) {
-            console.error('Failed to submit game results:', error);
-            notificationManager.error('Failed to save game results');
-        }
-        
-        // Clear game timer
-        if (this.gameTimer) {
-            clearInterval(this.gameTimer);
-            this.gameTimer = null;
-        }
-    }
-    
-    showGameResults(rewards, stats) {
-        const resultText = this.gameData.won ? 'Victory!' : 'Game Over';
-        const resultClass = this.gameData.won ? 'success' : 'info';
-        
-        let rewardText = '';
-        if (rewards) {
-            if (rewards.bottle_caps > 0) {
-                rewardText += `🍺 +${rewards.bottle_caps} Bottle Caps\n`;
-            }
-            if (rewards.tsar_tokens > 0) {
-                rewardText += `💰 +${rewards.tsar_tokens} TSAR Tokens\n`;
-            }
-            if (rewards.level_up) {
-                rewardText += `🎉 Level up! Now level ${rewards.new_level}\n`;
-            }
-        }
-        
-        notificationManager.show(`${resultText}\n\nScore: ${this.gameData.score}\n${rewardText}`, resultClass, {
-            title: CONFIG.GAMES[this.currentGame].name,
-            duration: 8000
-        });
-    }
-    
-    startGameTimer() {
-        if (!this.gameData.duration) return;
-        
-        const updateTimer = () => {
-            const elapsed = Date.now() - this.gameData.startTime;
-            const remaining = this.gameData.duration * 1000 - elapsed;
-            
-            if (remaining <= 0) {
-                this.endGame(false); // Time's up
-                return;
-            }
-            
-            // Update timer display
-            const seconds = Math.ceil(remaining / 1000);
-            const timerElement = document.getElementById('game-timer');
-            if (timerElement) {
-                timerElement.textContent = `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
-            }
-        };
-        
-        updateTimer();
-        this.gameTimer = setInterval(updateTimer, 1000);
-    }
-    
-    handleKeyDown(event) {
-        if (!this.currentGame || !this.gameData.isPlaying) return;
-        
-        // Game-specific key handling
-        switch (this.currentGame) {
-            case 'terminal-hacking':
-                this.handleTerminalHackingKey(event);
-                break;
-            case 'wasteland-wings':
-                this.handleWastelandWingsKey(event);
-                break;
-            case 'nuclear-charge':
-                this.handleNuclearChargeKey(event);
-                break;
-        }
-    }
-    
-    handleKeyUp(event) {
-        // Handle key release events if needed
-    }
-    
-    async refreshUserData() {
-        try {
-            const user = stateManager.getUser();
-            if (user) {
-                const response = await apiService.getUser(user.user_id);
-                if (response.success) {
-                    stateManager.setUser(response.data);
-                    updateUserDisplay();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to refresh user data:', error);
-        }
-    }
-    
-    // Game-specific implementations
-    async loadTerminalHacking() {
-        if (!this.gameArea) return;
-        
-        this.gameArea.innerHTML = `
-            <div class="terminal-hacking-game">
-                <div class="terminal-screen">
-                    <div class="terminal-header">
-                        <span class="terminal-title">ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL</span>
-                        <span class="terminal-timer" id="game-timer">3:00</span>
-                    </div>
-                    <div class="terminal-content">
-                        <div class="terminal-log" id="terminal-log">
-                            <div class="log-line">Welcome to ROBCO Industries (TM) Termlink</div>
-                            <div class="log-line">Password Required</div>
-                            <div class="log-line">Attempts Remaining: <span id="attempts-remaining">4</span></div>
-                            <div class="log-line"></div>
-                        </div>
-                        <div class="terminal-words" id="terminal-words">
-                            <!-- Words will be generated here -->
-                        </div>
-                        <div class="terminal-input">
-                            <span class="prompt">&gt;</span>
-                            <input type="text" id="terminal-input" placeholder="Select a word..." readonly>
-                        </div>
-                    </div>
+            html += `
+                <div class="hex-line">
+                    <span class="hex-address">${hexPart}</span>
+                    <span class="hex-ascii">${asciiPart}</span>
                 </div>
-            </div>
-        `;
-        
-        // Initialize terminal hacking game
-        this.initTerminalHacking();
-    }
-    
-    initTerminalHacking() {
-        const words = this.generateHackingWords();
-        const correctWord = words[Math.floor(Math.random() * words.length)];
-        
-        this.gameData.correctWord = correctWord;
-        this.gameData.attempts = 4;
-        this.gameData.words = words;
-        
-        const wordsContainer = document.getElementById('terminal-words');
-        if (wordsContainer) {
-            wordsContainer.innerHTML = words.map((word, index) => 
-                `<span class="terminal-word" data-word="${word}" onclick="gameEngine.selectWord('${word}')">${word}</span>`
-            ).join('');
-        }
-    }
-    
-    generateHackingWords() {
-        const wordLists = {
-            4: ['HACK', 'CODE', 'DATA', 'BYTE', 'CORE', 'FIRE', 'WAVE', 'ZERO'],
-            5: ['VIRUS', 'CYBER', 'LOGIN', 'ADMIN', 'GHOST', 'QUICK', 'BRAIN', 'STORM'],
-            6: ['MATRIX', 'SYSTEM', 'ACCESS', 'SECURE', 'BYPASS', 'NEURAL', 'BINARY', 'CRYPTO'],
-            7: ['NETWORK', 'PROGRAM', 'MACHINE', 'DIGITAL', 'PROCESS', 'HACKER', 'FIREWALL', 'QUANTUM'],
-            8: ['PASSWORD', 'TERMINAL', 'DATABASE', 'PROTOCOL', 'MAINFRAME', 'SUBROUTINE', 'BACKDOOR', 'OVERRIDE']
-        };
-        
-        const length = 4 + Math.floor(Math.random() * 5); // 4-8 letters
-        const wordList = wordLists[length];
-        
-        // Select 8 random words
-        const selectedWords = [];
-        while (selectedWords.length < 8) {
-            const word = wordList[Math.floor(Math.random() * wordList.length)];
-            if (!selectedWords.includes(word)) {
-                selectedWords.push(word);
-            }
-        }
-        
-        return selectedWords;
-    }
-    
-    selectWord(word) {
-        if (!this.gameData.isPlaying) return;
-        
-        const input = document.getElementById('terminal-input');
-        if (input) {
-            input.value = word;
-        }
-        
-        if (word === this.gameData.correctWord) {
-            this.terminalHackingSuccess();
-        } else {
-            this.terminalHackingFailure(word);
-        }
-    }
-    
-    terminalHackingSuccess() {
-        const log = document.getElementById('terminal-log');
-        if (log) {
-            log.innerHTML += `
-                <div class="log-line success">&gt; ${this.gameData.correctWord}</div>
-                <div class="log-line success">Exact match!</div>
-                <div class="log-line success">Please wait while system is accessed...</div>
-                <div class="log-line success">Access granted!</div>
             `;
         }
         
-        this.gameData.score = 1000 * this.gameData.attempts; // Bonus for fewer attempts
-        this.endGame(true);
+        hexSection.innerHTML = html;
+        console.log('✅ Hex dump generated successfully');
+        
+        // Привязываем обработчики событий
+        this.attachEventHandlers();
     }
     
-    terminalHackingFailure(selectedWord) {
-        this.gameData.attempts--;
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    
+    attachEventHandlers() {
+        // Обработчики для паролей
+        document.querySelectorAll('.password-word').forEach(wordElement => {
+            wordElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                const word = wordElement.getAttribute('data-word');
+                console.log(`🎯 Selected word: ${word}`);
+                this.selectPassword(word);
+            });
+        });
         
-        const likeness = this.calculateLikeness(selectedWord, this.gameData.correctWord);
+        // Обработчики для подсказок
+        document.querySelectorAll('.bracket-hint').forEach(bracketElement => {
+            bracketElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🔧 Used bracket hint');
+                this.useBracketHint(bracketElement);
+            });
+        });
         
-        const log = document.getElementById('terminal-log');
-        const attemptsElement = document.getElementById('attempts-remaining');
-        
-        if (log) {
-            log.innerHTML += `
-                <div class="log-line error">&gt; ${selectedWord}</div>
-                <div class="log-line error">Entry denied</div>
-                <div class="log-line">Likeness=${likeness}</div>
-                <div class="log-line"></div>
-            `;
+        console.log('🎮 Event handlers attached to terminal game');
+    }
+    
+    selectPassword(word) {
+        if (!this.gameActive) {
+            console.log('❌ Game not active');
+            return;
         }
         
-        if (attemptsElement) {
-            attemptsElement.textContent = this.gameData.attempts;
+        console.log(`🔍 Checking password: ${word} vs ${this.correctWord}`);
+        
+        // Убираем выделение с других слов
+        document.querySelectorAll('.password-word').forEach(w => {
+            w.classList.remove('selected');
+        });
+        
+        // Выделяем выбранное слово
+        const selectedElement = document.querySelector(`[data-word="${word}"]`);
+        if (selectedElement) {
+            selectedElement.classList.add('selected');
+            console.log('✅ Word selected in UI');
         }
         
-        if (this.gameData.attempts <= 0) {
-            if (log) {
-                log.innerHTML += `
-                    <div class="log-line error">Terminal locked</div>
-                    <div class="log-line error">Please contact an administrator</div>
-                `;
+        this.addLogEntry(`> ${word}`);
+        this.addLogEntry('> Checking...');
+        
+        setTimeout(() => {
+            if (word === this.correctWord) {
+                this.handleCorrectPassword(word, selectedElement);
+            } else {
+                this.handleIncorrectPassword(word, selectedElement);
             }
-            this.gameData.score = 100; // Consolation score
-            this.endGame(false);
+        }, 800);
+    }
+    
+    handleCorrectPassword(word, element) {
+        console.log('🎉 Correct password!');
+        
+        if (element) {
+            element.classList.add('correct');
+        }
+        
+        this.addLogEntry('> Exact match!', 'success');
+        this.addLogEntry('> Access granted!', 'success');
+        this.addLogEntry('> Terminal unlocked!', 'success');
+        
+        if (audioManager) audioManager.success();
+        
+        setTimeout(() => {
+            this.endGame(true);
+        }, 2000);
+    }
+    
+    handleIncorrectPassword(word, element) {
+        console.log('❌ Incorrect password');
+        
+        if (element) {
+            element.classList.add('incorrect');
+        }
+        
+        const likeness = this.calculateLikeness(word, this.correctWord);
+        this.addLogEntry('> Entry denied', 'error');
+        this.addLogEntry(`> Likeness=${likeness}`, 'error');
+        
+        this.attemptsLeft--;
+        this.updateUI();
+        
+        if (audioManager) audioManager.error();
+        
+        if (this.attemptsLeft <= 0) {
+            this.addLogEntry('> Terminal locked', 'error');
+            this.addLogEntry('> Access denied', 'error');
+            setTimeout(() => this.endGame(false), 1500);
         }
     }
     
     calculateLikeness(word1, word2) {
-        let likeness = 0;
+        let matches = 0;
         const minLength = Math.min(word1.length, word2.length);
         
         for (let i = 0; i < minLength; i++) {
             if (word1[i] === word2[i]) {
-                likeness++;
+                matches++;
             }
         }
-        
-        return likeness;
+        return matches;
     }
     
-    handleTerminalHackingKey(event) {
-        // Terminal hacking uses mouse clicks, not keyboard
+    useBracketHint(element) {
+        if (!this.gameActive || element.classList.contains('used')) return;
+        
+        element.classList.add('used');
+        element.style.color = '#666666';
+        element.style.opacity = '0.3';
+        element.style.cursor = 'default';
+        
+        this.removeDudPassword();
+        this.addLogEntry('> Dud removed', 'system');
+        
+        if (audioManager) audioManager.click();
     }
     
-    async loadWastelandWings() {
-        if (!this.gameArea) return;
+    removeDudPassword() {
+        const availablePasswords = Array.from(document.querySelectorAll('.password-word'))
+            .filter(element => 
+                !element.classList.contains('incorrect') && 
+                !element.classList.contains('correct') && 
+                !element.classList.contains('removed') &&
+                element.getAttribute('data-word') !== this.correctWord
+            );
         
-        this.gameArea.innerHTML = `
-            <div class="wasteland-wings-game">
-                <canvas id="wings-canvas" width="800" height="600"></canvas>
-                <div class="wings-ui">
-                    <div class="wings-score">Score: <span id="wings-score">0</span></div>
-                    <div class="wings-health">Health: <span id="wings-health">100</span></div>
-                    <div class="wings-timer" id="game-timer">5:00</div>
-                </div>
-            </div>
-        `;
-        
-        this.initWastelandWings();
+        if (availablePasswords.length > 0) {
+            const randomDud = availablePasswords[Math.floor(Math.random() * availablePasswords.length)];
+            randomDud.classList.add('removed');
+            console.log('🗑️ Removed dud:', randomDud.getAttribute('data-word'));
+        }
     }
     
-    initWastelandWings() {
-        const canvas = document.getElementById('wings-canvas');
-        if (!canvas) return;
+    addLogEntry(text, type = 'normal') {
+        const logContent = document.getElementById('log-section');
+        if (!logContent) {
+            console.error('❌ Log section not found!');
+            return;
+        }
         
-        const ctx = canvas.getContext('2d');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.textContent = text;
         
-        this.gameData.wingsGame = {
-            canvas,
-            ctx,
-            player: {
-                x: 100,
-                y: 300,
-                width: 40,
-                height: 30,
-                health: 100,
-                speed: 5
-            },
-            enemies: [],
-            bullets: [],
-            score: 0,
-            keys: {}
+        logContent.appendChild(entry);
+        logContent.scrollTop = logContent.scrollHeight;
+        
+        // Ограничиваем количество записей
+        while (logContent.children.length > 25) {
+            logContent.removeChild(logContent.children[0]);
+        }
+        
+        console.log(`📝 Log: ${text} (${type})`);
+    }
+    
+    updateUI() {
+        const attemptsElement = document.getElementById('hack-attempts');
+        if (attemptsElement) {
+            attemptsElement.textContent = this.attemptsLeft;
+        }
+        
+        console.log(`🎯 Attempts remaining: ${this.attemptsLeft}`);
+    }
+    
+    endGame(won) {
+        this.gameActive = false;
+        console.log(`🏁 Game ended. Won: ${won}`);
+        
+        if (!userData) return;
+        
+        // Рассчитываем награду только в CAPS
+        const baseReward = CONFIG.GAME_REWARDS['terminal-hacking'];
+        const attemptBonus = won ? (this.attemptsLeft * 0.25) : 0; // Бонус за оставшиеся попытки
+        const timeBonus = won ? Math.max(0, (180000 - (Date.now() - this.startTime)) / 180000) : 0; // Бонус за скорость
+        
+        const totalMultiplier = 1 + attemptBonus + timeBonus;
+        const capsReward = Math.floor((baseReward.min + Math.random() * (baseReward.max - baseReward.min)) * totalMultiplier);
+        
+        // Выдаем награду только в CAPS
+        const earnedCaps = capsEconomy.earnCaps(capsReward, 'terminal-hacking');
+        
+        // Обновляем статистику
+        userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+        if (won) {
+            userData.gamesWon = (userData.gamesWon || 0) + 1;
+        }
+        
+        // Обновляем прогресс миссий
+        if (missionSystem) {
+            missionSystem.updateProgress('terminal_completed', 1);
+        }
+        
+        // Обновляем отображение
+        const capsEarnedElement = document.getElementById('game-caps-earned');
+        if (capsEarnedElement) {
+            capsEarnedElement.textContent = earnedCaps;
+        }
+        
+        updateUserDisplay();
+        
+        const resultMessage = won ? 
+            `🎉 ACCESS GRANTED!\nTerminal hacked successfully!\n+${earnedCaps} CAPS earned` :
+            `❌ TERMINAL LOCKED!\nBetter luck next time!\n+${earnedCaps} CAPS consolation reward`;
+        
+        showNotification(resultMessage, won ? 'success' : 'warning', 4000);
+        
+        // Автоматически закрываем игру через 3 секунды
+        setTimeout(() => {
+            this.closeGame();
+        }, 3000);
+    }
+    
+    resetGame() {
+        this.gameActive = false;
+        this.currentWords = [];
+        this.correctWord = '';
+        this.attemptsLeft = 4;
+        this.startTime = 0;
+        
+        // Очищаем UI
+        const hexSection = document.getElementById('hex-section');
+        const logSection = document.getElementById('log-section');
+        const capsEarned = document.getElementById('game-caps-earned');
+        
+        if (hexSection) hexSection.innerHTML = '';
+        if (logSection) logSection.innerHTML = '';
+        if (capsEarned) capsEarned.textContent = '0';
+        
+        console.log('🔄 Terminal game reset');
+    }
+    
+    closeGame() {
+        this.resetGame();
+        closeGame();
+    }
+}
+
+// ===== УЛУЧШЕННАЯ ИГРА WASTELAND WINGS =====
+class WastelandWingsGame {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.gameActive = false;
+        this.gameLoop = null;
+        
+        // Игровые объекты
+        this.player = {
+            x: 50, y: 200, width: 25, height: 20,
+            health: 100, maxHealth: 100,
+            speed: 4, fireRate: 0, fireDelay: 10
         };
         
-        this.startWastelandWingsLoop();
-        this.spawnEnemies();
+        this.enemies = [];
+        this.bullets = [];
+        this.powerups = [];
+        this.particles = [];
+        
+        // Игровые данные
+        this.score = 0;
+        this.wave = 1;
+        this.enemiesKilled = 0;
+        this.startTime = 0;
+        
+        // Настройки сложности
+        this.difficulty = {
+            enemySpeed: 1.5,
+            spawnRate: 120, // frames между спавном
+            enemyHealth: 1,
+            enemyDamage: 10
+        };
+        
+        this.frameCount = 0;
     }
     
-    startWastelandWingsLoop() {
+    init() {
+        this.canvas = document.getElementById('wings-canvas');
+        if (!this.canvas) {
+            console.error('❌ Wings canvas not found!');
+            return false;
+        }
+        
+        this.ctx = this.canvas.getContext('2d');
+        console.log('✈️ Wasteland Wings initialized');
+        return true;
+    }
+    
+    startGame() {
+        if (!this.init()) {
+            showNotification('❌ Failed to initialize Wasteland Wings', 'error');
+            return;
+        }
+        
+        console.log('🚁 Starting Wasteland Wings...');
+        
+        this.resetGameState();
+        this.gameActive = true;
+        this.startTime = Date.now();
+        
+        this.updateUI();
+        this.startGameLoop();
+        
+        if (audioManager) audioManager.powerup();
+        
+        showNotification('✈️ Wasteland Wings started! Destroy enemies to earn CAPS!', 'info', 3000);
+    }
+    
+    resetGameState() {
+        this.score = 0;
+        this.wave = 1;
+        this.enemiesKilled = 0;
+        this.frameCount = 0;
+        
+        this.player = {
+            x: 50, y: 200, width: 25, height: 20,
+            health: 100, maxHealth: 100,
+            speed: 4, fireRate: 0, fireDelay: 10
+        };
+        
+        this.enemies = [];
+        this.bullets = [];
+        this.powerups = [];
+        this.particles = [];
+        
+        this.difficulty = {
+            enemySpeed: 1.5,
+            spawnRate: 120,
+            enemyHealth: 1,
+            enemyDamage: 10
+        };
+        
+        console.log('🔄 Game state reset');
+    }
+    
+    startGameLoop() {
         const gameLoop = () => {
-            if (!this.gameData.isPlaying) return;
+            if (!this.gameActive) return;
             
-            this.updateWastelandWings();
-            this.renderWastelandWings();
-            
-            requestAnimationFrame(gameLoop);
+            this.frameCount++;
+            this.update();
+            this.render();
+            this.gameLoop = requestAnimationFrame(gameLoop);
         };
         
         gameLoop();
+        console.log('🔁 Game loop started');
     }
     
-    updateWastelandWings() {
-        const game = this.gameData.wingsGame;
-        if (!game) return;
-        
-        // Update player position
-        if (game.keys.ArrowUp && game.player.y > 0) {
-            game.player.y -= game.player.speed;
-        }
-        if (game.keys.ArrowDown && game.player.y < game.canvas.height - game.player.height) {
-            game.player.y += game.player.speed;
-        }
-        if (game.keys.ArrowLeft && game.player.x > 0) {
-            game.player.x -= game.player.speed;
-        }
-        if (game.keys.ArrowRight && game.player.x < game.canvas.width - game.player.width) {
-            game.player.x += game.player.speed;
+    update() {
+        // Спавн врагов
+        if (this.frameCount % this.difficulty.spawnRate === 0) {
+            this.spawnEnemy();
         }
         
-        // Update bullets
-        game.bullets = game.bullets.filter(bullet => {
+        // Спавн powerup'ов
+        if (this.frameCount % 1800 === 0) { // Каждые 30 секунд
+            this.spawnPowerup();
+        }
+        
+        // Обновляем все объекты
+        this.updateBullets();
+        this.updateEnemies();
+        this.updatePowerups();
+        this.updateParticles();
+        
+        // Проверяем коллизии
+        this.checkCollisions();
+        
+        // Проверяем смену волны
+        this.checkWaveProgression();
+        
+        // Уменьшаем fire rate
+        if (this.player.fireRate > 0) {
+            this.player.fireRate--;
+        }
+    }
+    
+    spawnEnemy() {
+        const enemyTypes = [
+            { 
+                type: 'scout', 
+                width: 15, height: 12, 
+                speed: this.difficulty.enemySpeed * 1.5, 
+                health: this.difficulty.enemyHealth,
+                color: '#ff4444',
+                points: 10
+            },
+            { 
+                type: 'fighter', 
+                width: 20, height: 16, 
+                speed: this.difficulty.enemySpeed, 
+                health: this.difficulty.enemyHealth * 2,
+                color: '#ff6600',
+                points: 25
+            },
+            { 
+                type: 'bomber', 
+                width: 30, height: 24, 
+                speed: this.difficulty.enemySpeed * 0.7, 
+                health: this.difficulty.enemyHealth * 3,
+                color: '#cc3333',
+                points: 50
+            }
+        ];
+        
+        const enemyTemplate = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        
+        const enemy = {
+            ...enemyTemplate,
+            x: this.canvas.width,
+            y: Math.random() * (this.canvas.height - enemyTemplate.height - 50),
+            maxHealth: enemyTemplate.health,
+            lastShot: 0
+        };
+        
+        this.enemies.push(enemy);
+    }
+    
+    spawnPowerup() {
+        const powerupTypes = [
+            { type: 'health', color: '#00ff88', icon: '💚' },
+            { type: 'weapon', color: '#ffaa00', icon: '🔥' },
+            { type: 'shield', color: '#00aaff', icon: '🛡️' },
+            { type: 'bonus', color: '#ff00ff', icon: '💎' }
+        ];
+        
+        const powerupTemplate = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+        
+        const powerup = {
+            ...powerupTemplate,
+            x: this.canvas.width,
+            y: Math.random() * (this.canvas.height - 100),
+            width: 20, height: 20,
+            speed: 2
+        };
+        
+        this.powerups.push(powerup);
+    }
+    
+    updateBullets() {
+        this.bullets = this.bullets.filter(bullet => {
             bullet.x += bullet.speed;
-            return bullet.x < game.canvas.width;
+            return bullet.x < this.canvas.width + 10;
         });
-        
-        // Update enemies
-        game.enemies = game.enemies.filter(enemy => {
+    }
+    
+    updateEnemies() {
+        this.enemies = this.enemies.filter(enemy => {
             enemy.x -= enemy.speed;
             
-            // Check collision with player
-            if (this.checkCollision(game.player, enemy)) {
-                game.player.health -= 10;
-                if (game.player.health <= 0) {
-                    this.endGame(false);
-                }
-                return false; // Remove enemy
-            }
-            
-            // Check collision with bullets
-            for (let i = game.bullets.length - 1; i >= 0; i--) {
-                if (this.checkCollision(game.bullets[i], enemy)) {
-                    game.bullets.splice(i, 1);
-                    game.score += 10;
-                    return false; // Remove enemy
-                }
+            // Враги иногда стреляют (только бомбардировщики)
+            if (enemy.type === 'bomber' && this.frameCount - enemy.lastShot > 120) {
+                this.enemyShoot(enemy);
+                enemy.lastShot = this.frameCount;
             }
             
             return enemy.x > -enemy.width;
         });
-        
-        // Update UI
-        const scoreElement = document.getElementById('wings-score');
-        const healthElement = document.getElementById('wings-health');
-        
-        if (scoreElement) scoreElement.textContent = game.score;
-        if (healthElement) healthElement.textContent = game.player.health;
-        
-        this.gameData.score = game.score;
     }
     
-    renderWastelandWings() {
-        const game = this.gameData.wingsGame;
-        if (!game) return;
-        
-        const { ctx, canvas } = game;
-        
-        // Clear canvas
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw player
-        ctx.fillStyle = '#00ff41';
-        ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
-        
-        // Draw enemies
-        ctx.fillStyle = '#ff4444';
-        game.enemies.forEach(enemy => {
-            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-        });
-        
-        // Draw bullets
-        ctx.fillStyle = '#ffff00';
-        game.bullets.forEach(bullet => {
-            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+    updatePowerups() {
+        this.powerups = this.powerups.filter(powerup => {
+            powerup.x -= powerup.speed;
+            return powerup.x > -powerup.width;
         });
     }
     
-    spawnEnemies() {
-        const spawnEnemy = () => {
-            if (!this.gameData.isPlaying) return;
-            
-            const game = this.gameData.wingsGame;
-            if (!game) return;
-            
-            game.enemies.push({
-                x: game.canvas.width,
-                y: Math.random() * (game.canvas.height - 40),
-                width: 30,
-                height: 20,
-                speed: 2 + Math.random() * 3
-            });
-            
-            setTimeout(spawnEnemy, 1000 + Math.random() * 2000);
-        };
-        
-        setTimeout(spawnEnemy, 2000);
+    updateParticles() {
+        this.particles = this.particles.filter(particle => {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.life--;
+            particle.alpha = particle.life / particle.maxLife;
+            return particle.life > 0;
+        });
     }
     
-    handleWastelandWingsKey(event) {
-        const game = this.gameData.wingsGame;
-        if (!game) return;
-        
-        if (event.type === 'keydown') {
-            game.keys[event.code] = true;
+    enemyShoot(enemy) {
+        // Враги стреляют в сторону игрока
+        this.bullets.push({
+            x: enemy.x,
+            y: enemy.y + enemy.height / 2,
+            width: 6, height: 3,
+            speed: -3, // Летит влево
+            fromEnemy: true,
+            color: '#ff4444'
+        });
+    }
+    
+    checkCollisions() {
+        // Пули игрока vs враги
+        for (let b = this.bullets.length - 1; b >= 0; b--) {
+            const bullet = this.bullets[b];
+            if (bullet.fromEnemy) continue;
             
-            if (event.code === 'Space') {
-                event.preventDefault();
-                this.shootBullet();
+            for (let e = this.enemies.length - 1; e >= 0; e--) {
+                const enemy = this.enemies[e];
+                
+                if (this.isColliding(bullet, enemy)) {
+                    this.bullets.splice(b, 1);
+                    enemy.health--;
+                    
+                    // Создаем частицы попадания
+                    this.createHitParticles(enemy.x, enemy.y);
+                    
+                    if (enemy.health <= 0) {
+                        this.score += enemy.points;
+                        this.enemiesKilled++;
+                        this.enemies.splice(e, 1);
+                        
+                        // Создаем частицы взрыва
+                        this.createExplosionParticles(enemy.x, enemy.y);
+                        
+                        if (audioManager) audioManager.explosion();
+                    } else {
+                        if (audioManager) audioManager.click();
+                    }
+                    
+                    break;
+                }
             }
-        } else if (event.type === 'keyup') {
-            game.keys[event.code] = false;
+        }
+        
+        // Пули врагов vs игрок
+        for (let b = this.bullets.length - 1; b >= 0; b--) {
+            const bullet = this.bullets[b];
+            if (!bullet.fromEnemy) continue;
+            
+            if (this.isColliding(bullet, this.player)) {
+                this.bullets.splice(b, 1);
+                this.player.health -= this.difficulty.enemyDamage;
+                
+                this.createHitParticles(this.player.x, this.player.y);
+                
+                if (audioManager) audioManager.error();
+                
+                if (this.player.health <= 0) {
+                    this.endGame(false);
+                    return;
+                }
+            }
+        }
+        
+        // Игрок vs враги (столкновение)
+        for (let e = this.enemies.length - 1; e >= 0; e--) {
+            const enemy = this.enemies[e];
+            
+            if (this.isColliding(this.player, enemy)) {
+                this.enemies.splice(e, 1);
+                this.player.health -= this.difficulty.enemyDamage * 2; // Двойной урон при столкновении
+                
+                this.createExplosionParticles(enemy.x, enemy.y);
+                
+                if (audioManager) audioManager.explosion();
+                
+                if (this.player.health <= 0) {
+                    this.endGame(false);
+                    return;
+                }
+            }
+        }
+        
+        // Игрок vs powerups
+        for (let p = this.powerups.length - 1; p >= 0; p--) {
+            const powerup = this.powerups[p];
+            
+            if (this.isColliding(this.player, powerup)) {
+                this.powerups.splice(p, 1);
+                this.handlePowerup(powerup);
+                
+                if (audioManager) audioManager.powerup();
+            }
+        }
+        
+        this.updateUI();
+    }
+    
+    handlePowerup(powerup) {
+        switch (powerup.type) {
+            case 'health':
+                this.player.health = Math.min(this.player.maxHealth, this.player.health + 30);
+                showNotification('💚 Health restored!', 'success', 2000);
+                break;
+            case 'weapon':
+                this.player.fireDelay = Math.max(3, this.player.fireDelay - 2);
+                showNotification('🔥 Weapon upgraded!', 'success', 2000);
+                break;
+            case 'shield':
+                this.player.health = Math.min(this.player.maxHealth, this.player.health + 50);
+                showNotification('🛡️ Shield activated!', 'success', 2000);
+                break;
+            case 'bonus':
+                this.score += 100;
+                showNotification('💎 Bonus points!', 'success', 2000);
+                break;
         }
     }
     
-    shootBullet() {
-        const game = this.gameData.wingsGame;
-        if (!game) return;
-        
-        game.bullets.push({
-            x: game.player.x + game.player.width,
-            y: game.player.y + game.player.height / 2,
-            width: 10,
-            height: 3,
-            speed: 8
-        });
+    checkWaveProgression() {
+        // Новая волна каждые 15 убитых врагов
+        if (this.enemiesKilled > 0 && this.enemiesKilled % 15 === 0) {
+            this.nextWave();
+        }
     }
     
-    checkCollision(rect1, rect2) {
+    nextWave() {
+        this.wave++;
+        
+        // Увеличиваем сложность
+        this.difficulty.enemySpeed += 0.3;
+        this.difficulty.spawnRate = Math.max(60, this.difficulty.spawnRate - 10);
+        this.difficulty.enemyHealth += Math.floor(this.wave / 3);
+        this.difficulty.enemyDamage += 2;
+        
+        showNotification(`🌊 WAVE ${this.wave}!\nEnemies getting stronger!`, 'warning', 3000);
+        
+        if (audioManager) audioManager.powerup();
+        
+        console.log(`🌊 Wave ${this.wave} started`);
+    }
+    
+    isColliding(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
                rect1.x + rect1.width > rect2.x &&
                rect1.y < rect2.y + rect2.height &&
                rect1.y + rect1.height > rect2.y;
     }
     
-    async loadNuclearCharge() {
-        if (!this.gameArea) return;
-        
-        this.gameArea.innerHTML = `
-            <div class="nuclear-charge-game">
-                <div class="trading-interface">
-                    <div class="market-display">
-                        <h3>Fusion Core Market</h3>
-                        <div class="price-chart" id="price-chart">
-                            <canvas id="chart-canvas" width="400" height="200"></canvas>
-                        </div>
-                        <div class="current-price">
-                            Current Price: <span id="current-price">100</span> Caps
-                        </div>
-                    </div>
-                    <div class="trading-controls">
-                        <div class="inventory">
-                            <div>Fusion Cores: <span id="cores-count">0</span></div>
-                            <div>Caps: <span id="caps-count">1000</span></div>
-                        </div>
-                        <div class="trading-buttons">
-                            <button id="buy-btn" onclick="gameEngine.buyCore()">Buy Core</button>
-                            <button id="sell-btn" onclick="gameEngine.sellCore()">Sell Core</button>
-                        </div>
-                        <div class="market-info">
-                            <div>Portfolio Value: <span id="portfolio-value">1000</span> Caps</div>
-                            <div>Profit/Loss: <span id="profit-loss">0</span> Caps</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        this.initNuclearCharge();
+    createHitParticles(x, y) {
+        for (let i = 0; i < 5; i++) {
+            this.particles.push({
+                x: x + Math.random() * 20,
+                y: y + Math.random() * 20,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 20,
+                maxLife: 20,
+                alpha: 1,
+                color: '#ffaa00'
+            });
+        }
     }
     
-    initNuclearCharge() {
-        this.gameData.tradingGame = {
-            cores: 0,
-            caps: 1000,
-            initialCaps: 1000,
-            currentPrice: 100,
-            priceHistory: [100],
-            priceDirection: 1
-        };
-        
-        this.updateTradingDisplay();
-        this.startPriceSimulation();
+    createExplosionParticles(x, y) {
+        for (let i = 0; i < 10; i++) {
+            this.particles.push({
+                x: x + Math.random() * 30,
+                y: y + Math.random() * 30,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 30,
+                maxLife: 30,
+                alpha: 1,
+                color: Math.random() < 0.5 ? '#ff4444' : '#ffaa00'
+            });
+        }
     }
     
-    startPriceSimulation() {
-        const updatePrice = () => {
-            if (!this.gameData.isPlaying) return;
-            
-            const game = this.gameData.tradingGame;
-            
-            // Simple price simulation
-            const change = (Math.random() - 0.5) * 20;
-            game.currentPrice = Math.max(50, Math.min(200, game.currentPrice + change));
-            game.priceHistory.push(game.currentPrice);
-            
-            // Keep only last 50 prices
-            if (game.priceHistory.length > 50) {
-                game.priceHistory.shift();
-            }
-            
-            this.updateTradingDisplay();
-            this.updateChart();
-            
-            setTimeout(updatePrice, 2000);
-        };
+    render() {
+        if (!this.ctx) return;
         
-        updatePrice();
+        // Очищаем экран с градиентом
+        const gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
+        gradient.addColorStop(0, '#000011');
+        gradient.addColorStop(0.5, '#001122');
+        gradient.addColorStop(1, '#000033');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Рисуем звезды
+        this.drawStarfield();
+        
+        // Рисуем игровые объекты
+        this.drawPlayer();
+        this.drawBullets();
+        this.drawEnemies();
+        this.drawPowerups();
+        this.drawParticles();
+        this.drawUI();
     }
     
-    updateTradingDisplay() {
-        const game = this.gameData.tradingGame;
-        
-        document.getElementById('cores-count').textContent = game.cores;
-        document.getElementById('caps-count').textContent = Math.floor(game.caps);
-        document.getElementById('current-price').textContent = Math.floor(game.currentPrice);
-        
-        const portfolioValue = game.caps + (game.cores * game.currentPrice);
-        const profitLoss = portfolioValue - game.initialCaps;
-        
-        document.getElementById('portfolio-value').textContent = Math.floor(portfolioValue);
-        document.getElementById('profit-loss').textContent = Math.floor(profitLoss);
-        
-        this.gameData.score = Math.max(0, profitLoss);
+    drawStarfield() {
+        this.ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 100; i++) {
+            const x = (i * 7 + this.frameCount * 0.5) % this.canvas.width;
+            const y = (i * 13) % this.canvas.height;
+            const size = Math.random() < 0.1 ? 2 : 1;
+            this.ctx.fillRect(x, y, size, size);
+        }
     }
     
-    updateChart() {
-        const canvas = document.getElementById('chart-canvas');
-        if (!canvas) return;
+    drawPlayer() {
+        // Основной корпус
+        this.ctx.fillStyle = '#00ff41';
+        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
         
-        const ctx = canvas.getContext('2d');
-        const game = this.gameData.tradingGame;
+        // Форма истребителя
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.player.x + this.player.width, this.player.y + this.player.height / 2);
+        this.ctx.lineTo(this.player.x, this.player.y);
+        this.ctx.lineTo(this.player.x + 8, this.player.y + this.player.height / 2);
+        this.ctx.lineTo(this.player.x, this.player.y + this.player.height);
+        this.ctx.closePath();
+        this.ctx.fill();
         
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Двигатели
+        this.ctx.fillStyle = '#00aaff';
+        this.ctx.fillRect(this.player.x - 5, this.player.y + 4, 8, 4);
+        this.ctx.fillRect(this.player.x - 5, this.player.y + 12, 8, 4);
         
-        if (game.priceHistory.length < 2) return;
-        
-        const minPrice = Math.min(...game.priceHistory);
-        const maxPrice = Math.max(...game.priceHistory);
-        const priceRange = maxPrice - minPrice;
-        
-        ctx.strokeStyle = '#00ff41';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        
-        game.priceHistory.forEach((price, index) => {
-            const x = (index / (game.priceHistory.length - 1)) * canvas.width;
-            const y = canvas.height - ((price - minPrice) / priceRange) * canvas.height;
+        // Эффект двигателей
+        if (this.frameCount % 6 < 3) {
+            this.ctx.fillStyle = '#0088ff';
+            this.ctx.fillRect(this.player.x - 8, this.player.y + 5, 6, 2);
+            this.ctx.fillRect(this.player.x - 8, this.player.y + 13, 6, 2);
+        }
+    }
+    
+    drawBullets() {
+        this.bullets.forEach(bullet => {
+            this.ctx.fillStyle = bullet.fromEnemy ? '#ff4444' : '#ffff00';
+            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
             
-            if (index === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
+            // Эффект свечения
+            this.ctx.shadowColor = bullet.color || (bullet.fromEnemy ? '#ff4444' : '#ffff00');
+            this.ctx.shadowBlur = 5;
+            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            this.ctx.shadowBlur = 0;
+        });
+    }
+    
+    drawEnemies() {
+        this.enemies.forEach(enemy => {
+            // Основной корпус
+            this.ctx.fillStyle = enemy.color;
+            this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            
+            // Полоска здоровья для крупных врагов
+            if (enemy.maxHealth > 1) {
+                const healthPercent = enemy.health / enemy.maxHealth;
+                const barWidth = enemy.width;
+                const barHeight = 3;
+                
+                this.ctx.fillStyle = '#333333';
+                this.ctx.fillRect(enemy.x, enemy.y - 5, barWidth, barHeight);
+                
+                this.ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : '#ff4444';
+                this.ctx.fillRect(enemy.x, enemy.y - 5, barWidth * healthPercent, barHeight);
             }
         });
-        
-        ctx.stroke();
     }
     
-    buyCore() {
-        const game = this.gameData.tradingGame;
-        
-        if (game.caps >= game.currentPrice) {
-            game.caps -= game.currentPrice;
-            game.cores++;
-            this.updateTradingDisplay();
+    drawPowerups() {
+        this.powerups.forEach(powerup => {
+            // Мерцающий эффект
+            const alpha = 0.7 + 0.3 * Math.sin(this.frameCount * 0.1);
+            this.ctx.globalAlpha = alpha;
             
-            notificationManager.success(`Bought 1 Fusion Core for ${Math.floor(game.currentPrice)} caps`);
-        } else {
-            notificationManager.warning('Not enough caps!');
+            this.ctx.fillStyle = powerup.color;
+            this.ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
+            
+            // Свечение
+            this.ctx.shadowColor = powerup.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
+            this.ctx.shadowBlur = 0;
+            
+            this.ctx.globalAlpha = 1;
+        });
+    }
+    
+    drawParticles() {
+        this.particles.forEach(particle => {
+            this.ctx.globalAlpha = particle.alpha;
+            this.ctx.fillStyle = particle.color;
+            this.ctx.fillRect(particle.x, particle.y, 2, 2);
+        });
+        this.ctx.globalAlpha = 1;
+    }
+    
+    drawUI() {
+        // Полоска здоровья
+        const healthBarWidth = 150;
+        const healthBarHeight = 10;
+        const healthPercent = this.player.health / this.player.maxHealth;
+        
+        this.ctx.fillStyle = '#333333';
+        this.ctx.fillRect(10, 10, healthBarWidth, healthBarHeight);
+        
+        this.ctx.fillStyle = healthPercent > 0.5 ? '#00ff41' : '#ff4444';
+        this.ctx.fillRect(10, 10, healthBarWidth * healthPercent, healthBarHeight);
+        
+        // Текст здоровья
+        this.ctx.fillStyle = '#00ff41';
+        this.ctx.font = '12px monospace';
+        this.ctx.fillText(`HEALTH: ${this.player.health}`, 10, 35);
+        
+        // Мини-карта
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(this.canvas.width - 80, 10, 70, 50);
+        
+        this.ctx.strokeStyle = '#00ff41';
+        this.ctx.strokeRect(this.canvas.width - 80, 10, 70, 50);
+        
+        // Показываем врагов на мини-карте
+        this.enemies.forEach(enemy => {
+            const miniX = this.canvas.width - 80 + (enemy.x / this.canvas.width) * 70;
+            const miniY = 10 + (enemy.y / this.canvas.height) * 50;
+            this.ctx.fillStyle = '#ff4444';
+            this.ctx.fillRect(miniX, miniY, 2, 2);
+        });
+        
+        // Игрок на мини-карте
+        const playerMiniX = this.canvas.width - 80 + (this.player.x / this.canvas.width) * 70;
+        const playerMiniY = 10 + (this.player.y / this.canvas.height) * 50;
+        this.ctx.fillStyle = '#00ff41';
+        this.ctx.fillRect(playerMiniX, playerMiniY, 3, 3);
+    }
+    
+    // Управление
+    shoot() {
+        if (!this.gameActive || this.player.fireRate > 0) return;
+        
+        this.bullets.push({
+            x: this.player.x + this.player.width,
+            y: this.player.y + this.player.height / 2 - 2,
+            width: 10, height: 4,
+            speed: 8,
+            fromEnemy: false
+        });
+        
+        this.player.fireRate = this.player.fireDelay;
+        
+        if (audioManager) audioManager.shoot();
+    }
+    
+    movePlayer(direction) {
+        if (!this.gameActive) return;
+        
+        const speed = this.player.speed;
+        const margin = 5;
+        
+        switch (direction) {
+            case 'up':
+                this.player.y = Math.max(margin, this.player.y - speed);
+                break;
+            case 'down':
+                this.player.y = Math.min(this.canvas.height - this.player.height - margin, this.player.y + speed);
+                break;
+            case 'left':
+                this.player.x = Math.max(margin, this.player.x - speed);
+                break;
+            case 'right':
+                this.player.x = Math.min(this.canvas.width - this.player.width - margin, this.player.x + speed);
+                break;
         }
     }
     
-    sellCore() {
-        const game = this.gameData.tradingGame;
+    updateUI() {
+        const scoreElement = document.getElementById('wings-score');
+        const livesElement = document.getElementById('wings-lives'); 
+        const waveElement = document.getElementById('wings-wave');
         
-        if (game.cores > 0) {
-            game.caps += game.currentPrice;
-            game.cores--;
-            this.updateTradingDisplay();
-            
-            notificationManager.success(`Sold 1 Fusion Core for ${Math.floor(game.currentPrice)} caps`);
-        } else {
-            notificationManager.warning('No cores to sell!');
-        }
+        if (scoreElement) scoreElement.textContent = this.score;
+        if (livesElement) livesElement.textContent = Math.ceil(this.player.health / 33.33); // 3 жизни = 100 HP
+        if (waveElement) waveElement.textContent = this.wave;
     }
     
-    handleNuclearChargeKey(event) {
-        // Nuclear Charge uses mouse clicks, not keyboard
+    endGame(won = false) {
+        this.gameActive = false;
+        
+        if (this.gameLoop) {
+            cancelAnimationFrame(this.gameLoop);
+            this.gameLoop = null;
+        }
+        
+        console.log(`🏁 Wasteland Wings ended. Score: ${this.score}, Wave: ${this.wave}`);
+        
+        if (!userData) return;
+        
+        // Рассчитываем награду только в CAPS
+        const baseReward = CONFIG.GAME_REWARDS['wasteland-wings'];
+        const scoreMultiplier = Math.min(this.score / 1000, 3); // Максимум 3x
+        const waveBonus = (this.wave - 1) * 50; // Бонус за волны
+        
+        const capsReward = Math.floor(
+            (baseReward.min + Math.random() * (baseReward.max - baseReward.min)) * scoreMultiplier + waveBonus
+        );
+        
+        // Выдаем награду
+        const earnedCaps = capsEconomy.earnCaps(capsReward, 'wasteland-wings');
+        
+        // Обновляем статистику
+        userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+        if (this.score > 500) { // Считаем победой если набрали 500+ очков
+            userData.gamesWon = (userData.gamesWon || 0) + 1;
+        }
+        
+        // Обновляем прогресс миссий
+        if (missionSystem) {
+            missionSystem.updateProgress('wings_score', this.score);
+        }
+        
+        updateUserDisplay();
+        
+        const status = this.player.health > 0 ? '🏆 MISSION COMPLETE!' : '💥 AIRCRAFT DESTROYED!';
+        const resultMessage = `${status}\nScore: ${this.score} | Wave: ${this.wave}\n+${earnedCaps} CAPS earned`;
+        
+        showNotification(resultMessage, this.player.health > 0 ? 'success' : 'warning', 5000);
+        
+        setTimeout(() => {
+            this.closeGame();
+        }, 4000);
+    }
+    
+    closeGame() {
+        this.resetGameState();
+        closeGame();
     }
 }
 
-// Mission System
-class MissionManager {
+// ===== НОВАЯ ИГРА CYBER DUEL =====
+class CyberDuelGame {
     constructor() {
-        this.missions = [];
-        this.availableMissions = [
-            {
-                id: 1,
-                title: '🎮 First Steps',
-                description: 'Play your first game in RUNNER Terminal',
-                type: 'daily',
-                difficulty: 'Easy',
-                requirements: { games_played: 1 },
-                rewards: { tsar: 50, bottle_caps: 100 },
-                progress: 0,
-                maxProgress: 1
-            },
-            {
-                id: 2,
-                title: '🔗 Social Butterfly',
-                description: 'Share RUNNER Terminal with 3 friends',
-                type: 'weekly',
-                difficulty: 'Medium',
-                requirements: { referrals: 3 },
-                rewards: { tsar: 200, bottle_caps: 500 },
-                progress: 0,
-                maxProgress: 3
-            },
-            {
-                id: 3,
-                title: '💰 Wallet Connect',
-                description: 'Connect your TON wallet to RUNNER Terminal',
-                type: 'special',
-                difficulty: 'Easy',
-                requirements: { wallet_connected: true },
-                rewards: { tsar: 150, bottle_caps: 300 },
-                progress: 0,
-                maxProgress: 1
-            },
-            {
-                id: 4,
-                title: '🏆 Win Streak',
-                description: 'Win 5 games in a row',
-                type: 'daily',
-                difficulty: 'Hard',
-                requirements: { win_streak: 5 },
-                rewards: { tsar: 300, bottle_caps: 750 },
-                progress: 0,
-                maxProgress: 5
-            },
-            {
-                id: 5,
-                title: '⭐ High Score',
-                description: 'Achieve a score of 5000+ in any game',
-                type: 'weekly',
-                difficulty: 'Expert',
-                requirements: { high_score: 5000 },
-                rewards: { tsar: 500, ton: 0.001 },
-                progress: 0,
-                maxProgress: 5000
-            }
+        this.gameActive = false;
+        this.isMultiplayer = true; // Всегда мультиплеер
+        
+        // Состояние игры
+        this.player = {
+            health: 100,
+            maxHealth: 100,
+            energy: 100,
+            maxEnergy: 100,
+            shield: 0
+        };
+        
+        this.opponent = {
+            health: 100,
+            maxHealth: 100,
+            energy: 100,
+            maxEnergy: 100,
+            shield: 0,
+            name: 'UNKNOWN',
+            ai: true // Пока ИИ противник
+        };
+        
+        this.round = 1;
+        this.maxRounds = 5;
+        this.playerTurn = true;
+        this.battleLog = [];
+        
+        // ИИ настройки
+        this.aiDifficulty = 'normal';
+        this.aiActions = ['attack', 'defend', 'special', 'heal'];
+    }
+    
+    startGame() {
+        console.log('⚔️ Starting Cyber Duel...');
+        
+        this.resetGame();
+        this.gameActive = true;
+        this.findOpponent();
+        
+        if (audioManager) audioManager.powerup();
+    }
+    
+    resetGame() {
+        this.player = {
+            health: 100, maxHealth: 100,
+            energy: 100, maxEnergy: 100,
+            shield: 0
+        };
+        
+        this.opponent = {
+            health: 100, maxHealth: 100,
+            energy: 100, maxEnergy: 100,
+            shield: 0,
+            name: this.generateOpponentName(),
+            ai: true
+        };
+        
+        this.round = 1;
+        this.playerTurn = true;
+        this.battleLog = [];
+        
+        this.updateUI();
+        this.addBattleLog('⚔️ Cyber Duel initiated');
+        this.addBattleLog('🎯 Choose your action');
+    }
+    
+    generateOpponentName() {
+        const names = [
+            'CYBER_NINJA', 'DATA_GHOST', 'NEURAL_HUNTER', 'QUANTUM_WARRIOR',
+            'VOID_STRIKER', 'NEON_SAMURAI', 'DIGITAL_PHANTOM', 'CHROME_KILLER',
+            'MATRIX_REBEL', 'SHADOW_HACKER', 'PLASMA_KNIGHT', 'BINARY_BLADE'
         ];
+        return names[Math.floor(Math.random() * names.length)];
     }
     
-    async loadMissions() {
-        try {
-            // In a real implementation, this would fetch from API
-            this.missions = [...this.availableMissions];
-            this.updateMissionProgress();
-            this.renderMissions();
-        } catch (error) {
-            console.error('Failed to load missions:', error);
-        }
-    }
-    
-    updateMissionProgress() {
-        const user = stateManager.getUser();
-        if (!user) return;
+    findOpponent() {
+        this.addBattleLog('🔍 Searching for opponent...');
         
-        this.missions.forEach(mission => {
-            switch (mission.id) {
-                case 1: // First Steps
-                    mission.progress = Math.min(user.games_played || 0, mission.maxProgress);
-                    break;
-                case 2: // Social Butterfly
-                    mission.progress = Math.min(user.referrals_count || 0, mission.maxProgress);
-                    break;
-                case 3: // Wallet Connect
-                    mission.progress = user.wallet_address ? 1 : 0;
-                    break;
-                case 4: // Win Streak
-                    mission.progress = Math.min(user.current_win_streak || 0, mission.maxProgress);
-                    break;
-                case 5: // High Score
-                    mission.progress = Math.min(user.best_score || 0, mission.maxProgress);
-                    break;
-            }
+        setTimeout(() => {
+            this.addBattleLog(`🤖 Opponent found: ${this.opponent.name}`);
+            this.addBattleLog('⚡ Neural link established');
+            this.addBattleLog('🥊 Battle begins!');
+            this.updateUI();
+        }, 2000);
+    }
+    
+    // Игровые действия
+    performAction(action) {
+        if (!this.gameActive || !this.playerTurn) return;
+        
+        console.log(`🎮 Player action: ${action}`);
+        
+        const result = this.executeAction(this.player, action, 'Player');
+        
+        if (result.success) {
+            this.addBattleLog(`🎯 You used ${action.toUpperCase()}: ${result.message}`);
             
-            mission.completed = mission.progress >= mission.maxProgress;
-        });
-    }
-    
-    renderMissions() {
-        const missionsList = document.getElementById('missions-list');
-        if (!missionsList) return;
-        
-        const filteredMissions = this.getFilteredMissions();
-        
-        missionsList.innerHTML = filteredMissions.map(mission => `
-            <div class="mission-card ${mission.completed ? 'completed' : ''}" data-mission-id="${mission.id}">
-                <div class="mission-header">
-                    <div class="mission-info">
-                        <h3>${mission.title}</h3>
-                        <p>${mission.description}</p>
-                    </div>
-                    <div class="mission-status">
-                        <span class="status-badge ${mission.completed ? 'completed' : 'available'}">${mission.completed ? 'Completed' : 'Active'}</span>
-                        <span class="difficulty-badge ${mission.difficulty.toLowerCase()}">${mission.difficulty}</span>
-                    </div>
-                </div>
-                
-                <div class="mission-progress">
-                    <div class="progress-header">
-                        <span>Progress</span>
-                        <span>${mission.progress}/${mission.maxProgress}</span>
-                    </div>
-                    <div class="progress-bar-mission">
-                        <div class="progress-fill-mission" style="width: ${(mission.progress / mission.maxProgress) * 100}%"></div>
-                    </div>
-                </div>
-                
-                <div class="mission-rewards">
-                    <div class="rewards-list">
-                        ${Object.entries(mission.rewards).map(([currency, amount]) => `
-                            <span class="reward-item">${this.getCurrencyIcon(currency)} ${amount} ${currency.toUpperCase()}</span>
-                        `).join('')}
-                    </div>
-                    <div class="mission-action">
-                        ${mission.completed 
-                            ? '<button class="mission-btn" disabled>Completed</button>'
-                            : `<button class="mission-btn" onclick="missionManager.completeMission(${mission.id})">Claim Reward</button>`
-                        }
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    getFilteredMissions() {
-        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-        
-        if (activeFilter === 'all') {
-            return this.missions;
-        }
-        
-        return this.missions.filter(mission => mission.type === activeFilter);
-    }
-    
-    getCurrencyIcon(currency) {
-        const icons = {
-            tsar: '💰',
-            ton: '💎',
-            bottle_caps: '🍺',
-            stars: '⭐'
-        };
-        return icons[currency] || '🎁';
-    }
-    
-    async completeMission(missionId) {
-        try {
-            const mission = this.missions.find(m => m.id === missionId);
-            if (!mission || !mission.completed) {
-                notificationManager.warning('Mission not completed yet!');
+            // Проверяем конец игры
+            if (this.opponent.health <= 0) {
+                this.endGame(true);
                 return;
             }
             
-            const user = stateManager.getUser();
-            if (!user) {
-                notificationManager.error('User not found');
-                return;
-            }
-            
-            const response = await apiService.completeMission(user.user_id, missionId, {
-                progress: mission.progress,
-                completed_at: new Date().toISOString()
-            });
-            
-            if (response.success) {
-                notificationManager.success(`Mission "${mission.title}" completed!`, {
-                    title: 'Mission Complete'
-                });
-                
-                // Show rewards
-                const rewardText = Object.entries(mission.rewards)
-                    .map(([currency, amount]) => `${this.getCurrencyIcon(currency)} +${amount} ${currency.toUpperCase()}`)
-                    .join('\n');
-                
-                notificationManager.success(`Rewards received:\n${rewardText}`, {
-                    title: 'Rewards',
-                    duration: 6000
-                });
-                
-                // Mark mission as claimed
-                mission.claimed = true;
-                
-                // Refresh user data and missions
-                await gameEngine.refreshUserData();
-                this.loadMissions();
-                
-            } else {
-                notificationManager.error('Failed to complete mission');
-            }
-            
-        } catch (error) {
-            console.error('Failed to complete mission:', error);
-            notificationManager.error('Failed to complete mission');
-        }
-    }
-    
-    setFilter(filter) {
-        // Update filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === filter);
-        });
-        
-        // Re-render missions
-        this.renderMissions();
-    }
-}
-
-// Market System
-class MarketManager {
-    constructor() {
-        this.products = [];
-        this.currentTab = 'tokens';
-    }
-    
-    async loadProducts() {
-        try {
-            const response = await apiService.getShopProducts();
-            if (response.success) {
-                this.products = response.products;
-                this.renderProducts();
-            }
-        } catch (error) {
-            console.error('Failed to load products:', error);
-            // Use fallback products
-            this.loadFallbackProducts();
-        }
-    }
-    
-    loadFallbackProducts() {
-        this.products = [
-            {
-                id: 'tsar_pack_small',
-                name: '100 TSAR Tokens',
-                description: 'Small pack of TSAR tokens for RUNNER Terminal',
-                price: 1,
-                reward_type: 'tsar',
-                category: 'tokens',
-                available: true
-            },
-            {
-                id: 'tsar_pack_medium',
-                name: '1,000 TSAR Tokens',
-                description: 'Medium pack with +20% bonus tokens',
-                price: 5,
-                reward_type: 'tsar',
-                category: 'tokens',
-                available: true
-            },
-            {
-                id: 'tsar_pack_large',
-                name: '10,000 TSAR Tokens',
-                description: 'Large pack with +50% bonus tokens',
-                price: 25,
-                reward_type: 'tsar',
-                category: 'tokens',
-                available: true
-            },
-            {
-                id: 'premium_nft',
-                name: 'Vault-Tec Premium NFT',
-                description: 'Exclusive RUNNER Terminal NFT with special bonuses',
-                price: 10,
-                reward_type: 'nft',
-                category: 'nfts',
-                available: true
-            },
-            {
-                id: 'battle_pass',
-                name: 'Wasteland Battle Pass',
-                description: '30 days of premium rewards and exclusive missions',
-                price: 15,
-                reward_type: 'battle_pass',
-                category: 'passes',
-                available: true
-            }
-        ];
-        
-        this.renderProducts();
-    }
-    
-    renderProducts() {
-        const categories = ['tokens', 'nfts', 'passes', 'items'];
-        
-        categories.forEach(category => {
-            const container = document.getElementById(`${category === 'tokens' ? 'tsar' : category.slice(0, -1)}-products`);
-            if (!container) return;
-            
-            const categoryProducts = this.products.filter(p => p.category === category);
-            
-            container.innerHTML = categoryProducts.map(product => `
-                <div class="product-card" data-product-id="${product.id}">
-                    <div class="product-header">
-                        <div class="product-info">
-                            <h3>${product.name}</h3>
-                            <p>${product.description}</p>
-                        </div>
-                        <div class="product-price">
-                            <span class="price-amount">${product.price}</span>
-                            <span class="price-currency">⭐ Stars</span>
-                        </div>
-                    </div>
-                    
-                    <div class="product-features">
-                        <ul class="features-list">
-                            ${this.getProductFeatures(product).map(feature => `<li>${feature}</li>`).join('')}
-                        </ul>
-                    </div>
-                    
-                    <button class="purchase-btn" onclick="marketManager.purchaseProduct('${product.id}')" ${!product.available ? 'disabled' : ''}>
-                        ${product.available ? 'Purchase with Stars' : 'Not Available'}
-                    </button>
-                </div>
-            `).join('');
-        });
-    }
-    
-    getProductFeatures(product) {
-        const features = {
-            'tsar_pack_small': ['100 TSAR Tokens', 'Instant delivery', 'Perfect for beginners'],
-            'tsar_pack_medium': ['1,200 TSAR Tokens', '+20% bonus tokens', 'Best value for regular players'],
-            'tsar_pack_large': ['15,000 TSAR Tokens', '+50% bonus tokens', 'Maximum value pack'],
-            'premium_nft': ['Exclusive NFT artwork', 'Special game bonuses', 'Limited edition'],
-            'battle_pass': ['30 days premium access', 'Exclusive missions', 'Double XP bonus', 'Special rewards']
-        };
-        
-        return features[product.id] || ['Special item', 'Limited availability'];
-    }
-    
-    async purchaseProduct(productId) {
-        try {
-            const user = stateManager.getUser();
-            if (!user) {
-                notificationManager.error('Please start the bot first');
-                return;
-            }
-            
-            const product = this.products.find(p => p.id === productId);
-            if (!product) {
-                notificationManager.error('Product not found');
-                return;
-            }
-            
-            // Create Stars invoice
-            const response = await apiService.createStarsInvoice(user.user_id, productId);
-            
-            if (response.success) {
-                // Open invoice URL
-                if (window.Telegram?.WebApp) {
-                    window.Telegram.WebApp.openInvoice(response.invoice_url);
-                } else {
-                    // Fallback for testing
-                    window.open(response.invoice_url, '_blank');
-                }
-                
-                notificationManager.info('Redirecting to payment...', {
-                    title: 'Purchase'
-                });
-            } else {
-                notificationManager.error('Failed to create payment');
-            }
-            
-        } catch (error) {
-            console.error('Purchase failed:', error);
-            notificationManager.error('Purchase failed');
-        }
-    }
-    
-    setTab(tab) {
-        this.currentTab = tab;
-        
-        // Update tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tab);
-        });
-        
-        // Update tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tab}-tab`);
-        });
-    }
-}
-
-// UI Management
-class UIManager {
-    constructor() {
-        this.currentSection = 'dashboard';
-        this.sideMenuOpen = false;
-        this.isLoading = false;
-    }
-    
-    init() {
-        this.setupEventListeners();
-        this.setupNavigation();
-        this.setupSideMenu();
-        this.setupTabs();
-        this.updateUserDisplay();
-    }
-    
-    setupEventListeners() {
-        // Navigation buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const section = btn.dataset.section;
-                this.switchSection(section);
-            });
-        });
-        
-        // Menu button
-        const menuBtn = document.getElementById('menu-btn');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', () => this.toggleSideMenu());
-        }
-        
-        // Close modal buttons
-        document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const modal = btn.closest('.modal');
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-        
-        // Modal overlay clicks
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-        
-        // TON Connect button
-        const tonConnectBtn = document.getElementById('ton-connect-btn');
-        if (tonConnectBtn) {
-            tonConnectBtn.addEventListener('click', () => {
-                tonConnectManager.connect();
-            });
-        }
-        
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const filter = btn.dataset.filter;
-                missionManager.setFilter(filter);
-            });
-        });
-        
-        // Tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                const parent = btn.closest('[class*="tabs"]').nextElementSibling;
-                this.setActiveTab(parent, tab);
-            });
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-        
-        // Visibility change (for pausing animations when tab is not visible)
-        document.addEventListener('visibilitychange', () => {
-            this.handleVisibilityChange();
-        });
-    }
-    
-    setupNavigation() {
-        // Set initial active navigation
-        this.updateNavigation(this.currentSection);
-    }
-    
-    setupSideMenu() {
-        // Create overlay if it doesn't exist
-        let overlay = document.getElementById('menu-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'menu-overlay';
-            overlay.className = 'menu-overlay';
-            overlay.addEventListener('click', () => this.closeSideMenu());
-            document.body.appendChild(overlay);
-        }
-    }
-    
-    setupTabs() {
-        // Initialize all tab systems
-        const tabSystems = document.querySelectorAll('[class*="tabs"]');
-        tabSystems.forEach(tabSystem => {
-            const firstTab = tabSystem.querySelector('.tab-btn');
-            if (firstTab) {
-                const tab = firstTab.dataset.tab;
-                const content = tabSystem.nextElementSibling;
-                this.setActiveTab(content, tab);
-            }
-        });
-    }
-    
-    switchSection(section) {
-        if (this.currentSection === section) return;
-        
-        // Hide all sections
-        document.querySelectorAll('.content-section').forEach(sec => {
-            sec.classList.remove('active');
-        });
-        
-        // Show target section
-        const targetSection = document.getElementById(`${section}-section`);
-        if (targetSection) {
-            targetSection.classList.add('active');
-            this.currentSection = section;
-            
-            // Update navigation
-            this.updateNavigation(section);
-            
-            // Update state
-            stateManager.setCurrentSection(section);
-            
-            // Load section-specific data
-            this.loadSectionData(section);
-            
-            // Close side menu if open
-            this.closeSideMenu();
-        }
-    }
-    
-    updateNavigation(activeSection) {
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.section === activeSection);
-        });
-    }
-    
-    async loadSectionData(section) {
-        switch (section) {
-            case 'dashboard':
-                this.updateDashboard();
-                break;
-            case 'missions':
-                await missionManager.loadMissions();
-                break;
-            case 'market':
-                await marketManager.loadProducts();
-                break;
-            case 'inventory':
-                this.loadInventory();
-                break;
-            case 'leaderboard':
-                this.loadLeaderboard();
-                break;
-        }
-    }
-    
-    updateDashboard() {
-        const user = stateManager.getUser();
-        if (!user) return;
-        
-        // Update stats
-        const elements = {
-            'dash-games-played': user.games_played || 0,
-            'dash-missions-completed': user.missions_completed || 0,
-            'dash-total-earned': (user.total_earned || 0).toFixed(6),
-            'dash-win-rate': this.calculateWinRate(user)
-        };
-        
-        Object.entries(elements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
-        });
-    }
-    
-    calculateWinRate(user) {
-        const totalGames = (user.wins || 0) + (user.losses || 0);
-        if (totalGames === 0) return '0%';
-        return Math.round((user.wins || 0) / totalGames * 100) + '%';
-    }
-    
-    updateUserDisplay() {
-        const user = stateManager.getUser();
-        if (!user) return;
-        
-        // Update header stats
-        const elements = {
-            'user-level': user.level || 1,
-            'tsar-balance': (user.tsar_balance || 0).toLocaleString(),
-            'caps-balance': (user.bottle_caps || 1250).toLocaleString()
-        };
-        
-        Object.entries(elements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
-        });
-        
-        // Update user info in side menu
-        const userNameElement = document.getElementById('user-name');
-        const userRankElement = document.getElementById('user-rank');
-        const userAvatarElement = document.getElementById('user-avatar');
-        
-        if (userNameElement) {
-            userNameElement.textContent = user.first_name || 'Unknown User';
-        }
-        
-        if (userRankElement) {
-            userRankElement.textContent = this.getUserRank(user);
-        }
-        
-        if (userAvatarElement && window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url) {
-            userAvatarElement.src = window.Telegram.WebApp.initDataUnsafe.user.photo_url;
-        }
-    }
-    
-    getUserRank(user) {
-        const totalEarned = user.total_earned || 0;
-        
-        if (totalEarned >= 1.0) return '🏆 Elite Runner';
-        if (totalEarned >= 0.1) return '🥇 Pro Runner';
-        if (totalEarned >= 0.01) return '🥈 Active Runner';
-        return '🥉 Rookie Runner';
-    }
-    
-    toggleSideMenu() {
-        if (this.sideMenuOpen) {
-            this.closeSideMenu();
+            // Ход противника
+            this.playerTurn = false;
+            setTimeout(() => {
+                this.opponentTurn();
+            }, 1500);
         } else {
-            this.openSideMenu();
+            this.addBattleLog(`❌ ${result.message}`);
+            if (audioManager) audioManager.error();
         }
+        
+        this.updateUI();
     }
     
-    openSideMenu() {
-        const sideMenu = document.getElementById('side-menu');
-        const overlay = document.getElementById('menu-overlay');
-        
-        if (sideMenu) {
-            sideMenu.classList.add('open');
-            this.sideMenuOpen = true;
-        }
-        
-        if (overlay) {
-            overlay.classList.add('active');
-        }
-        
-        document.body.style.overflow = 'hidden';
-    }
-    
-    closeSideMenu() {
-        const sideMenu = document.getElementById('side-menu');
-        const overlay = document.getElementById('menu-overlay');
-        
-        if (sideMenu) {
-            sideMenu.classList.remove('open');
-            this.sideMenuOpen = false;
-        }
-        
-        if (overlay) {
-            overlay.classList.remove('active');
-        }
-        
-        document.body.style.overflow = '';
-    }
-    
-    setActiveTab(container, tabId) {
-        if (!container) return;
-        
-        // Update tab buttons
-        const tabButtons = container.previousElementSibling.querySelectorAll('.tab-btn');
-        tabButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabId);
-        });
-        
-        // Update tab content
-        const tabContents = container.querySelectorAll('.tab-content');
-        tabContents.forEach(content => {
-            content.classList.toggle('active', content.id === `${tabId}-tab`);
-        });
-        
-        // Handle market tab changes
-        if (container.closest('#market-section')) {
-            marketManager.setTab(tabId);
-        }
-    }
-    
-    showLoading(show = true) {
-        this.isLoading = show;
-        const loadingScreen = document.getElementById('loading-screen');
-        
-        if (loadingScreen) {
-            if (show) {
-                loadingScreen.classList.remove('hidden');
-            } else {
-                loadingScreen.classList.add('hidden');
-            }
-        }
-    }
-    
-    handleKeyboardShortcuts(event) {
-        // Escape key - close modals and menus
-        if (event.key === 'Escape') {
-            // Close any open modals
-            document.querySelectorAll('.modal').forEach(modal => {
-                if (modal.style.display !== 'none') {
-                    modal.style.display = 'none';
+    executeAction(actor, action, actorName) {
+        switch (action) {
+            case 'attack':
+                if (actor.energy < 20) {
+                    return { success: false, message: 'Not enough energy' };
                 }
-            });
+                
+                actor.energy -= 20;
+                const damage = 25 + Math.floor(Math.random() * 15); // 25-40 урона
+                const target = actor === this.player ? this.opponent : this.player;
+                
+                // Учитываем щит
+                const actualDamage = Math.max(1, damage - target.shield);
+                target.health = Math.max(0, target.health - actualDamage);
+                target.shield = Math.max(0, target.shield - damage);
+                
+                if (audioManager) audioManager.click();
+                
+                return { 
+                    success: true, 
+                    message: `${actualDamage} damage dealt${target.shield > 0 ? ' (shield absorbed some)' : ''}` 
+                };
+                
+            case 'defend':
+                if (actor.energy < 10) {
+                    return { success: false, message: 'Not enough energy' };
+                }
+                
+                actor.energy -= 10;
+                const shieldGain = 15 + Math.floor(Math.random() * 10); // 15-25 щита
+                actor.shield += shieldGain;
+                
+                return { success: true, message: `Shield increased (+${shieldGain} points)` };
+                
+            case 'special':
+                if (actor.energy < 40) {
+                    return { success: false, message: 'Not enough energy' };
+                }
+                
+                actor.energy -= 40;
+                const specialDamage = 40 + Math.floor(Math.random() * 20); // 40-60 урона
+                const specialTarget = actor === this.player ? this.opponent : this.player;
+                
+                specialTarget.health = Math.max(0, specialTarget.health - specialDamage);
+                specialTarget.shield = 0; // Спец атака убирает щит
+                
+                if (audioManager) audioManager.explosion();
+                
+                return { success: true, message: `CRITICAL HIT! ${specialDamage} damage + shield destroyed` };
+                
+            case 'heal':
+                if (actor.energy < 30) {
+                    return { success: false, message: 'Not enough energy' };
+                }
+                
+                actor.energy -= 30;
+                const oldHealth = actor.health;
+                const healing = 20 + Math.floor(Math.random() * 15); // 20-35 лечения
+                actor.health = Math.min(actor.maxHealth, actor.health + healing);
+                const actualHealing = actor.health - oldHealth;
+                
+                return { success: true, message: `Restored ${actualHealing} health` };
+                
+            default:
+                return { success: false, message: 'Unknown action' };
+        }
+    }
+    
+    opponentTurn() {
+        if (!this.gameActive) return;
+        
+        // ИИ выбирает действие
+        const action = this.selectAIAction();
+        const result = this.executeAction(this.opponent, action, 'Opponent');
+        
+        if (result.success) {
+            this.addBattleLog(`🤖 ${this.opponent.name} used ${action.toUpperCase()}: ${result.message}`);
             
-            // Close side menu
-            this.closeSideMenu();
-            
-            // Close game
-            if (gameEngine.currentGame) {
-                gameEngine.closeGame();
+            // Проверяем конец игры
+            if (this.player.health <= 0) {
+                this.endGame(false);
+                return;
             }
         }
         
-        // Number keys for navigation (1-6)
-        if (event.key >= '1' && event.key <= '6' && !event.ctrlKey && !event.altKey) {
-            const sections = ['dashboard', 'games', 'missions', 'market', 'inventory', 'leaderboard'];
-            const sectionIndex = parseInt(event.key) - 1;
-            
-            if (sections[sectionIndex]) {
-                this.switchSection(sections[sectionIndex]);
-            }
-        }
-    }
-    
-    handleVisibilityChange() {
-        if (document.hidden) {
-            // Pause animations and timers when tab is not visible
-            document.body.classList.add('page-hidden');
-        } else {
-            // Resume when tab becomes visible
-            document.body.classList.remove('page-hidden');
-        }
-    }
-    
-    loadInventory() {
-        const user = stateManager.getUser();
-        if (!user) return;
+        // Восстанавливаем энергию обоим
+        this.player.energy = Math.min(this.player.maxEnergy, this.player.energy + 10);
+        this.opponent.energy = Math.min(this.opponent.maxEnergy, this.opponent.energy + 10);
         
-        // Load NFTs
-        this.loadUserNFTs(user);
+        // Следующий раунд
+        this.round++;
+        this.playerTurn = true;
         
-        // Load items
-        this.loadUserItems(user);
-        
-        // Load achievements
-        this.loadUserAchievements(user);
-    }
-    
-    loadUserNFTs(user) {
-        const nftsContainer = document.getElementById('user-nfts');
-        if (!nftsContainer) return;
-        
-        const nfts = user.nft_inventory || [];
-        
-        if (nfts.length === 0) {
-            nftsContainer.innerHTML = `
-                <div class="empty-state">
-                    <h3>🎨 No NFTs Yet</h3>
-                    <p>Purchase NFTs from the market to see them here</p>
-                    <button class="action-btn" onclick="uiManager.switchSection('market')">
-                        <span class="btn-icon">🛒</span>
-                        <span class="btn-text">Visit Market</span>
-                    </button>
-                </div>
-            `;
+        // Проверяем лимит раундов
+        if (this.round > this.maxRounds) {
+            const playerWon = this.player.health > this.opponent.health;
+            this.endGame(playerWon);
             return;
         }
         
-        nftsContainer.innerHTML = nfts.map(nft => `
-            <div class="inventory-item nft-item">
-                <div class="item-icon">🎨</div>
-                <div class="item-name">${nft.name}</div>
-                <div class="item-description">${nft.description || 'Exclusive NFT'}</div>
-                <div class="item-rarity legendary">Legendary</div>
-                <div class="item-actions">
-                    <button class="item-btn primary">View Details</button>
-                </div>
-            </div>
-        `).join('');
+        this.updateUI();
     }
     
-    loadUserItems(user) {
-        const itemsContainer = document.getElementById('user-items');
-        if (!itemsContainer) return;
+    selectAIAction() {
+        const opponentState = this.opponent;
+        const playerState = this.player;
         
-        // For now, show placeholder items
-        itemsContainer.innerHTML = `
-            <div class="empty-state">
-                <h3>⚔️ No Items Yet</h3>
-                <p>Items will be available in future updates</p>
-            </div>
-        `;
+        // Простая ИИ логика
+        if (opponentState.health < 30 && opponentState.energy >= 30) {
+            return 'heal'; // Лечимся если мало HP
+        }
+        
+        if (playerState.health < 50 && opponentState.energy >= 40) {
+            return 'special'; // Добиваем если у игрока мало HP
+        }
+        
+        if (opponentState.shield < 10 && opponentState.energy >= 10) {
+            return 'defend'; // Защищаемся если нет щита
+        }
+        
+        // Иначе атакуем
+        return 'attack';
     }
     
-    loadUserAchievements(user) {
-        const achievementsContainer = document.getElementById('user-achievements');
-        if (!achievementsContainer) return;
+    addBattleLog(message) {
+        this.battleLog.push({
+            text: message,
+            timestamp: Date.now()
+        });
         
-        const achievements = [
-            { id: 1, name: 'First Steps', description: 'Played your first game', unlocked: (user.games_played || 0) > 0 },
-            { id: 2, name: 'Social Butterfly', description: 'Referred 3 friends', unlocked: (user.referrals_count || 0) >= 3 },
-            { id: 3, name: 'Crypto Warrior', description: 'Connected TON wallet', unlocked: !!user.wallet_address },
-            { id: 4, name: 'High Roller', description: 'Earned 1000+ TSAR', unlocked: (user.tsar_balance || 0) >= 1000 },
-            { id: 5, name: 'Mission Master', description: 'Completed 10 missions', unlocked: (user.missions_completed || 0) >= 10 },
-            { id: 6, name: 'Elite Gamer', description: 'Reached level 10', unlocked: (user.level || 1) >= 10 }
+        // Ограничиваем лог
+        if (this.battleLog.length > 10) {
+            this.battleLog.shift();
+        }
+        
+        this.updateBattleLogDisplay();
+    }
+    
+    updateBattleLogDisplay() {
+        const logContent = document.getElementById('battle-log-content');
+        if (!logContent) return;
+        
+        logContent.innerHTML = this.battleLog.map(entry => 
+            `<div class="log-entry">${entry.text}</div>`
+        ).join('');
+        
+        logContent.scrollTop = logContent.scrollHeight;
+    }
+    
+    updateUI() {
+        // Здоровье игрока
+        const playerHealthBar = document.getElementById('player-health-bar');
+        const playerEnergyBar = document.getElementById('player-energy-bar');
+        
+        if (playerHealthBar) {
+            const healthPercent = (this.player.health / this.player.maxHealth) * 100;
+            playerHealthBar.style.width = `${healthPercent}%`;
+        }
+        
+        if (playerEnergyBar) {
+            const energyPercent = (this.player.energy / this.player.maxEnergy) * 100;
+            playerEnergyBar.style.width = `${energyPercent}%`;
+        }
+        
+        // Здоровье противника
+        const opponentHealthBar = document.getElementById('opponent-health-bar');
+        const opponentEnergyBar = document.getElementById('opponent-energy-bar');
+        
+        if (opponentHealthBar) {
+            const healthPercent = (this.opponent.health / this.opponent.maxHealth) * 100;
+            opponentHealthBar.style.width = `${healthPercent}%`;
+        }
+        
+        if (opponentEnergyBar) {
+            const energyPercent = (this.opponent.energy / this.opponent.maxEnergy) * 100;
+            opponentEnergyBar.style.width = `${energyPercent}%`;
+        }
+        
+        // Общая информация
+        const healthElement = document.getElementById('duel-health');
+        const energyElement = document.getElementById('duel-energy');
+        const roundElement = document.getElementById('duel-round');
+        const opponentNameElement = document.getElementById('opponent-name');
+        const battleStatusElement = document.getElementById('battle-status');
+        
+        if (healthElement) healthElement.textContent = this.player.health;
+        if (energyElement) energyElement.textContent = this.player.energy;
+        if (roundElement) roundElement.textContent = this.round;
+        if (opponentNameElement) opponentNameElement.textContent = this.opponent.name;
+        
+        if (battleStatusElement) {
+            battleStatusElement.textContent = this.playerTurn ? 'YOUR TURN' : 'OPPONENT TURN';
+        }
+        
+        // Обновляем доступность кнопок действий
+        this.updateActionButtons();
+    }
+    
+    updateActionButtons() {
+        const actions = [
+            { action: 'attack', cost: 20 },
+            { action: 'defend', cost: 10 },
+            { action: 'special', cost: 40 },
+            { action: 'heal', cost: 30 }
         ];
         
-        achievementsContainer.innerHTML = achievements.map(achievement => `
-            <div class="achievement-card ${achievement.unlocked ? 'unlocked' : ''}">
-                <div class="achievement-icon">${achievement.unlocked ? '🏆' : '🔒'}</div>
-                <div class="achievement-title">${achievement.name}</div>
-                <div class="achievement-description">${achievement.description}</div>
-                <div class="achievement-progress">
-                    ${achievement.unlocked ? 'Unlocked!' : 'Keep playing to unlock'}
-                </div>
-            </div>
-        `).join('');
+        actions.forEach(({ action, cost }) => {
+            const button = document.querySelector(`[onclick="duelAction('${action}')"]`);
+            if (button) {
+                const canUse = this.playerTurn && this.player.energy >= cost;
+                button.disabled = !canUse;
+                button.style.opacity = canUse ? '1' : '0.5';
+            }
+        });
     }
     
-    loadLeaderboard() {
-        const leaderboardList = document.getElementById('leaderboard-list');
-        if (!leaderboardList) return;
+    endGame(won) {
+        this.gameActive = false;
+        console.log(`🏁 Cyber Duel ended. Won: ${won}`);
         
-        // Mock leaderboard data
-        const leaderboardData = [
-            { rank: 1, name: 'VaultDweller', earnings: 10.5, games: 145, avatar: 'assets/avatar1.png' },
-            { rank: 2, name: 'WastelandWanderer', earnings: 8.3, games: 132, avatar: 'assets/avatar2.png' },
-            { rank: 3, name: 'TerminalHacker', earnings: 7.1, games: 98, avatar: 'assets/avatar3.png' },
-            { rank: 4, name: 'NukeCollector', earnings: 6.8, games: 87, avatar: 'assets/avatar4.png' },
-            { rank: 5, name: 'RadiationKing', earnings: 5.9, games: 76, avatar: 'assets/avatar5.png' }
-        ];
+        if (!userData) return;
         
-        leaderboardList.innerHTML = leaderboardData.map(player => `
-            <div class="leaderboard-item ${player.rank <= 3 ? `top-${player.rank}` : ''}">
-                <div class="rank-number ${player.rank <= 3 ? `top-${player.rank}` : ''}">${player.rank}</div>
-                <img class="user-avatar" src="${player.avatar}" alt="${player.name}" onerror="this.src='assets/default-avatar.png'">
-                <div class="user-info">
-                    <div class="user-name">${player.name}</div>
-                    <div class="user-stats-mini">
-                        <span>Games: ${player.games}</span>
-                    </div>
-                </div>
-                <div class="stat-value-lb">${player.earnings} TON</div>
-            </div>
-        `).join('');
+        // Рассчитываем награду только в CAPS
+        const baseReward = CONFIG.GAME_REWARDS['cyber-duel'];
+        const performanceMultiplier = won ? 1.5 : 0.5;
+        const roundBonus = this.round * 50;
+        
+        const capsReward = Math.floor(
+            (baseReward.min + Math.random() * (baseReward.max - baseReward.min)) * performanceMultiplier + roundBonus
+        );
+        
+        // Выдаем награду
+        const earnedCaps = capsEconomy.earnCaps(capsReward, 'cyber-duel');
+        
+        // Обновляем статистику
+        userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+        if (won) {
+            userData.gamesWon = (userData.gamesWon || 0) + 1;
+        }
+        
+        // Обновляем прогресс миссий
+        if (missionSystem) {
+            missionSystem.updateProgress('duel_completed', 1);
+        }
+        
+        updateUserDisplay();
+        
+        const resultMessage = won ? 
+            `🏆 VICTORY!\nYou defeated ${this.opponent.name}!\n+${earnedCaps} CAPS earned` :
+            `💀 DEFEAT!\n${this.opponent.name} won this time!\n+${earnedCaps} CAPS consolation`;
+        
+        showNotification(resultMessage, won ? 'success' : 'warning', 5000);
+        
+        setTimeout(() => {
+            this.closeGame();
+        }, 4000);
+    }
+    
+    closeGame() {
+        this.resetGame();
+        closeGame();
     }
 }
 
-// PWA Support
-class PWAManager {
+// ===== РАДИО СИСТЕМА =====
+class WastelandRadio {
     constructor() {
-        this.deferredPrompt = null;
-        this.isInstalled = false;
-    }
-    
-    init() {
-        // Check if already installed
-        this.checkInstallStatus();
+        this.messages = this.loadMessages();
+        this.nextId = this.getNextId();
+        this.onlineUsers = 2847;
         
-        // Listen for install prompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            this.deferredPrompt = e;
-            this.showInstallPrompt();
-        });
-        
-        // Listen for app installed
-        window.addEventListener('appinstalled', () => {
-            this.isInstalled = true;
-            this.hideInstallPrompt();
-            notificationManager.success('RUNNER Terminal installed successfully!', {
-                title: 'App Installed'
-            });
-        });
+        this.startRadioUpdates();
     }
     
-    checkInstallStatus() {
-        // Check if running as PWA
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            this.isInstalled = true;
-        }
-    }
-    
-    showInstallPrompt() {
-        if (this.isInstalled) return;
-        
-        const prompt = document.getElementById('pwa-prompt');
-        if (prompt) {
-            prompt.classList.remove('hidden');
-            
-            // Set up buttons
-            const installBtn = document.getElementById('pwa-install');
-            const dismissBtn = document.getElementById('pwa-dismiss');
-            
-            if (installBtn) {
-                installBtn.onclick = () => this.installApp();
-            }
-            
-            if (dismissBtn) {
-                dismissBtn.onclick = () => this.hideInstallPrompt();
-            }
-        }
-    }
-    
-    hideInstallPrompt() {
-        const prompt = document.getElementById('pwa-prompt');
-        if (prompt) {
-            prompt.classList.add('hidden');
-        }
-    }
-    
-    async installApp() {
-        if (!this.deferredPrompt) return;
-        
+    loadMessages() {
         try {
-            this.deferredPrompt.prompt();
-            const result = await this.deferredPrompt.userChoice;
-            
-            if (result.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
+            const saved = localStorage.getItem('wasteland_radio_v3');
+            if (saved) {
+                return JSON.parse(saved);
             }
-            
-            this.deferredPrompt = null;
-            this.hideInstallPrompt();
-            
-        } catch (error) {
-            console.error('Failed to install app:', error);
+        } catch (e) {
+            console.warn('Failed to load radio messages:', e);
+        }
+        
+        return this.getDefaultMessages();
+    }
+    
+    getDefaultMessages() {
+        return [
+            {
+                id: 1,
+                author: 'VAULT_DWELLER_101',
+                text: 'New CAPS trading opportunities in sector 7! 💰',
+                time: this.formatTime(Date.now() - 300000),
+                type: 'public',
+                timestamp: Date.now() - 300000
+            },
+            {
+                id: 2,
+                author: 'ANONYMOUS_USER',
+                text: 'Big announcement coming soon... HODL your CAPS! 🚀',
+                time: this.formatTime(Date.now() - 180000),
+                type: 'anonymous',
+                timestamp: Date.now() - 180000
+            },
+            {
+                id: 3,
+                author: 'TERMINAL_MASTER',
+                text: '[SPONSORED] 🎯 Learn advanced hacking techniques! Join our training program!',
+                time: this.formatTime(Date.now() - 120000),
+                type: 'sponsored',
+                timestamp: Date.now() - 120000
+            }
+        ];
+    }
+    
+    saveMessages() {
+        try {
+            localStorage.setItem('wasteland_radio_v3', JSON.stringify(this.messages.slice(0, 100)));
+        } catch (e) {
+            console.warn('Failed to save radio messages:', e);
         }
     }
-}
-
-// Global instances
-let stateManager;
-let apiService;
-let notificationManager;
-let tonConnectManager;
-let gameEngine;
-let missionManager;
-let marketManager;
-let uiManager;
-let pwaManager;
-
-// Global functions for HTML onclick handlers
-window.switchSection = (section) => uiManager.switchSection(section);
-window.startGame = (gameId) => gameEngine.startGame(gameId);
-window.closeGame = () => gameEngine.closeGame();
-window.openTONConnect = () => tonConnectManager.connect();
-window.closeSideMenu = () => uiManager.closeSideMenu();
-window.showProfile = () => notificationManager.info('Profile feature coming soon!');
-window.showSettings = () => notificationManager.info('Settings feature coming soon!');
-window.showHelp = () => notificationManager.info('Help feature coming soon!');
-window.showAbout = () => notificationManager.info('RUNNER Terminal v3.0 - Post-apocalyptic blockchain gaming platform');
-
-// Boot sequence
-async function bootSystem() {
-    try {
-        console.log('🚀 Booting RUNNER Terminal...');
+    
+    getNextId() {
+        return this.messages.length > 0 ? Math.max(...this.messages.map(m => m.id)) + 1 : 1;
+    }
+    
+    addMessage(text, author, type = 'public') {
+        const message = {
+            id: this.nextId++,
+            author: type === 'anonymous' ? 'ANONYMOUS_USER' : author,
+            text: text.substring(0, 200),
+            time: this.formatTime(Date.now()),
+            type: type,
+            timestamp: Date.now()
+        };
         
-        // Show boot messages
-        const bootMessages = [
-            'Initializing quantum processors...',
-            'Loading fusion protocols...',
-            'Establishing wasteland connection...',
-            'Calibrating crypto miners...',
-            'Activating terminal interface...',
-            'Loading user data...',
-            'Connecting to blockchain...',
-            'Systems ready!'
+        this.messages.unshift(message);
+        this.saveMessages();
+        this.displayMessages();
+        
+        console.log(`📻 Message added: ${type} by ${author}`);
+        return message;
+    }
+    
+    formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    displayMessages() {
+        const feedElement = document.getElementById('radio-feed');
+        if (!feedElement) return;
+        
+        feedElement.innerHTML = this.messages.map(msg => `
+            <div class="radio-message ${msg.type}">
+                <div class="message-header">
+                    <span class="message-author">${msg.author}</span>
+                    <span class="message-time">${msg.time}</span>
+                </div>
+                <div class="message-text">${msg.text}</div>
+            </div>
+        `).join('');
+        
+        feedElement.scrollTop = 0;
+    }
+    
+    startRadioUpdates() {
+        // Обновляем количество онлайн пользователей
+        setInterval(() => {
+            this.onlineUsers += Math.floor(Math.random() * 20) - 10;
+            this.onlineUsers = Math.max(1000, Math.min(5000, this.onlineUsers));
+            
+            const onlineElement = document.getElementById('radio-online');
+            if (onlineElement) {
+                onlineElement.textContent = this.onlineUsers.toLocaleString();
+            }
+            
+            // Иногда добавляем случайные сообщения
+            if (Math.random() < 0.2) {
+                this.addRandomMessage();
+            }
+        }, CONFIG.RADIO_UPDATE_INTERVAL);
+    }
+    
+    addRandomMessage() {
+        const messages = [
+            'Market looking bullish today! 📈',
+            'Found legendary loot in the north!',
+            'Anyone up for some dueling?',
+            'New settlement discovered!',
+            'CAPS price breaking resistance!',
+            'Radiation storm incoming...',
+            'Trading volume is pumping! 🚀',
+            'Who wants to party up?',
+            'Best hacker wins the prize!'
         ];
         
-        const bootTextElement = document.getElementById('boot-text');
-        const progressElement = document.getElementById('boot-progress');
+        const authors = [
+            'WANDERER_X', 'SCAV_KING', 'TRADER_99', 'VAULT_HUNTER',
+            'NEON_GHOST', 'CAPS_LORD', 'CYBER_MONK', 'DATA_NOMAD'
+        ];
         
-        for (let i = 0; i < bootMessages.length; i++) {
-            if (bootTextElement) {
-                bootTextElement.textContent = bootMessages[i];
-            }
-            
-            if (progressElement) {
-                progressElement.style.width = `${((i + 1) / bootMessages.length) * 100}%`;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        const author = authors[Math.floor(Math.random() * authors.length)];
         
-        // Initialize all systems
-        await initializeSystem();
-        
-        // Hide loading screen
-        const loadingScreen = document.getElementById('loading-screen');
-        const app = document.getElementById('app');
-        
-        if (loadingScreen && app) {
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                app.classList.remove('hidden');
-            }, 500);
-        }
-        
-        console.log('✅ RUNNER Terminal ready!');
-        
-    } catch (error) {
-        console.error('❌ Boot failed:', error);
-        notificationManager?.error('Failed to initialize RUNNER Terminal');
+        this.addMessage(message, author, 'public');
     }
 }
 
-async function initializeSystem() {
-    // Initialize managers
-    stateManager = new StateManager();
-    apiService = new APIService();
-    notificationManager = new NotificationManager();
-    tonConnectManager = new TONConnectManager();
-    gameEngine = new GameEngine();
-    missionManager = new MissionManager();
-    marketManager = new MarketManager();
-    uiManager = new UIManager();
-    pwaManager = new PWAManager();
+// ===== СИСТЕМА МИССИЙ =====
+class MissionSystem {
+    constructor() {
+        this.missions = [
+            {
+                id: 'terminal_novice',
+                title: 'Terminal Novice',
+                description: 'Complete 3 Terminal Hacking games',
+                type: 'daily',
+                requirement: 3,
+                current: 0,
+                reward: 500,
+                completed: false,
+                trackType: 'terminal_completed'
+            },
+            {
+                id: 'wings_pilot',
+                title: 'Wings Pilot',
+                description: 'Score 1000+ in Wasteland Wings',
+                type: 'challenge',
+                requirement: 1000,
+                current: 0,
+                reward: 750,
+                completed: false,
+                trackType: 'wings_score'
+            },
+            {
+                id: 'duel_warrior',
+                title: 'Cyber Warrior',
+                description: 'Win 5 Cyber Duels',
+                type: 'weekly',
+                requirement: 5,
+                current: 0,
+                reward: 1200,
+                completed: false,
+                trackType: 'duel_won'
+            },
+            {
+                id: 'radio_broadcaster',
+                title: 'Radio Star',
+                description: 'Send 10 radio messages',
+                type: 'weekly',
+                requirement: 10,
+                current: 0,
+                reward: 800,
+                completed: false,
+                trackType: 'radio_sent'
+            },
+            {
+                id: 'caps_collector',
+                title: 'CAPS Collector',
+                description: 'Accumulate 10,000 CAPS',
+                type: 'milestone',
+                requirement: 10000,
+                current: 0,
+                reward: 2000,
+                completed: false,
+                trackType: 'caps_balance'
+            }
+        ];
+        
+        this.loadProgress();
+        this.checkMissions();
+    }
     
-    // Initialize components
-    notificationManager.init();
-    await tonConnectManager.init();
-    gameEngine.init();
-    uiManager.init();
-    pwaManager.init();
-    
-    // Load initial data
-    await loadInitialData();
-    
-    // Set up state listeners
-    setupStateListeners();
-    
-    console.log('🔧 All systems initialized');
-}
-
-async function loadInitialData() {
-    try {
-        // Check API health
+    loadProgress() {
         try {
-            const health = await apiService.healthCheck();
-            console.log('✅ API connected:', health);
-        } catch (error) {
-            console.warn('⚠️ API not available, using offline mode');
-        }
-        
-        // Load user data from Telegram
-        if (window.Telegram?.WebApp) {
-            const webApp = window.Telegram.WebApp;
-            webApp.ready();
-            
-            const user = webApp.initDataUnsafe?.user;
-            if (user) {
-                try {
-                    const response = await apiService.getUser(user.id);
-                    if (response.success) {
-                        stateManager.setUser(response.data);
-                    } else {
-                        // Create new user
-                        const newUser = {
-                            user_id: user.id,
-                            username: user.username,
-                            first_name: user.first_name,
-                            last_name: user.last_name,
-                            ton_balance: 0,
-                            tsar_balance: 0,
-                            bottle_caps: 1250,
-                            level: 1,
-                            games_played: 0,
-                            missions_completed: 0
-                        };
-                        stateManager.setUser(newUser);
+            const saved = localStorage.getItem('mission_progress_v3');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                this.missions.forEach(mission => {
+                    const savedMission = progress.find(p => p.id === mission.id);
+                    if (savedMission) {
+                        mission.current = savedMission.current || 0;
+                        mission.completed = savedMission.completed || false;
                     }
-                } catch (error) {
-                    console.error('Failed to load user data:', error);
-                    // Use fallback user data
-                    stateManager.setUser({
-                        user_id: user.id,
-                        first_name: user.first_name || 'Anonymous',
-                        bottle_caps: 1250,
-                        level: 1
-                    });
-                }
+                });
             }
-        } else {
-            // Development mode - use test user
-            stateManager.setUser({
-                user_id: 12345,
-                first_name: 'Test User',
-                bottle_caps: 1250,
-                tsar_balance: 100,
-                level: 3,
-                games_played: 5,
-                wins: 3,
-                losses: 2
-            });
+        } catch (e) {
+            console.warn('Failed to load mission progress:', e);
         }
-        
-        // Update UI
-        uiManager.updateUserDisplay();
-        
-    } catch (error) {
-        console.error('Failed to load initial data:', error);
     }
-}
-
-function setupStateListeners() {
-    // Listen for state changes
-    stateManager.subscribe('userChanged', (user) => {
-        uiManager.updateUserDisplay();
-        missionManager.updateMissionProgress();
-    });
     
-    stateManager.subscribe('walletChanged', (wallet) => {
-        tonConnectManager.updateWalletUI();
-    });
+    saveProgress() {
+        try {
+            const progress = this.missions.map(m => ({
+                id: m.id,
+                current: m.current,
+                completed: m.completed
+            }));
+            localStorage.setItem('mission_progress_v3', JSON.stringify(progress));
+        } catch (e) {
+            console.warn('Failed to save mission progress:', e);
+        }
+    }
     
-    stateManager.subscribe('sectionChanged', (section) => {
-        uiManager.loadSectionData(section);
-    });
+    updateProgress(trackType, value) {
+        this.missions.forEach(mission => {
+            if (mission.completed || mission.trackType !== trackType) return;
+            
+            if (trackType === 'caps_balance') {
+                mission.current = userData?.capsBalance || 0;
+            } else {
+                mission.current += (value || 1);
+            }
+            
+            // Проверяем завершение
+            if (mission.current >= mission.requirement) {
+                this.completeMission(mission.id);
+            }
+        });
+        
+        this.saveProgress();
+        this.checkMissions();
+    }
+    
+    completeMission(missionId) {
+        const mission = this.missions.find(m => m.id === missionId);
+        if (!mission || mission.completed) return;
+        
+        mission.completed = true;
+        
+        // Выдаем награду в CAPS
+        const earnedCaps = capsEconomy.earnCaps(mission.reward, `mission-${missionId}`);
+        
+        showNotification(
+            `🎉 MISSION COMPLETED!\n${mission.title}\n+${earnedCaps} CAPS earned!`,
+            'success',
+            5000
+        );
+        
+        console.log(`✅ Mission completed: ${mission.title}`);
+    }
+    
+    checkMissions() {
+        // Проверяем текущие значения
+        if (userData) {
+            this.updateProgress('caps_balance', 0); // Обновляем без изменения значения
+        }
+    }
 }
 
-// Initialize when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootSystem);
-} else {
-    bootSystem();
+// ===== ПОЛЬЗОВАТЕЛЬСКИЕ ДАННЫЕ =====
+function loadUserData() {
+    try {
+        const saved = localStorage.getItem('runner_user_v3');
+        if (saved) {
+            userData = JSON.parse(saved);
+            
+            // Миграция данных
+            if (!userData.capsBalance) userData.capsBalance = CONFIG.CAPS_INITIAL_AMOUNT;
+            if (!userData.tsarBalance) userData.tsarBalance = 0; // TSAR не выдается бесплатно!
+            if (!userData.gamesPlayed) userData.gamesPlayed = 0;
+            if (!userData.gamesWon) userData.gamesWon = 0;
+            if (!userData.totalCapsEarned) userData.totalCapsEarned = 0;
+        }
+    } catch (e) {
+        console.warn('Failed to load user data:', e);
+    }
+    
+    if (!userData) {
+        userData = {
+            id: 'dweller_' + Date.now(),
+            name: 'DWELLER_' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            
+            // Игровая валюта (можно заработать)
+            capsBalance: CONFIG.CAPS_INITIAL_AMOUNT,
+            totalCapsEarned: CONFIG.CAPS_INITIAL_AMOUNT,
+            
+            // Реальные токены (только покупка)
+            tsarBalance: 0,              // Реальный TSAR токен
+            tonBalance: 0,               // TON
+            starsBalance: 0,             // Telegram Stars
+            
+            // Статистика
+            level: 1,
+            gamesPlayed: 0,
+            gamesWon: 0,
+            referrals: 0,
+            radioMessagesSent: 0,
+            
+            // Временные метки
+            created: Date.now(),
+            lastActive: Date.now(),
+            
+            // Настройки
+            soundEnabled: true,
+            theme: 'cyber'
+        };
+        
+        console.log('👤 New user created:', userData.name);
+        showNotification(`🎉 Welcome to RUNNER Terminal!\nYou received ${CONFIG.CAPS_INITIAL_AMOUNT} CAPS to start!`, 'success', 6000);
+    }
+    
+    saveUserData();
+    updateUserDisplay();
 }
 
-// Error handling
-window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
-    if (notificationManager) {
-        notificationManager.error('An unexpected error occurred');
+function saveUserData() {
+    if (!userData) return;
+    
+    userData.lastActive = Date.now();
+    
+    try {
+        localStorage.setItem('runner_user_v3', JSON.stringify(userData));
+    } catch (e) {
+        console.error('❌ Failed to save user data:', e);
     }
-});
+}
 
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-    if (notificationManager) {
-        notificationManager.error('Failed to complete operation');
-    }
-});
-
-// Export for debugging
-if (typeof window !== 'undefined') {
-    window.RUNNER = {
-        stateManager,
-        apiService,
-        notificationManager,
-        tonConnectManager,
-        gameEngine,
-        missionManager,
-        marketManager,
-        uiManager,
-        pwaManager,
-        CONFIG
+function updateUserDisplay() {
+    if (!userData) return;
+    
+    // Основные балансы
+    const updates = {
+        'header-caps': capsEconomy ? capsEconomy.formatNumber(userData.capsBalance) : userData.capsBalance,
+        'header-tsar': tsarManager ? tsarManager.formatTsarAmount(userData.tsarBalance) : userData.tsarBalance,
+        'header-level': userData.level,
+        'dash-caps': capsEconomy ? capsEconomy.formatNumber(userData.capsBalance) : userData.capsBalance,
+        'dash-tsar': tsarManager ? tsarManager.formatTsarAmount(userData.tsarBalance) : userData.tsarBalance,
+        'dash-stars': userData.starsBalance,
+        'dash-games': userData.gamesPlayed,
+        'dash-rank': capsEconomy ? capsEconomy.calculateUserRank() : '#∞',
+        'user-caps-display': capsEconomy ? capsEconomy.formatNumber(userData.capsBalance) : userData.capsBalance,
+        'tsar-display': tsarManager ? tsarManager.formatTsarAmount(userData.tsarBalance) : userData.tsarBalance,
+        'portfolio-caps': capsEconomy ? capsEconomy.formatNumber(userData.capsBalance) : userData.capsBalance,
+        'portfolio-ton': userData.tonBalance.toFixed(3)
     };
+    
+    Object.entries(updates).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
+    
+    // Винрейт
+    const winRate = userData.gamesPlayed > 0 ? 
+        ((userData.gamesWon / userData.gamesPlayed) * 100).toFixed(1) : 0;
+    
+    const winRateElements = ['dash-winrate', 'profile-winrate'];
+    winRateElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = `${winRate}%`;
+    });
+    
+    // Обновляем привилегии TSAR
+    if (tsarManager) {
+        tsarManager.userTsarBalance = userData.tsarBalance;
+        tsarManager.updatePrivileges();
+    }
+    
+    console.log('📊 User display updated');
 }
 
-console.log('📱 RUNNER Terminal v3.0 loaded successfully');
+// ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
+
+// Функции для HTML onclick
+window.startGame = function(gameType) {
+    console.log(`🎮 Starting game: ${gameType}`);
+    
+    switch (gameType) {
+        case 'terminal-hacking':
+            openGameModal('terminal-hacking-modal');
+            if (terminalGame) terminalGame.startGame();
+            break;
+            
+        case 'wasteland-wings':
+            openGameModal('wasteland-wings-modal');
+            if (wingsGame) wingsGame.startGame();
+            break;
+            
+        case 'cyber-duel':
+            openGameModal('cyber-duel-modal');
+            if (cyberDuel) cyberDuel.startGame();
+            break;
+            
+        case 'caps-trading':
+            openGameModal('caps-trading-modal');
+            if (chartEngine) {
+                setTimeout(() => chartEngine.initChart(), 100);
+            }
+            break;
+            
+        default:
+            showNotification(`🚧 Game ${gameType} not implemented yet`, 'info');
+    }
+};
+
+window.closeGame = function() {
+    console.log('🚪 Closing game...');
+    
+    // Останавливаем все игры
+    if (terminalGame) terminalGame.gameActive = false;
+    if (wingsGame) wingsGame.gameActive = false;
+    if (cyberDuel) cyberDuel.gameActive = false;
+    
+    // Закрываем все модальные окна
+    document.querySelectorAll('.game-modal').forEach(modal => {
+        modal.classList.remove('active');
+    });
+    
+    currentGame = null;
+    
+    if (audioManager) audioManager.beep();
+};
+
+// Функции для Terminal Hacking
+window.selectPassword = function(word) {
+    if (terminalGame) {
+        terminalGame.selectPassword(word);
+    }
+};
+
+window.useBracketHint = function(element) {
+    if (terminalGame) {
+        terminalGame.useBracketHint(element);
+    }
+};
+
+// Функции для Wasteland Wings
+window.wingsAction = function(action) {
+    if (!wingsGame || !wingsGame.gameActive) return;
+    
+    switch (action) {
+        case 'shoot':
+            wingsGame.shoot();
+            break;
+        case 'up':
+        case 'down':
+        case 'left':
+        case 'right':
+            wingsGame.movePlayer(action);
+            break;
+    }
+};
+
+// Функции для Cyber Duel
+window.duelAction = function(action) {
+    if (cyberDuel && cyberDuel.gameActive && cyberDuel.playerTurn) {
+        cyberDuel.performAction(action);
+    }
+};
+
+// TSAR функции
+window.buyTsarWithStars = function() {
+    if (tsarManager) {
+        tsarManager.buyTsarWithStars();
+    }
+};
+
+window.connectTonWallet = function() {
+    if (tsarManager) {
+        tsarManager.connectTonWallet();
+    }
+};
+
+// ===== ОСНОВНЫЕ ФУНКЦИИ =====
+function openGameModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        currentGame = modalId;
+        console.log(`🎯 Opened modal: ${modalId}`);
+    }
+}
+
+function showSection(section) {
+    console.log(`📂 Showing section: ${section}`);
+    
+    // Убираем активный класс со всех разделов
+    document.querySelectorAll('.content-section').forEach(sec => {
+        sec.classList.remove('active');
+    });
+    
+    // Убираем активный класс с кнопок навигации
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Показываем выбранный раздел
+    const targetSection = document.getElementById(`${section}-section`);
+    const navButton = document.querySelector(`[data-section="${section}"]`);
+    
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    if (navButton) {
+        navButton.classList.add('active');
+    }
+    
+    // Загружаем контент раздела
+    loadSectionContent(section);
+    
+    if (audioManager) audioManager.beep();
+}
+
+function loadSectionContent(section) {
+    switch (section) {
+        case 'dashboard':
+            updateDashboard();
+            break;
+        case 'radio':
+            if (wastelandRadio) wastelandRadio.displayMessages();
+            break;
+        case 'caps':
+            if (capsEconomy) capsEconomy.updateDisplays();
+            break;
+        case 'tsar':
+            if (tsarManager) tsarManager.updateTsarDisplays();
+            break;
+    }
+}
+
+function updateDashboard() {
+    if (!userData) return;
+    
+    // Обновляем дашборд
+    const dailyProgress = {
+        games: Math.min(userData.gamesPlayed || 0, 5),
+        caps: userData.totalCapsEarned || 0,
+        radio: Math.min(userData.radioMessagesSent || 0, 10)
+    };
+    
+    const dailyElements = {
+        'daily-games': `${dailyProgress.games}/5`,
+        'daily-caps': capsEconomy ? capsEconomy.formatNumber(dailyProgress.caps) : dailyProgress.caps,
+        'daily-radio': `${dailyProgress.radio}/10`
+    };
+    
+    Object.entries(dailyElements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
+}
+
+function showNotification(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('notification-system');
+    if (!container) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Показываем с анимацией
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Автоматически убираем
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, duration);
+    
+    console.log(`📢 Notification: ${message} (${type})`);
+}
+
+// ===== РАДИО ФУНКЦИИ =====
+function sendRadioMessage() {
+    const messageInput = document.getElementById('radio-message-input');
+    if (!messageInput || !wastelandRadio) return;
+    
+    const messageText = messageInput.value.trim();
+    
+    if (!messageText) {
+        showNotification('❌ Message cannot be empty', 'error');
+        return;
+    }
+    
+    if (!userData) return;
+    
+    // Проверяем стоимость и возможность отправки
+    const cost = CONFIG.RADIO_COSTS[messageType];
+    
+    if (messageType === 'anonymous' && userData.tsarBalance < cost) {
+        showNotification(`❌ Anonymous messages require ${cost.toLocaleString()} TSAR tokens`, 'error');
+        return;
+    }
+    
+    if (messageType === 'sponsored' && userData.tsarBalance < cost) {
+        showNotification(`❌ Sponsored messages require ${cost.toLocaleString()} TSAR tokens`, 'error');
+        return;
+    }
+    
+    // Списываем TSAR за премиум сообщения
+    if (cost > 0) {
+        const spendResult = tsarManager.spendTsar(cost, `radio-${messageType}`);
+        if (!spendResult.success) {
+            showNotification(`❌ ${spendResult.message}`, 'error');
+            return;
+        }
+    }
+    
+    // Добавляем сообщение
+    wastelandRadio.addMessage(messageText, userData.name, messageType);
+    
+    // Очищаем форму
+    messageInput.value = '';
+    const charCount = document.getElementById('char-count');
+    if (charCount) charCount.textContent = '0/200';
+    
+    // Обновляем статистику
+    userData.radioMessagesSent = (userData.radioMessagesSent || 0) + 1;
+    
+    // Обновляем прогресс миссий
+    if (missionSystem) {
+        missionSystem.updateProgress('radio_sent', 1);
+    }
+    
+    updateUserDisplay();
+    showNotification('📻 Message transmitted successfully!', 'success');
+    
+    console.log(`📻 Radio message sent: ${messageType}`);
+}
+
+// ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
+function setupEventHandlers() {
+    console.log('🔧 Setting up event handlers...');
+    
+    setupNavigation();
+    setupRadioHandlers();
+    setupGameControls();
+    setupTsarHandlers();
+}
+
+function setupNavigation() {
+    // Навигационные кнопки
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = btn.dataset.section;
+            showSection(section);
+        });
+    });
+    
+    console.log('🧭 Navigation handlers set up');
+}
+
+function setupRadioHandlers() {
+    // Типы сообщений
+    document.querySelectorAll('.msg-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            document.querySelectorAll('.msg-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            messageType = btn.dataset.type;
+            
+            if (audioManager) audioManager.click();
+            console.log(`📻 Message type changed to: ${messageType}`);
+        });
+    });
+    
+    // Кнопка отправки
+    const transmitBtn = document.getElementById('transmit-btn');
+    if (transmitBtn) {
+        transmitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            sendRadioMessage();
+        });
+    }
+    
+    // Счетчик символов
+    const messageInput = document.getElementById('radio-message-input');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            const count = this.value.length;
+            const counter = document.getElementById('char-count');
+            if (counter) {
+                counter.textContent = `${count}/200`;
+            }
+        });
+    }
+    
+    console.log('📻 Radio handlers set up');
+}
+
+function setupGameControls() {
+    // Управление Wasteland Wings
+    document.querySelectorAll('.control-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const action = btn.dataset.action;
+            
+            if (action === 'shoot') {
+                if (wingsGame) wingsGame.shoot();
+            } else {
+                if (wingsGame) wingsGame.movePlayer(action);
+            }
+        });
+    });
+    
+    console.log('🎮 Game control handlers set up');
+}
+
+function setupTsarHandlers() {
+    // Покупка TSAR
+    const buyTsarBtns = document.querySelectorAll('[onclick*="buyTsarWithStars"]');
+    buyTsarBtns.forEach(btn => {
+        btn.removeAttribute('onclick'); // Убираем старые обработчики
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (tsarManager) tsarManager.buyTsarWithStars();
+        });
+    });
+    
+    // Подключение кошелька
+    const connectBtns = document.querySelectorAll('[onclick*="connectTonWallet"]');
+    connectBtns.forEach(btn => {
+        btn.removeAttribute('onclick'); // Убираем старые обработчики
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (tsarManager) tsarManager.connectTonWallet();
+        });
+    });
+    
+    console.log('⭐ TSAR handlers set up');
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+function initializeApp() {
+    console.log('🚀 Initializing RUNNER Terminal v3.0...');
+    
+    // Создаем все системы
+    audioManager = new AudioManager();
+    capsEconomy = new CapsEconomy();
+    tsarManager = new TsarManager();
+    wastelandRadio = new WastelandRadio();
+    terminalGame = new TerminalHackingGame();
+    wingsGame = new WastelandWingsGame();
+    cyberDuel = new CyberDuelGame();
+    missionSystem = new MissionSystem();
+    
+    // Загружаем пользовательские данные
+    loadUserData();
+    
+    // Настраиваем обработчики
+    setupEventHandlers();
+    
+    // Показываем дашборд по умолчанию
+    showSection('dashboard');
+    
+    // Инициализируем аудио при первом взаимодействии
+    const initAudio = () => {
+        if (audioManager) audioManager.init();
+    };
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('touchstart', initAudio, { once: true });
+    
+    // Интеграция с Telegram
+    if (window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp;
+        webApp.ready();
+        webApp.expand();
+        
+        const telegramUser = webApp.initDataUnsafe?.user;
+        if (telegramUser && userData) {
+            userData.name = telegramUser.username || userData.name;
+            userData.telegramId = telegramUser.id;
+            userData.firstName = telegramUser.first_name;
+            saveUserData();
+            console.log('📱 Telegram user integrated:', telegramUser.username);
+        }
+    }
+    
+    console.log('✅ RUNNER Terminal v3.0 initialized successfully!');
+    showNotification('🎮 RUNNER Terminal v3.0 online!\nEarn CAPS, trade, and dominate the wasteland!', 'success', 4000);
+}
+
+// ===== ЗАПУСК =====
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
+
+// Предотвращение зума на мобильных
+document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+console.log('🎮 RUNNER Terminal v3.0 - Script loaded with real TSAR token integration');
+console.log('📄 TSAR Contract:', CONFIG.TSAR_CONTRACT);
