@@ -1,686 +1,454 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>RUNNER - KILOTON TERMINAL</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RUNNER Terminal</title>
+    <meta name="description" content="Post-apocalyptic blockchain gaming platform">
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00ff41">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="assets/runner-icon.png">
+    <link rel="apple-touch-icon" href="assets/runner-icon.png">
+    
+    <!-- Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- TON Connect -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <link href="https://fonts.cdnfonts.com/css/monofonto" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/mobile.css">
 </head>
 <body>
-    <div class="pipboy-container">
-        <!-- Верхняя рамка -->
-        <div class="pipboy-frame top-frame">
-            <div class="frame-details">
-                <span class="frame-text">RUNNER TERMINAL RT-2077 v2.1</span>
-                <span class="frame-text">BLOCKCHAIN-POWERED GAMING SYSTEM</span>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="terminal-boot">
+            <div class="boot-logo">
+                <img src="assets/runner-icon.png" alt="RUNNER Terminal">
+                <h1>RUNNER TERMINAL</h1>
             </div>
-        </div>
-        
-        <!-- Основной экран -->
-        <div class="pipboy-screen">
-            <!-- Упрощенный приветственный экран -->
-            <div id="welcome-screen" class="screen active">
-                <div class="retro-terminal" id="welcome-terminal">
-                    <div class="skip-notice">
-                        <span class="skip-text">TAP SCREEN TO SKIP</span>
-                    </div>
-                    
-                    <div class="terminal-header">
-                        <div class="header-line">KILOTON INDUSTRIES (TM) TERMLINK</div>
-                        <div class="header-line">COPYRIGHT 2024-2077</div>
-                        <div class="separator-line">=====================================</div>
-                    </div>
-                    
-                    <div class="runner-logo-section">
-                        <div class="runner-title" id="runner-title">RUNNER</div>
-                        <div class="logo-subtitle">BLOCKCHAIN GAMING TERMINAL</div>
-                    </div>
-                    
-                    <div class="boot-sequence" id="boot-sequence">
-                        <div class="boot-line" id="boot-line-1"></div>
-                        <div class="boot-line" id="boot-line-2"></div>
-                        <div class="boot-line" id="boot-line-3"></div>
-                        <div class="boot-line" id="boot-line-4"></div>
-                        <div class="boot-line" id="boot-line-5"></div>
-                    </div>
-                    
-                    <div class="system-check" id="system-check" style="display: none;">
-                        <div class="check-item">
-                            <span class="check-label">BLOCKCHAIN CONNECTION:</span>
-                            <span class="check-status">TON NETWORK OK</span>
-                        </div>
-                        <div class="check-item">
-                            <span class="check-label">TSAR TOKEN:</span>
-                            <span class="check-status">ACTIVE OK</span>
-                        </div>
-                        <div class="check-item">
-                            <span class="check-label">GAMING PROTOCOLS:</span>
-                            <span class="check-status">LOADED OK</span>
-                        </div>
-                    </div>
-                    
-                    <div class="continue-section" id="continue-section" style="display: none;">
-                        <div class="continue-text">PRESS ANY KEY TO CONTINUE</div>
-                        <div class="cursor-blink">_</div>
-                    </div>
+            <div class="boot-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="boot-progress"></div>
                 </div>
-            </div>
-            
-            <!-- Главный экран БЕЗ верхней панели -->
-            <div id="main-screen" class="screen">
-                <!-- Заголовок упрощенный -->
-                <div class="screen-header-simple">
-                    <h1 class="yellow-text">RUNNER</h1>
-                    <div class="header-details">KILOTON GAMING TERMINAL v2.1 | STATUS: ONLINE</div>
-                </div>
-                
-                <!-- Область контента (поднята выше) -->
-                <div class="content-area-raised" id="content-area">
-                    <!-- Дефолтный текст -->
-                    <div class="default-content-raised" id="default-content">
-                        <p>SELECT A SECTION FROM MENU</p>
-                        <p>KILOTON INDUSTRIES (C) 2024</p>
-                        <p>BLOCKCHAIN GAMING ECOSYSTEM</p>
-                    </div>
-
-                    <!-- STATUS -->
-                    <div id="stat-section" class="section-content">
-                        <h2 class="yellow-text">PLAYER STATUS</h2>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-label">LEVEL</div>
-                                <div class="stat-value yellow-text" id="player-level">15</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label">BOTTLE CAPS</div>
-                                <div class="stat-value yellow-text" id="caps-value">1250</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label">TON BALANCE</div>
-                                <div class="stat-value yellow-text" id="ton-stat">0.542</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label">TSAR BALANCE</div>
-                                <div class="stat-value yellow-text" id="tsar-stat">1,250</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label">REFERRALS</div>
-                                <div class="stat-value yellow-text" id="referral-count">0</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-label">CLAN STATUS</div>
-                                <div class="stat-value yellow-text" id="clan-status">NO CLAN</div>
-                            </div>
-                        </div>
-                        
-                        <div class="referral-section">
-                            <h3 class="section-subtitle">REFERRAL SYSTEM</h3>
-                            <div class="referral-info">
-                                <p>Your referral link:</p>
-                                <div class="referral-link" id="referral-link">https://t.me/runner_bot?start=REF_USER123</div>
-                                <button class="copy-btn" id="copy-referral">COPY LINK</button>
-                            </div>
-                            <div class="referral-rewards">
-                                <div class="reward-item">Level 1: 10% from referral earnings</div>
-                                <div class="reward-item">Level 2: 5% from sub-referrals</div>
-                                <div class="reward-item">Level 3: 2% from sub-sub-referrals</div>
-                            </div>
-                        </div>
-                        
-                        <div class="clan-section">
-                            <h3 class="section-subtitle">CLAN MANAGEMENT</h3>
-                            <div class="clan-actions">
-                                <button class="clan-btn" id="create-clan-btn">CREATE CLAN (1000 TSAR)</button>
-                                <button class="clan-btn" id="join-clan-btn">JOIN CLAN</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- WALLET БЕЗ лишних описаний -->
-                    <div id="wallet-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">CRYPTO WALLET</h2>
-                        
-                        <div class="wallet-connection">
-                            <div class="connection-status" id="wallet-status">
-                                <span class="status-text">WALLET: DISCONNECTED</span>
-                                <button class="connect-btn" id="connect-wallet">CONNECT TON WALLET</button>
-                            </div>
-                        </div>
-                        
-                        <div class="crypto-balance">
-                            <div class="balance-item">
-                                <div class="balance-info">
-                                    <span class="crypto-icon">[TON]</span>
-                                    <span class="crypto-name">TONCOIN</span>
-                                </div>
-                                <span class="crypto-amount" id="ton-balance">0.542</span>
-                            </div>
-                            <div class="balance-item">
-                                <div class="balance-info">
-                                    <span class="crypto-icon">[TSR]</span>
-                                    <span class="crypto-name">TSAR TOKEN</span>
-                                </div>
-                                <span class="crypto-amount" id="tsar-balance">1,250</span>
-                            </div>
-                            <div class="balance-item">
-                                <div class="balance-info">
-                                    <span class="crypto-icon">[STR]</span>
-                                    <span class="crypto-name">TELEGRAM STARS</span>
-                                </div>
-                                <span class="crypto-amount" id="stars-balance">45</span>
-                            </div>
-                        </div>
-                        
-                        <div class="wallet-actions">
-                            <button class="wallet-btn primary" id="deposit-btn">
-                                <span class="btn-icon">[IN]</span>
-                                <span class="btn-text">DEPOSIT</span>
-                            </button>
-                            <button class="wallet-btn secondary" id="withdraw-btn">
-                                <span class="btn-icon">[OUT]</span>
-                                <span class="btn-text">WITHDRAW</span>
-                            </button>
-                            <button class="wallet-btn special" id="stake-tsar-btn">
-                                <span class="btn-icon">[STK]</span>
-                                <span class="btn-text">STAKE TSAR</span>
-                            </button>
-                            <button class="wallet-btn special" id="add-tokens-btn">
-                                <span class="btn-icon">[ADD]</span>
-                                <span class="btn-text">ADD TOKENS</span>
-                            </button>
-                        </div>
-                        
-                        <div class="listing-panel" id="listing-panel">
-                            <h3 class="panel-title">TOKEN LISTING</h3>
-                            <div class="listing-info">
-                                <p>List your Jetton in RUNNER ecosystem</p>
-                                <p class="listing-price">Cost: $50 worth of TSAR (sent to burn address)</p>
-                            </div>
-                            <button class="listing-btn" id="list-token-btn">LIST YOUR TOKEN</button>
-                        </div>
-                    </div>
-
-                    <!-- RUNNER -->
-                    <div id="runner-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">RUNNER MISSIONS HUB</h2>
-                        <div class="runner-description">
-                            <p class="yellow-text">Complete missions to earn cryptocurrency</p>
-                            <p class="runner-info">Transform routine tasks into profitable adventures</p>
-                        </div>
-                        
-                        <div class="quester-panel">
-                            <h3 class="panel-title">AVAILABLE MISSIONS</h3>
-                            <div class="missions-filter">
-                                <select class="filter-select" id="mission-filter">
-                                    <option value="all">ALL MISSIONS</option>
-                                    <option value="telegram">TELEGRAM TASKS</option>
-                                    <option value="social">SOCIAL MEDIA</option>
-                                    <option value="trading">TRADING TASKS</option>
-                                </select>
-                                <span class="missions-count" id="missions-count">5 active missions</span>
-                            </div>
-                            
-                            <div class="missions-list" id="missions-list">
-                                <!-- Миссии загружаются динамически -->
-                            </div>
-                        </div>
-                        
-                        <div class="advertiser-panel" id="advertiser-panel">
-                            <h3 class="panel-title">MISSION CONTROL CENTER</h3>
-                            <div class="access-requirement">
-                                <span class="requirement-text">ACCESS REQUIREMENT: 350,000+ TSAR TOKENS</span>
-                                <span class="access-status" id="advertiser-access">LOCKED</span>
-                            </div>
-                            <button class="create-mission-btn" id="create-mission-btn" disabled>CREATE MISSION</button>
-                        </div>
-                        
-                        <div class="runner-stats">
-                            <div class="stat-row">
-                                <span class="stat-name">Completed Missions:</span>
-                                <span class="stat-value" id="completed-missions">0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Total Earned:</span>
-                                <span class="stat-value" id="total-earned">0 TON</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-name">Referral Earnings:</span>
-                                <span class="stat-value" id="referral-earnings">0 TON</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- WASTELAND MARKET -->
-                    <div id="shop-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">WASTELAND MARKET</h2>
-                        <p class="yellow-text">Decentralized marketplace for digital assets</p>
-                        
-                        <div class="market-tabs">
-                            <button class="tab-btn active" data-tab="listings">GENERAL LISTINGS</button>
-                            <button class="tab-btn" data-tab="nft">NFT COLLECTION</button>
-                            <button class="tab-btn" data-tab="gifts">TELEGRAM GIFTS</button>
-                        </div>
-                        
-                        <div class="market-controls">
-                            <button class="market-btn" id="create-listing-btn">CREATE LISTING</button>
-                            <button class="market-btn" id="sell-nft-btn">SELL NFT</button>
-                            <button class="market-btn" id="sell-gift-btn">SELL GIFT</button>
-                        </div>
-                        
-                        <div class="market-feed" id="market-feed">
-                            <div class="market-header">
-                                <span class="market-title">ACTIVE LISTINGS</span>
-                                <span class="market-info">Commission: 2.5%</span>
-                            </div>
-                            <div class="listings-container" id="listings-container">
-                                <!-- Листинги -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- INVENTORY -->
-                    <div id="inventory-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">INVENTORY & CRAFTING</h2>
-                        
-                        <div class="crafting-status">
-                            <div class="craft-access">
-                                <span class="access-text">CRAFTING ACCESS: </span>
-                                <span class="access-status" id="craft-status">LOCKED</span>
-                            </div>
-                            <div class="craft-requirement">Requires 500,000+ TSAR tokens</div>
-                        </div>
-                        
-                        <div class="inventory-tabs">
-                            <button class="inv-tab active" data-tab="items">ITEMS</button>
-                            <button class="inv-tab" data-tab="nfts">NFTs</button>
-                            <button class="inv-tab" data-tab="gifts">GIFTS</button>
-                        </div>
-                        
-                        <div class="inventory-grid" id="inventory-grid">
-                            <!-- Предметы загружаются динамически -->
-                        </div>
-                    </div>
-
-                    <!-- RADIO -->
-                    <div id="radio-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">WASTELAND RADIO</h2>
-                        
-                        <div class="radio-feed" id="radio-feed">
-                            <div class="feed-header">
-                                <span class="feed-title">WASTELAND TRANSMISSIONS</span>
-                                <button class="refresh-btn" id="refresh-radio">REFRESH</button>
-                            </div>
-                            <div class="feed-content" id="feed-content">
-                                <!-- Сообщения -->
-                            </div>
-                        </div>
-                        
-                        <div class="message-composer">
-                            <h3 class="composer-title">COMPOSE MESSAGE</h3>
-                            <div class="message-input-area">
-                                <textarea id="radio-message" placeholder="Type your message here..." maxlength="200"></textarea>
-                                <div class="message-controls">
-                                    <span class="char-counter" id="char-counter">0/200</span>
-                                    <button class="send-btn" id="send-message">TRANSMIT</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="message-options-panel">
-                            <h3 class="options-title">TRANSMISSION OPTIONS</h3>
-                            <div class="message-options">
-                                <button class="message-type-btn active" data-type="public">
-                                    <div class="btn-content">
-                                        <span class="btn-icon">[PUB]</span>
-                                        <span class="btn-text">PUBLIC MESSAGE</span>
-                                    </div>
-                                    <span class="btn-cost">FREE</span>
-                                </button>
-                                <button class="message-type-btn" data-type="anonymous">
-                                    <div class="btn-content">
-                                        <span class="btn-icon">[ANON]</span>
-                                        <span class="btn-text">ANONYMOUS</span>
-                                    </div>
-                                    <span class="btn-cost">5000 TSAR</span>
-                                </button>
-                                <button class="message-type-btn premium" data-type="sponsored">
-                                    <div class="btn-content">
-                                        <span class="btn-icon">[AD]</span>
-                                        <span class="btn-text">SPONSORED</span>
-                                    </div>
-                                    <span class="btn-cost">10000 TSAR</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- NUCLEAR CHARGE -->
-                    <div id="nuclear-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">NUCLEAR CHARGE</h2>
-                        <div class="trading-description">
-                            <p class="yellow-text">Advanced crypto trading terminal</p>
-                            <p class="trading-info">Trade TON, TSAR and listed tokens</p>
-                        </div>
-                        
-                        <div class="wallet-connect-panel" id="wallet-connect-panel">
-                            <button class="connect-wallet-btn" id="connect-trading-wallet">CONNECT WALLET FOR TRADING</button>
-                        </div>
-                        
-                        <div class="trading-panel" id="trading-panel" style="display: none;">
-                            <div class="trading-pair">
-                                <label class="trade-label">TRADING PAIR:</label>
-                                <select class="pair-selector" id="trading-pair">
-                                    <option value="TSAR/TON">TSAR/TON</option>
-                                    <option value="TON/USDT">TON/USDT</option>
-                                </select>
-                            </div>
-                            
-                            <div class="trading-form">
-                                <div class="trade-input-group">
-                                    <label>AMOUNT:</label>
-                                    <input type="number" id="trade-amount" placeholder="0.0">
-                                    <span id="trade-currency">TSAR</span>
-                                </div>
-                                <div class="trade-input-group">
-                                    <label>PRICE:</label>
-                                    <input type="number" id="trade-price" placeholder="0.001">
-                                    <span>TON</span>
-                                </div>
-                            </div>
-                            
-                            <div class="trading-actions">
-                                <button class="trade-btn buy" id="buy-btn">PLACE BUY ORDER</button>
-                                <button class="trade-btn sell" id="sell-btn">PLACE SELL ORDER</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SETTINGS -->
-                    <div id="settings-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">TERMINAL SETTINGS</h2>
-                        
-                        <div class="settings-category">
-                            <h3 class="category-title">GENERAL SETTINGS</h3>
-                            <div class="setting-item">
-                                <span class="setting-name">[SND] Sound Effects</span>
-                                <button class="setting-toggle active" id="sound-toggle">ON</button>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-name">[VFX] Animations</span>
-                                <button class="setting-toggle active" id="animation-toggle">ON</button>
-                            </div>
-                            <div class="setting-item">
-                                <span class="setting-name">[LANG] Language</span>
-                                <select class="setting-select" id="language-select">
-                                    <option value="en">ENGLISH</option>
-                                    <option value="ru">РУССКИЙ</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-category premium">
-                            <h3 class="category-title">PREMIUM FEATURES</h3>
-                            <div class="premium-requirement">Requires 10,000+ TSAR tokens</div>
-                            <div class="setting-item">
-                                <span class="setting-name">[THEME] Color Scheme</span>
-                                <select class="setting-select" id="theme-select" disabled>
-                                    <option value="classic">CLASSIC GREEN</option>
-                                    <option value="amber">AMBER GLOW</option>
-                                    <option value="blue">BLUE STEEL</option>
-                                    <option value="red">CRIMSON</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- GAMES -->
-                    <div id="gameboy-section" class="section-content yellow-content">
-                        <h2 class="yellow-text">RUNNER ARCADE</h2>
-                        <p class="yellow-text">BLOCKCHAIN GAMING PLATFORM:</p>
-                        
-                        <div class="game-categories">
-                            <div class="category-header">STRATEGY GAMES</div>
-                            <div class="game-list">
-                                <div class="game-item featured-game" id="terminal-hack-btn">
-                                    <span class="game-icon">[HACK]</span>
-                                    <span class="game-title">Terminal Hacking</span>
-                                    <span class="game-desc">Fallout-style password cracking</span>
-                                    <span class="game-status">ONLINE</span>
-                                </div>
-                                <div class="game-item" id="chess-btn">
-                                    <span class="game-icon">[CHES]</span>
-                                    <span class="game-title">Wasteland Chess</span>
-                                    <span class="game-desc">Strategic board game with crypto stakes</span>
-                                    <span class="game-status">COMING SOON</span>
-                                </div>
-                            </div>
-                            
-                            <div class="category-header">ACTION GAMES</div>
-                            <div class="game-list">
-                                <div class="game-item featured-game" id="shmup-btn">
-                                    <span class="game-icon">[SHOT]</span>
-                                    <span class="game-title">Wasteland Wings</span>
-                                    <span class="game-desc">Retro space shooter with crypto rewards</span>
-                                    <span class="game-status">ONLINE</span>
-                                </div>
-                                <div class="game-item" id="battle-arena-btn">
-                                    <span class="game-icon">[LOCK]</span>
-                                    <span class="game-title">Battle Arena</span>
-                                    <span class="game-desc">PvP Combat System</span>
-                                    <span class="game-status">COMING SOON</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Экран игры - Terminal Hacking -->
-            <div id="game-screen" class="screen">
-                <div class="game-header">
-                    <button class="terminal-btn" id="back-to-arcade">&lt; EXIT</button>
-                    <h2 class="game-title">TERMINAL HACKING</h2>
-                    <div class="score-display" id="score-display">SCORE: 0</div>
-                </div>
-                
-                <!-- Выбор режима -->
-                <div class="mode-selector" id="mode-selector">
-                    <h3 class="mode-title">SELECT MODE</h3>
-                    <div class="mode-options">
-                        <button class="mode-btn solo-mode" id="solo-mode-btn">
-                            <span class="mode-icon">[SOLO]</span>
-                            <span class="mode-name">PRACTICE</span>
-                            <span class="mode-desc">Train your hacking skills</span>
-                            <span class="mode-reward">Earn bottle caps</span>
-                        </button>
-                        <button class="mode-btn multiplayer-mode" id="multiplayer-mode-btn">
-                            <span class="mode-icon">[VS]</span>
-                            <span class="mode-name">VERSUS</span>
-                            <span class="mode-desc">Challenge other hackers</span>
-                            <span class="mode-reward">Win crypto stakes</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Настройка мультиплеера -->
-                <div class="multiplayer-setup" id="multiplayer-setup" style="display: none;">
-                    <div class="setup-container">
-                        <h3 class="setup-title">CRYPTO STAKES</h3>
-                        
-                        <div class="stake-selector">
-                            <div class="currency-options">
-                                <button class="crypto-option active" data-currency="TON">
-                                    <span class="currency-symbol">[TON]</span>
-                                    <span class="currency-label">TONCOIN</span>
-                                    <span class="currency-balance">Balance: 0.542</span>
-                                </button>
-                                <button class="crypto-option" data-currency="TSAR">
-                                    <span class="currency-symbol">[TSR]</span>
-                                    <span class="currency-label">TSAR TOKEN</span>
-                                    <span class="currency-balance">Balance: 1,250</span>
-                                </button>
-                            </div>
-                            
-                            <div class="amount-selector">
-                                <label class="amount-label">STAKE AMOUNT:</label>
-                                <div class="amount-input-group">
-                                    <input type="number" id="stake-amount" min="0.001" step="0.001" value="0.1">
-                                    <span id="currency-display">TON</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="setup-actions">
-                            <button class="action-btn primary" id="create-game">CREATE GAME</button>
-                            <button class="action-btn secondary" id="find-game">FIND OPPONENT</button>
-                            <button class="action-btn back" id="back-to-modes">&lt; BACK</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ожидание -->
-                <div class="waiting-lobby" id="waiting-lobby" style="display: none;">
-                    <div class="waiting-content">
-                        <h3 class="waiting-title">FINDING OPPONENT</h3>
-                        <div class="game-code">CODE: <span id="lobby-game-code">XXXX</span></div>
-                        <div class="stake-info">STAKE: <span id="lobby-stake">0.1 TON</span></div>
-                        <div class="waiting-dots">
-                            <span>.</span><span>.</span><span>.</span>
-                        </div>
-                        <button class="cancel-btn" id="cancel-waiting">CANCEL</button>
-                    </div>
-                </div>
-
-                <!-- Игровой экран -->
-                <div class="gaming-area" id="gaming-area" style="display: none;">
-                    <div class="game-status-bar">
-                        <div class="game-progress">
-                            <div class="player-side">
-                                <div class="player-label">YOU</div>
-                                <div class="player-attempts" id="player-attempts">[█][█][█][█]</div>
-                                <div class="player-status" id="player-status">READY</div>
-                            </div>
-                            
-                            <div class="vs-section">
-                                <div class="mode-badge" id="mode-badge">SOLO</div>
-                                <div class="stake-info" id="stake-info" style="display: none;">0.1 TON</div>
-                                <div class="turn-indicator">
-                                    <div class="turn-text">YOUR TURN</div>
-                                    <div class="turn-timer" id="turn-timer">30s</div>
-                                </div>
-                            </div>
-                            
-                            <div class="opponent-side" id="opponent-side" style="display: none;">
-                                <div class="opponent-label">OPPONENT</div>
-                                <div class="opponent-attempts" id="opponent-attempts">[█][█][█][█]</div>
-                                <div class="opponent-status" id="opponent-status">WAITING</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="fallout-terminal">
-                        <div class="terminal-header">
-                            <div class="header-row">
-                                <span class="terminal-label">ROBCO INDUSTRIES (TM) TERMLINK</span>
-                                <span class="attempts-label">ATTEMPTS REMAINING: <span id="attempts-display">4</span></span>
-                            </div>
-                        </div>
-                        
-                        <div class="terminal-content">
-                            <div class="hex-dump" id="hex-dump">
-                                <!-- Hex код с паролями -->
-                            </div>
-                            
-                            <div class="terminal-log" id="terminal-log">
-                                <div class="log-entry">&gt; Please wait while system</div>
-                                <div class="log-entry">&gt; attempts to locate next</div>
-                                <div class="log-entry">&gt; encrypted access code...</div>
-                                <div class="log-entry system">&gt; ENTER PASSWORD</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Экран игры - Shmup -->
-            <div id="shmup-screen" class="screen">
-                <div class="game-header">
-                    <button class="terminal-btn" id="back-from-shmup">&lt; EXIT</button>
-                    <h2 class="game-title">WASTELAND WINGS</h2>
-                    <div class="shmup-score">SCORE: <span id="shmup-score">0</span> | LIVES: <span id="shmup-lives">3</span></div>
-                </div>
-                
-                <div class="shmup-game-area" id="shmup-game-area">
-                    <canvas id="shmup-canvas" width="300" height="400"></canvas>
-                    <div class="shmup-controls">
-                        <button class="control-btn" id="shoot-btn">FIRE</button>
-                        <div class="movement-controls">
-                            <button class="move-btn" id="move-left">←</button>
-                            <button class="move-btn" id="move-up">↑</button>
-                            <button class="move-btn" id="move-down">↓</button>
-                            <button class="move-btn" id="move-right">→</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Эффекты -->
-            <div class="retro-effects">
-                <div class="scanlines"></div>
-                <div class="screen-curve"></div>
-                <div class="phosphor-glow"></div>
-            </div>
-        </div>
-
-        <!-- Увеличенная кнопка меню -->
-        <div class="bottom-menu">
-            <button class="large-menu-btn" id="simple-menu-toggle">
-                <span class="menu-icon">═══</span>
-                <span class="menu-text">TERMINAL MENU</span>
-            </button>
-        </div>
-
-        <!-- Простое рабочее меню -->
-        <div class="simple-nav" id="simple-nav" style="display: none;">
-            <div class="simple-nav-header">
-                <span class="nav-title">RUNNER TERMINAL</span>
-                <button class="simple-close-btn" id="simple-close">[X]</button>
-            </div>
-            <div class="simple-nav-content">
-                <button class="simple-nav-btn" data-section="stat">
-                    <span class="nav-icon">[STAT]</span>STATUS
-                </button>
-                <button class="simple-nav-btn" data-section="wallet">
-                    <span class="nav-icon">[$$$]</span>WALLET
-                </button>
-                <button class="simple-nav-btn runner-btn" data-section="runner">
-                    <span class="nav-icon">[RUN]</span>RUNNER
-                </button>
-                <button class="simple-nav-btn" data-section="shop">
-                    <span class="nav-icon">[MKT]</span>MARKET
-                </button>
-                <button class="simple-nav-btn" data-section="inventory">
-                    <span class="nav-icon">[BAG]</span>INVENTORY
-                </button>
-                <button class="simple-nav-btn" data-section="radio">
-                    <span class="nav-icon">[RAD]</span>RADIO
-                </button>
-                <button class="simple-nav-btn" data-section="nuclear">
-                    <span class="nav-icon">[NUC]</span>NUCLEAR
-                </button>
-                <button class="simple-nav-btn" data-section="settings">
-                    <span class="nav-icon">[CFG]</span>SETTINGS
-                </button>
-                <button class="simple-nav-btn" data-section="gameboy">
-                    <span class="nav-icon">[GAM]</span>GAMES
-                </button>
+                <div class="boot-text" id="boot-text">Initializing systems...</div>
             </div>
         </div>
     </div>
 
+    <!-- Main App -->
+    <div id="app" class="app hidden">
+        <!-- Header -->
+        <header class="terminal-header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="assets/runner-icon.png" alt="RUNNER">
+                    <span>RUNNER TERMINAL</span>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <div class="user-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Level</span>
+                        <span class="stat-value" id="user-level">1</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">TSAR</span>
+                        <span class="stat-value" id="tsar-balance">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Caps</span>
+                        <span class="stat-value" id="caps-balance">1,250</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="wallet-btn" id="ton-connect-btn">
+                    <span id="wallet-status">Connect Wallet</span>
+                </button>
+                <button class="menu-btn" id="menu-btn">☰</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="terminal-nav" id="main-nav">
+            <button class="nav-btn active" data-section="dashboard">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-section="games">
+                <span class="nav-icon">🎮</span>
+                <span class="nav-text">Games</span>
+            </button>
+            <button class="nav-btn" data-section="missions">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-text">Missions</span>
+            </button>
+            <button class="nav-btn" data-section="market">
+                <span class="nav-icon">🛒</span>
+                <span class="nav-text">Market</span>
+            </button>
+            <button class="nav-btn" data-section="inventory">
+                <span class="nav-icon">🎒</span>
+                <span class="nav-text">Inventory</span>
+            </button>
+            <button class="nav-btn" data-section="leaderboard">
+                <span class="nav-icon">🏆</span>
+                <span class="nav-text">Rankings</span>
+            </button>
+        </nav>
+
+        <!-- Content Sections -->
+        <main class="terminal-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-header">
+                    <h2>🏜️ Welcome to the Wasteland</h2>
+                    <p>Ready to earn crypto in the post-apocalyptic world?</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card stats-card">
+                        <h3>📊 Your Progress</h3>
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="value" id="dash-games-played">0</span>
+                                <span class="label">Games Played</span>
+                            </div>
+                            <div class="stat">
+                                <span class="value" id="dash-missions-completed">0</span>
+                                <span class="label">Missions Complete</span>
+                            </div>
+                            <div class="stat">
+                                <span class="value" id="dash-total-earned">0</span>
+                                <span class="label">TON Earned</span>
+                            </div>
+                            <div class="stat">
+                                <span class="value" id="dash-win-rate">0%</span>
+                                <span class="label">Win Rate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card quick-actions">
+                        <h3>⚡ Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="switchSection('games')">
+                                <span class="btn-icon">🎮</span>
+                                <span class="btn-text">Play Games</span>
+                            </button>
+                            <button class="action-btn" onclick="switchSection('missions')">
+                                <span class="btn-icon">🎯</span>
+                                <span class="btn-text">Start Mission</span>
+                            </button>
+                            <button class="action-btn" onclick="switchSection('market')">
+                                <span class="btn-icon">💎</span>
+                                <span class="btn-text">Buy Stars</span>
+                            </button>
+                            <button class="action-btn" onclick="openTONConnect()">
+                                <span class="btn-icon">💰</span>
+                                <span class="btn-text">Connect Wallet</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card news-card">
+                        <h3>📰 Wasteland News</h3>
+                        <div class="news-feed">
+                            <div class="news-item">
+                                <span class="news-time">2 min ago</span>
+                                <span class="news-text">New TSAR rewards available in Terminal Hacking!</span>
+                            </div>
+                            <div class="news-item">
+                                <span class="news-time">1 hour ago</span>
+                                <span class="news-text">Weekly leaderboard updated. Check your ranking!</span>
+                            </div>
+                            <div class="news-item">
+                                <span class="news-time">3 hours ago</span>
+                                <span class="news-text">Battle Pass Season 2 now available for purchase.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Games Section -->
+            <section id="games-section" class="content-section">
+                <div class="section-header">
+                    <h2>🎮 Wasteland Games</h2>
+                    <p>Earn crypto by playing post-apocalyptic games</p>
+                </div>
+
+                <div class="games-grid">
+                    <div class="game-card" data-game="terminal-hacking">
+                        <div class="game-image">
+                            <img src="assets/game-terminal.jpg" alt="Terminal Hacking" loading="lazy">
+                            <div class="game-badge">HOT</div>
+                        </div>
+                        <div class="game-info">
+                            <h3>🖥️ Terminal Hacking</h3>
+                            <p>Crack Vault-Tec terminals in this Fallout-style puzzle game</p>
+                            <div class="game-rewards">
+                                <span class="reward">💰 5-50 TSAR</span>
+                                <span class="reward">🍺 10-100 Caps</span>
+                            </div>
+                            <div class="game-stats">
+                                <span>🎯 Difficulty: Medium</span>
+                                <span>⏱️ ~3 minutes</span>
+                            </div>
+                            <button class="play-btn" onclick="startGame('terminal-hacking')">
+                                <span>🚀 PLAY NOW</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="game-card" data-game="wasteland-wings">
+                        <div class="game-image">
+                            <img src="assets/game-wings.jpg" alt="Wasteland Wings" loading="lazy">
+                            <div class="game-badge">NEW</div>
+                        </div>
+                        <div class="game-info">
+                            <h3>✈️ Wasteland Wings</h3>
+                            <p>Pilot pre-war aircraft through radioactive storms</p>
+                            <div class="game-rewards">
+                                <span class="reward">💰 10-100 TSAR</span>
+                                <span class="reward">🍺 20-200 Caps</span>
+                            </div>
+                            <div class="game-stats">
+                                <span>🎯 Difficulty: Hard</span>
+                                <span>⏱️ ~5 minutes</span>
+                            </div>
+                            <button class="play-btn" onclick="startGame('wasteland-wings')">
+                                <span>🚀 PLAY NOW</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="game-card" data-game="nuclear-charge">
+                        <div class="game-image">
+                            <img src="assets/game-charge.jpg" alt="Nuclear Charge" loading="lazy">
+                            <div class="game-badge">PREMIUM</div>
+                        </div>
+                        <div class="game-info">
+                            <h3>⚡ Nuclear Charge</h3>
+                            <p>Trade fusion cores and energy in the wasteland market</p>
+                            <div class="game-rewards">
+                                <span class="reward">💰 20-500 TSAR</span>
+                                <span class="reward">💎 Real TON</span>
+                            </div>
+                            <div class="game-stats">
+                                <span>🎯 Difficulty: Expert</span>
+                                <span>⏱️ ~10 minutes</span>
+                            </div>
+                            <button class="play-btn premium" onclick="startGame('nuclear-charge')">
+                                <span>⭐ PREMIUM PLAY</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Missions Section -->
+            <section id="missions-section" class="content-section">
+                <div class="section-header">
+                    <h2>🎯 Wasteland Missions</h2>
+                    <p>Complete tasks to earn crypto rewards</p>
+                </div>
+
+                <div class="missions-container">
+                    <div class="mission-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="daily">Daily</button>
+                        <button class="filter-btn" data-filter="weekly">Weekly</button>
+                        <button class="filter-btn" data-filter="special">Special</button>
+                    </div>
+
+                    <div class="missions-list" id="missions-list">
+                        <!-- Missions will be loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Market Section -->
+            <section id="market-section" class="content-section">
+                <div class="section-header">
+                    <h2>🛒 Wasteland Market</h2>
+                    <p>Purchase items, NFTs, and premium features with Telegram Stars</p>
+                </div>
+
+                <div class="market-tabs">
+                    <button class="tab-btn active" data-tab="tokens">💰 TSAR Tokens</button>
+                    <button class="tab-btn" data-tab="nfts">🎨 NFTs</button>
+                    <button class="tab-btn" data-tab="passes">🎫 Battle Pass</button>
+                    <button class="tab-btn" data-tab="items">⚔️ Items</button>
+                </div>
+
+                <div class="market-content">
+                    <div id="tokens-tab" class="tab-content active">
+                        <div class="products-grid" id="tsar-products">
+                            <!-- TSAR products will be loaded -->
+                        </div>
+                    </div>
+
+                    <div id="nfts-tab" class="tab-content">
+                        <div class="products-grid" id="nft-products">
+                            <!-- NFT products will be loaded -->
+                        </div>
+                    </div>
+
+                    <div id="passes-tab" class="tab-content">
+                        <div class="products-grid" id="pass-products">
+                            <!-- Battle pass products will be loaded -->
+                        </div>
+                    </div>
+
+                    <div id="items-tab" class="tab-content">
+                        <div class="products-grid" id="item-products">
+                            <!-- Item products will be loaded -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inventory Section -->
+            <section id="inventory-section" class="content-section">
+                <div class="section-header">
+                    <h2>🎒 Your Inventory</h2>
+                    <p>Manage your NFTs, items, and collectibles</p>
+                </div>
+
+                <div class="inventory-tabs">
+                    <button class="tab-btn active" data-tab="nfts">🎨 NFTs</button>
+                    <button class="tab-btn" data-tab="items">⚔️ Items</button>
+                    <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
+                </div>
+
+                <div class="inventory-content">
+                    <div id="nfts-inventory" class="tab-content active">
+                        <div class="inventory-grid" id="user-nfts">
+                            <!-- User NFTs will be loaded -->
+                        </div>
+                    </div>
+
+                    <div id="items-inventory" class="tab-content">
+                        <div class="inventory-grid" id="user-items">
+                            <!-- User items will be loaded -->
+                        </div>
+                    </div>
+
+                    <div id="achievements-inventory" class="tab-content">
+                        <div class="achievements-grid" id="user-achievements">
+                            <!-- User achievements will be loaded -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard Section -->
+            <section id="leaderboard-section" class="content-section">
+                <div class="section-header">
+                    <h2>🏆 Wasteland Rankings</h2>
+                    <p>See who dominates the post-apocalyptic world</p>
+                </div>
+
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" data-tab="earnings">💰 Top Earners</button>
+                    <button class="tab-btn" data-tab="games">🎮 Best Players</button>
+                    <button class="tab-btn" data-tab="missions">🎯 Mission Masters</button>
+                </div>
+
+                <div class="leaderboard-content">
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <!-- Leaderboard will be loaded -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Game Modal -->
+        <div id="game-modal" class="modal">
+            <div class="modal-content game-container">
+                <div class="game-header">
+                    <h3 id="game-title">Game</h3>
+                    <button class="close-btn" onclick="closeGame()">&times;</button>
+                </div>
+                <div class="game-area" id="game-area">
+                    <!-- Game will be loaded here -->
+                </div>
+                <div class="game-controls" id="game-controls">
+                    <!-- Game controls will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Menu -->
+        <div id="side-menu" class="side-menu">
+            <div class="menu-header">
+                <h3>RUNNER Menu</h3>
+                <button class="close-menu" onclick="closeSideMenu()">&times;</button>
+            </div>
+            <div class="menu-content">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <img id="user-avatar" src="assets/default-avatar.png" alt="User">
+                    </div>
+                    <div class="user-details">
+                        <h4 id="user-name">Loading...</h4>
+                        <p id="user-rank">Rookie Runner</p>
+                    </div>
+                </div>
+                
+                <div class="menu-items">
+                    <button class="menu-item" onclick="switchSection('dashboard')">
+                        <span>🏠 Dashboard</span>
+                    </button>
+                    <button class="menu-item" onclick="showProfile()">
+                        <span>👤 Profile</span>
+                    </button>
+                    <button class="menu-item" onclick="showSettings()">
+                        <span>⚙️ Settings</span>
+                    </button>
+                    <button class="menu-item" onclick="showHelp()">
+                        <span>❓ Help & Support</span>
+                    </button>
+                    <button class="menu-item" onclick="showAbout()">
+                        <span>ℹ️ About</span>
+                    </button>
+                </div>
+                
+                <div class="menu-footer">
+                    <p>RUNNER Terminal v3.0</p>
+                    <p>Powered by TON & Telegram Stars</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification System -->
+        <div id="notifications" class="notifications-container">
+            <!-- Notifications will appear here -->
+        </div>
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div id="pwa-prompt" class="pwa-prompt hidden">
+        <div class="pwa-content">
+            <h3>Install RUNNER Terminal</h3>
+            <p>Get the full experience with offline support</p>
+            <div class="pwa-buttons">
+                <button id="pwa-install">Install</button>
+                <button id="pwa-dismiss">Maybe Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="script.js"></script>
 </body>
 </html>
